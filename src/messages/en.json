@@ -22,7 +22,33 @@
     "hero": {
       "headline": "Preserving memories",
       "subheadline": "Design personal memorial and mourning cards — simple, dignified, and in just a few minutes.",
-      "cta": "Start designing"
+      "cta": "Start designing",
+      "steps": {
+        "choose": {
+          "title": "Choose a template",
+          "description": "Browse our collection of dignified templates for memorial, mourning, and thank-you cards."
+        },
+        "customize": {
+          "title": "Customize your card",
+          "description": "Add photos, text, and personal details — everything right in your browser."
+        },
+        "order": {
+          "title": "Order & receive",
+          "description": "Review your preview, place your order, and receive your finished cards quickly by mail."
+        }
+      }
     }
+  },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Choose a template as a starting point for your card.",
+    "categories": {
+      "all": "All",
+      "sterbebild": "Memorial cards",
+      "trauerkarte": "Mourning cards",
+      "dankkarte": "Thank-you cards"
+    },
+    "useTemplate": "Use template",
+    "empty": "No templates found in this category."
   }
 }

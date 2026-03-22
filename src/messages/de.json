@@ -22,7 +22,33 @@
     "hero": {
       "headline": "Erinnerungen bewahren",
       "subheadline": "Gestalten Sie persönliche Trauer- und Erinnerungskarten — einfach, würdevoll und in wenigen Minuten.",
-      "cta": "Jetzt gestalten"
+      "cta": "Jetzt gestalten",
+      "steps": {
+        "choose": {
+          "title": "Vorlage wählen",
+          "description": "Durchsuchen Sie unsere Sammlung würdevoller Vorlagen für Sterbebilder, Trauer- und Dankkarten."
+        },
+        "customize": {
+          "title": "Individuell gestalten",
+          "description": "Fügen Sie Fotos, Texte und persönliche Details hinzu — alles direkt im Browser."
+        },
+        "order": {
+          "title": "Bestellen & erhalten",
+          "description": "Vorschau prüfen, bestellen und Ihre fertigen Karten schnell per Post erhalten."
+        }
+      }
     }
+  },
+  "templates": {
+    "title": "Vorlagen",
+    "subtitle": "Wählen Sie eine Vorlage als Ausgangspunkt für Ihre Karte.",
+    "categories": {
+      "all": "Alle",
+      "sterbebild": "Sterbebilder",
+      "trauerkarte": "Trauerkarten",
+      "dankkarte": "Dankkarten"
+    },
+    "useTemplate": "Vorlage verwenden",
+    "empty": "Keine Vorlagen in dieser Kategorie gefunden."
   }
 }
