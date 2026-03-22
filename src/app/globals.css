@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #6B9B7D;
+  --color-brand-primary-hover: #5A8A6C;
+  --color-brand-primary-light: #E8F2EC;
+  --color-brand-dark: #1A1A1A;
+  --color-brand-gray: #6B7280;
+  --color-brand-light-gray: #F5F5F5;
+  --color-brand-border: #E5E7EB;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
