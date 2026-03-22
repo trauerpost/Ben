@@ -21,8 +21,10 @@
   "home": {
     "hero": {
       "headline": "Preserving memories",
-      "subheadline": "Design personal memorial and mourning cards — simple, dignified, and in just a few minutes.",
+      "subheadline": "Design personal memorial and mourning cards — simple, dignified, and in just a few minutes. Choose from over 20 background images and design your card directly online.",
       "cta": "Start designing",
+      "howItWorks": "How it works",
+      "howItWorksSubtitle": "Create your personal memorial card in just three steps — no design skills needed.",
       "steps": {
         "choose": {
           "title": "Choose a template",
@@ -36,7 +38,27 @@
           "title": "Order & receive",
           "description": "Review your preview, place your order, and receive your finished cards quickly by mail."
         }
-      }
+      },
+      "products": "Our Products",
+      "cards": {
+        "sterbebild": {
+          "title": "Memorial Cards",
+          "description": "Dignified memorial images to honor your loved ones."
+        },
+        "trauerkarte": {
+          "title": "Mourning Cards",
+          "description": "Personal mourning cards for announcements and invitations."
+        },
+        "dankkarte": {
+          "title": "Thank-you Cards",
+          "description": "Gratitude cards for the sympathy and support received."
+        }
+      },
+      "backgrounds": "Beautiful Backgrounds",
+      "backgroundsSubtitle": "Choose from over 20 premium nature images — mountains, lakes, forests, and more.",
+      "viewAll": "View all templates",
+      "ctaBanner": "Ready to design your card?",
+      "ctaBannerSubtitle": "Create a dignified memorial card in just a few minutes — start for free."
     }
   },
   "templates": {

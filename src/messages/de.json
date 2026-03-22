@@ -21,8 +21,10 @@
   "home": {
     "hero": {
       "headline": "Erinnerungen bewahren",
-      "subheadline": "Gestalten Sie persönliche Trauer- und Erinnerungskarten — einfach, würdevoll und in wenigen Minuten.",
+      "subheadline": "Gestalten Sie persönliche Trauer- und Erinnerungskarten — einfach, würdevoll und in wenigen Minuten. Wählen Sie aus über 20 Hintergrundmotiven und gestalten Sie Ihre Karte direkt online.",
       "cta": "Jetzt gestalten",
+      "howItWorks": "So einfach geht's",
+      "howItWorksSubtitle": "In nur drei Schritten zu Ihrer persönlichen Erinnerungskarte — kein Design-Wissen nötig.",
       "steps": {
         "choose": {
           "title": "Vorlage wählen",
@@ -36,7 +38,27 @@
           "title": "Bestellen & erhalten",
           "description": "Vorschau prüfen, bestellen und Ihre fertigen Karten schnell per Post erhalten."
         }
-      }
+      },
+      "products": "Unsere Produkte",
+      "cards": {
+        "sterbebild": {
+          "title": "Sterbebilder",
+          "description": "Würdevolle Erinnerungsbilder zum Gedenken an Ihre Liebsten."
+        },
+        "trauerkarte": {
+          "title": "Trauerkarten",
+          "description": "Persönliche Trauerkarten für die Bekanntgabe und Einladung."
+        },
+        "dankkarte": {
+          "title": "Dankkarten",
+          "description": "Dankeskarten für die Anteilnahme und Unterstützung."
+        }
+      },
+      "backgrounds": "Wunderschöne Hintergründe",
+      "backgroundsSubtitle": "Wählen Sie aus über 20 hochwertigen Naturmotiven — Berge, Seen, Wälder und mehr.",
+      "viewAll": "Alle Vorlagen ansehen",
+      "ctaBanner": "Bereit, Ihre Karte zu gestalten?",
+      "ctaBannerSubtitle": "Erstellen Sie in wenigen Minuten eine würdevolle Erinnerungskarte — kostenlos starten."
     }
   },
   "templates": {
