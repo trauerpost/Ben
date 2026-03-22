@@ -1,0 +1,28 @@
+{
+  "common": {
+    "siteName": "Trauerpost",
+    "tagline": "Dignified memorial cards — individually designed",
+    "nav": {
+      "home": "Home",
+      "templates": "Templates",
+      "builder": "Design",
+      "pricing": "Pricing",
+      "contact": "Contact",
+      "login": "Sign in"
+    },
+    "footer": {
+      "about": "About us",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "imprint": "Imprint",
+      "copyright": "© {year} Trauerpost. All rights reserved."
+    }
+  },
+  "home": {
+    "hero": {
+      "headline": "Preserving memories",
+      "subheadline": "Design personal memorial and mourning cards — simple, dignified, and in just a few minutes.",
+      "cta": "Start designing"
+    }
+  }
+}

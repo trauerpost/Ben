@@ -1,0 +1,28 @@
+{
+  "common": {
+    "siteName": "Trauerpost",
+    "tagline": "Würdevolle Erinnerungskarten — individuell gestaltet",
+    "nav": {
+      "home": "Startseite",
+      "templates": "Vorlagen",
+      "builder": "Gestalten",
+      "pricing": "Preise",
+      "contact": "Kontakt",
+      "login": "Anmelden"
+    },
+    "footer": {
+      "about": "Über uns",
+      "privacy": "Datenschutz",
+      "terms": "AGB",
+      "imprint": "Impressum",
+      "copyright": "© {year} Trauerpost. Alle Rechte vorbehalten."
+    }
+  },
+  "home": {
+    "hero": {
+      "headline": "Erinnerungen bewahren",
+      "subheadline": "Gestalten Sie persönliche Trauer- und Erinnerungskarten — einfach, würdevoll und in wenigen Minuten.",
+      "cta": "Jetzt gestalten"
+    }
+  }
+}
