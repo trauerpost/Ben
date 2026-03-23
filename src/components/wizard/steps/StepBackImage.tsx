@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import type { Asset } from "@/lib/supabase/types";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 interface StepBackImageProps {
   state: WizardState;
@@ -20,7 +20,7 @@ export default function StepBackImage({ state, dispatch, initialAssets = [] }: S
   useEffect(() => {
     if (initialAssets.length > 0) return;
 
-    const supabase = createBrowserSupabaseClient();
+    const supabase = createClient();
     supabase
       .from("assets")
       .select("*")

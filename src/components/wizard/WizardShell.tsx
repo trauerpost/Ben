@@ -73,8 +73,8 @@ export default function WizardShell({ initialAssets = [] }: WizardShellProps) {
         {renderStep(state, dispatch)}
       </div>
 
-      {/* Navigation */}
-      <div className="border-t border-brand-border bg-white px-6 py-4">
+      {/* Navigation — sticky at bottom of viewport */}
+      <div className="sticky bottom-0 border-t border-brand-border bg-white px-6 py-4 z-10">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <button
             onClick={() => dispatch({ type: "PREV_STEP" })}

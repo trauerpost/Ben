@@ -61,6 +61,26 @@
       "ctaBannerSubtitle": "Create a dignified memorial card in just a few minutes — start for free."
     }
   },
+  "login": {
+    "title": "Welcome back",
+    "subtitle": "Sign in to manage your memorial cards.",
+    "email": "Email address",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Sign in",
+    "loading": "Signing in...",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "register": "Register now",
+    "brandHeadline": "Design dignified memories",
+    "brandSubline": "Create personal memorial and mourning cards — simple and heartfelt."
+  },
+  "pricing": {
+    "title": "Pricing — Coming Soon",
+    "subtitle": "We are working on our pricing plans. Contact us for a custom quote.",
+    "cta": "Get in touch"
+  },
   "templates": {
     "title": "Templates",
     "subtitle": "Choose a template as a starting point for your card.",
@@ -72,5 +92,41 @@
     },
     "useTemplate": "Use template",
     "empty": "No templates found in this category."
+  },
+  "about": {
+    "title": "About Us",
+    "subtitle": "Dignified memorial print — your trusted partner for years",
+    "story": {
+      "title": "Our Story",
+      "p1": "Trauerpost specializes in dignified memorial print products. We design memorial cards, mourning cards, and thank-you cards — individually and with the greatest care.",
+      "p2": "Together with you, we quickly create an appropriate design that honors the memory of your loved ones. We can also incorporate personal photographs from bereaved families.",
+      "p3": "All elements for dignified memorial print — from design to the finished product — available from us in one place."
+    },
+    "values": {
+      "title": "What Sets Us Apart",
+      "personal": {
+        "title": "Personal Guidance",
+        "description": "We support you compassionately through the design process — by phone, email, or online."
+      },
+      "quality": {
+        "title": "Premium Quality",
+        "description": "Professional printing on high-quality paper — dignified and long-lasting."
+      },
+      "fast": {
+        "title": "Fast Delivery",
+        "description": "We know time matters. Your cards are printed and delivered as quickly as possible."
+      },
+      "custom": {
+        "title": "Custom Design",
+        "description": "Every card is designed to your wishes — with your own photos, text, and motifs."
+      }
+    },
+    "contact": {
+      "title": "Contact",
+      "phone": "0151 / 118 150 86",
+      "email": "info@trauerpost.com",
+      "hours": "Mon–Fri: 9:00 AM–6:00 PM",
+      "cta": "Write to us"
+    }
   }
 }

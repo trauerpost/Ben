@@ -61,6 +61,26 @@
       "ctaBannerSubtitle": "Erstellen Sie in wenigen Minuten eine würdevolle Erinnerungskarte — kostenlos starten."
     }
   },
+  "login": {
+    "title": "Willkommen zurück",
+    "subtitle": "Melden Sie sich an, um Ihre Erinnerungskarten zu verwalten.",
+    "email": "E-Mail-Adresse",
+    "emailPlaceholder": "name@beispiel.de",
+    "password": "Passwort",
+    "passwordPlaceholder": "Ihr Passwort eingeben",
+    "submit": "Anmelden",
+    "loading": "Wird angemeldet...",
+    "forgotPassword": "Passwort vergessen?",
+    "noAccount": "Noch kein Konto?",
+    "register": "Jetzt registrieren",
+    "brandHeadline": "Würdevolle Erinnerungen gestalten",
+    "brandSubline": "Erstellen Sie persönliche Trauer- und Erinnerungskarten — einfach und liebevoll."
+  },
+  "pricing": {
+    "title": "Preise — Demnächst verfügbar",
+    "subtitle": "Wir arbeiten an unseren Preispaketen. Kontaktieren Sie uns für ein individuelles Angebot.",
+    "cta": "Kontakt aufnehmen"
+  },
   "templates": {
     "title": "Vorlagen",
     "subtitle": "Wählen Sie eine Vorlage als Ausgangspunkt für Ihre Karte.",
@@ -72,5 +92,41 @@
     },
     "useTemplate": "Vorlage verwenden",
     "empty": "Keine Vorlagen in dieser Kategorie gefunden."
+  },
+  "about": {
+    "title": "Über uns",
+    "subtitle": "Würdevolle Trauerdrucksachen — seit Jahren Ihr zuverlässiger Partner",
+    "story": {
+      "title": "Unsere Geschichte",
+      "p1": "Trauerpost ist Ihr Spezialist für würdevolle Trauerdrucksachen. Wir gestalten Sterbebilder, Trauerkarten und Dankkarten — individuell und mit größter Sorgfalt.",
+      "p2": "Zusammen mit Ihnen entsteht rasch eine angemessene Variante, die dem Andenken Ihrer Liebsten gerecht wird. Wir können auch eigene Bildmotive der Hinterbliebenen verarbeiten.",
+      "p3": "Alle Elemente für würdige Trauerdrucksachen — von der Gestaltung bis zum fertigen Druck — erhalten Sie bei uns aus einer Hand."
+    },
+    "values": {
+      "title": "Was uns auszeichnet",
+      "personal": {
+        "title": "Persönliche Beratung",
+        "description": "Wir begleiten Sie einfühlsam durch den Gestaltungsprozess — per Telefon, E-Mail oder online."
+      },
+      "quality": {
+        "title": "Höchste Qualität",
+        "description": "Professioneller Druck auf hochwertigem Papier — würdevoll und langlebig."
+      },
+      "fast": {
+        "title": "Schnelle Lieferung",
+        "description": "Wir wissen, dass die Zeit drängt. Ihre Karten werden schnellstmöglich gedruckt und geliefert."
+      },
+      "custom": {
+        "title": "Individuelle Gestaltung",
+        "description": "Jede Karte wird nach Ihren Wünschen gestaltet — mit eigenen Fotos, Texten und Motiven."
+      }
+    },
+    "contact": {
+      "title": "Kontakt",
+      "phone": "0151 / 118 150 86",
+      "email": "info@trauerpost.com",
+      "hours": "Mo–Fr: 9:00–18:00 Uhr",
+      "cta": "Schreiben Sie uns"
+    }
   }
 }
