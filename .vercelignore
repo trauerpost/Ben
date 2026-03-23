@@ -1,0 +1,4 @@
+.env
+.env.local
+e2e/
+test-results/
