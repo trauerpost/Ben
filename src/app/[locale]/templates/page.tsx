@@ -9,14 +9,19 @@ export default async function TemplatesPage() {
   let templates: CardTemplate[] = [];
   try {
     const supabase = await createServerSupabaseClient();
-    const { data } = await supabase
-      .from("card_templates")
-      .select("*")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
+    const { data } = await Promise.race([
+      supabase
+        .from("card_templates")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Supabase timeout")), 5000)
+      ),
+    ]);
     templates = (data as CardTemplate[]) ?? [];
   } catch {
-    // Supabase query failed — show empty state
+    // Supabase query failed or timed out — show empty state
   }
 
   return (
