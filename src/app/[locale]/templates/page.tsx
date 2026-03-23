@@ -1,17 +1,23 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import TemplateGrid from "@/components/cards/TemplateGrid";
 import type { CardTemplate } from "@/lib/supabase/types";
 
 export default async function TemplatesPage() {
-  const t = useTranslations("templates");
-  const supabase = await createServerSupabaseClient();
+  const t = await getTranslations("templates");
 
-  const { data: templates } = await supabase
-    .from("card_templates")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  let templates: CardTemplate[] = [];
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data } = await supabase
+      .from("card_templates")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    templates = (data as CardTemplate[]) ?? [];
+  } catch {
+    // Supabase query failed — show empty state
+  }
 
   return (
     <section className="max-w-6xl mx-auto px-6 py-12">
@@ -22,7 +28,7 @@ export default async function TemplatesPage() {
         <p className="text-lg text-brand-gray">{t("subtitle")}</p>
       </div>
 
-      <TemplateGrid templates={(templates as CardTemplate[]) ?? []} />
+      <TemplateGrid templates={templates} />
     </section>
   );
 }
