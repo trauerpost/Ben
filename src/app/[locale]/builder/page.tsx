@@ -3,14 +3,23 @@ import type { Asset } from "@/lib/supabase/types";
 import WizardClient from "./WizardClient";
 
 export default async function BuilderPage() {
-  const supabase = await createServerSupabaseClient();
+  let assets: Asset[] = [];
 
-  const { data: assets } = await supabase
-    .from("assets")
-    .select("*")
-    .eq("category", "background")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("assets")
+      .select("*")
+      .eq("category", "background")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
 
-  return <WizardClient initialAssets={(assets as Asset[]) ?? []} />;
+    if (!error && data) {
+      assets = data as Asset[];
+    }
+  } catch {
+    // Server-side fetch failed — WizardClient will fetch client-side
+  }
+
+  return <WizardClient initialAssets={assets} />;
 }

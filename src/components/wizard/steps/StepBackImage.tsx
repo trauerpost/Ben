@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import type { Asset } from "@/lib/supabase/types";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
 interface StepBackImageProps {
   state: WizardState;
@@ -12,18 +13,35 @@ interface StepBackImageProps {
 }
 
 export default function StepBackImage({ state, dispatch, initialAssets = [] }: StepBackImageProps) {
+  const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [activeTag, setActiveTag] = useState<string>("all");
+
+  // Fallback: fetch client-side if server didn't provide assets
+  useEffect(() => {
+    if (initialAssets.length > 0) return;
+
+    const supabase = createBrowserSupabaseClient();
+    supabase
+      .from("assets")
+      .select("*")
+      .eq("category", "background")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (data) setAssets(data as Asset[]);
+      });
+  }, [initialAssets.length]);
 
   const allTags = useMemo(() => {
     const tags = new Set<string>();
-    initialAssets.forEach((a) => a.tags.forEach((t) => tags.add(t)));
+    assets.forEach((a) => a.tags.forEach((t) => tags.add(t)));
     return Array.from(tags).sort();
-  }, [initialAssets]);
+  }, [assets]);
 
   const filtered =
     activeTag === "all"
-      ? initialAssets
-      : initialAssets.filter((a) => a.tags.includes(activeTag));
+      ? assets
+      : assets.filter((a) => a.tags.includes(activeTag));
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -72,52 +90,58 @@ export default function StepBackImage({ state, dispatch, initialAssets = [] }: S
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {filtered.map((asset) => {
-          const isSelected = state.backImageUrl === asset.file_url;
-          return (
-            <button
-              key={asset.id}
-              onClick={() => dispatch({ type: "SET_BACK_IMAGE", url: asset.file_url })}
-              className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
-                isSelected
-                  ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
-                  : "border-transparent hover:border-brand-gray"
-              }`}
-            >
-              <Image
-                src={asset.file_url}
-                alt={asset.name}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                className="object-cover"
-              />
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
-                  <span className="text-white text-sm">✓</span>
+      {assets.length === 0 ? (
+        <div className="text-center py-20 text-brand-gray">
+          <p>No background images available yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filtered.map((asset) => {
+            const isSelected = state.backImageUrl === asset.file_url;
+            return (
+              <button
+                key={asset.id}
+                onClick={() => dispatch({ type: "SET_BACK_IMAGE", url: asset.file_url })}
+                className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
+                  isSelected
+                    ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
+                    : "border-transparent hover:border-brand-gray"
+                }`}
+              >
+                <Image
+                  src={asset.file_url}
+                  alt={asset.name}
+                  fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover"
+                />
+                {isSelected && (
+                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
+                    <span className="text-white text-sm">✓</span>
+                  </div>
+                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                  <span className="text-white text-xs">{asset.name}</span>
                 </div>
-              )}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <span className="text-white text-xs">{asset.name}</span>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
 
-        {/* Upload custom */}
-        <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
-          <div className="text-center">
-            <span className="text-3xl text-brand-gray">+</span>
-            <p className="text-xs text-brand-gray mt-2">Upload your own</p>
-          </div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleUpload}
-            className="hidden"
-          />
-        </label>
-      </div>
+          {/* Upload custom */}
+          <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
+            <div className="text-center">
+              <span className="text-3xl text-brand-gray">+</span>
+              <p className="text-xs text-brand-gray mt-2">Upload your own</p>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="hidden"
+            />
+          </label>
+        </div>
+      )}
     </div>
   );
 }

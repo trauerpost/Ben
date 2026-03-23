@@ -10,10 +10,13 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "NODE_TLS_REJECT_UNAUTHORIZED=0 npx next dev -p 3000",
+    command: "npx next dev -p 3000",
     port: 3000,
     timeout: 60000,
     reuseExistingServer: true,
+    env: {
+      NODE_TLS_REJECT_UNAUTHORIZED: "0",
+    },
   },
   projects: [
     {
