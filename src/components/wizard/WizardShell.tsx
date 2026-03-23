@@ -21,13 +21,7 @@ import StepDecorations from "./steps/StepDecorations";
 import StepPreview from "./steps/StepPreview";
 import StepOrder from "./steps/StepOrder";
 
-import type { Asset } from "@/lib/supabase/types";
-
-interface WizardShellProps {
-  initialAssets?: Asset[];
-}
-
-export default function WizardShell({ initialAssets = [] }: WizardShellProps) {
+export default function WizardShell() {
   const [state, dispatch] = useReducer(wizardReducer, initialWizardState);
 
   // Load draft on mount
@@ -49,7 +43,7 @@ export default function WizardShell({ initialAssets = [] }: WizardShellProps) {
     (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
       switch (stepState.currentStep) {
         case 1: return <StepSize state={stepState} dispatch={stepDispatch} />;
-        case 2: return <StepBackImage state={stepState} dispatch={stepDispatch} initialAssets={initialAssets} />;
+        case 2: return <StepBackImage state={stepState} dispatch={stepDispatch} />;
         case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
         case 4: return <StepText state={stepState} dispatch={stepDispatch} />;
         case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
