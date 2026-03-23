@@ -40,8 +40,9 @@ test.describe("Card Builder Wizard", () => {
   test("step 2 shows landscape images", async ({ page }) => {
     await page.getByText("Postkarte (A6)").click();
     await page.getByRole("button", { name: "Next →" }).click();
-    await page.waitForTimeout(3000);
-    const images = page.locator("img");
+    // Wait for Loading... to disappear
+    await expect(page.getByText("Loading...")).toBeHidden({ timeout: 15000 });
+    const images = page.locator("button:has(img)");
     const count = await images.count();
     expect(count).toBeGreaterThan(0);
   });
@@ -49,7 +50,7 @@ test.describe("Card Builder Wizard", () => {
   test("step 2 has tag filter buttons", async ({ page }) => {
     await page.getByText("Postkarte (A6)").click();
     await page.getByRole("button", { name: "Next →" }).click();
-    await page.waitForTimeout(3000);
+    await expect(page.getByText("Loading...")).toBeHidden({ timeout: 15000 });
     await expect(page.getByRole("button", { name: "All", exact: true })).toBeVisible();
   });
 
@@ -58,35 +59,33 @@ test.describe("Card Builder Wizard", () => {
     await page.getByText("Postkarte (A6)").click();
     await page.getByRole("button", { name: "Next →" }).click();
 
-    // Step 2: Background — select first image
-    await page.waitForTimeout(3000);
+    // Step 2: Background — wait for images, select first
+    await expect(page.getByText("Loading...")).toBeHidden({ timeout: 15000 });
     const firstImage = page.locator("button:has(img)").first();
-    if (await firstImage.isVisible()) {
-      await firstImage.click();
-      await page.getByRole("button", { name: "Next →" }).click();
+    await expect(firstImage).toBeVisible();
+    await firstImage.click();
+    await page.getByRole("button", { name: "Next →" }).click();
 
-      // Step 3: Photo — skip
-      await expect(page.getByRole("heading", { name: "Upload Photo" })).toBeVisible();
-      await page.getByRole("button", { name: "Next →" }).click();
+    // Step 3: Photo — skip
+    await expect(page.getByRole("heading", { name: "Upload Photo" })).toBeVisible();
+    await page.getByRole("button", { name: "Next →" }).click();
 
-      // Step 4: Text
-      await expect(page.getByRole("heading", { name: "Add Text" })).toBeVisible();
-    }
+    // Step 4: Text
+    await expect(page.getByRole("heading", { name: "Add Text" })).toBeVisible();
   });
 
   test("step 4: text input visible after navigation", async ({ page }) => {
     // Navigate through steps
     await page.getByText("Postkarte (A6)").click();
     await page.getByRole("button", { name: "Next →" }).click();
-    await page.waitForTimeout(3000);
+    await expect(page.getByText("Loading...")).toBeHidden({ timeout: 15000 });
     const img = page.locator("button:has(img)").first();
-    if (await img.isVisible()) {
-      await img.click();
-      await page.getByRole("button", { name: "Next →" }).click();
-      // Step 3: skip photo
-      await page.getByRole("button", { name: "Next →" }).click();
-      // Step 4: should see textarea
-      await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
-    }
+    await expect(img).toBeVisible();
+    await img.click();
+    await page.getByRole("button", { name: "Next →" }).click();
+    // Step 3: skip photo
+    await page.getByRole("button", { name: "Next →" }).click();
+    // Step 4: should see textarea
+    await expect(page.locator("textarea")).toBeVisible({ timeout: 10000 });
   });
 });

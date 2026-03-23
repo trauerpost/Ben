@@ -1,50 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import type { Asset } from "@/lib/supabase/types";
 
 interface StepBackImageProps {
   state: WizardState;
   dispatch: React.Dispatch<WizardAction>;
+  initialAssets?: Asset[];
 }
 
-export default function StepBackImage({ state, dispatch }: StepBackImageProps) {
-  const [assets, setAssets] = useState<Asset[]>([]);
+export default function StepBackImage({ state, dispatch, initialAssets = [] }: StepBackImageProps) {
   const [activeTag, setActiveTag] = useState<string>("all");
-  const [loading, setLoading] = useState(true);
-  const [allTags, setAllTags] = useState<string[]>([]);
 
-  useEffect(() => {
-    async function fetchAssets() {
-      setLoading(true);
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("assets")
-        .select("*")
-        .eq("category", "background")
-        .eq("is_active", true)
-        .order("sort_order", { ascending: true });
-
-      const items = (data as Asset[]) ?? [];
-      setAssets(items);
-
-      // Extract unique tags
-      const tags = new Set<string>();
-      items.forEach((a) => a.tags.forEach((t) => tags.add(t)));
-      setAllTags(Array.from(tags).sort());
-
-      setLoading(false);
-    }
-    fetchAssets();
-  }, []);
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    initialAssets.forEach((a) => a.tags.forEach((t) => tags.add(t)));
+    return Array.from(tags).sort();
+  }, [initialAssets]);
 
   const filtered =
     activeTag === "all"
-      ? assets
-      : assets.filter((a) => a.tags.includes(activeTag));
+      ? initialAssets
+      : initialAssets.filter((a) => a.tags.includes(activeTag));
 
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -93,55 +72,52 @@ export default function StepBackImage({ state, dispatch }: StepBackImageProps) {
         ))}
       </div>
 
-      {loading ? (
-        <p className="text-center text-brand-gray py-12">Loading...</p>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((asset) => {
-            const isSelected = state.backImageUrl === asset.file_url;
-            return (
-              <button
-                key={asset.id}
-                onClick={() => dispatch({ type: "SET_BACK_IMAGE", url: asset.file_url })}
-                className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
-                  isSelected
-                    ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
-                    : "border-transparent hover:border-brand-gray"
-                }`}
-              >
-                <Image
-                  src={asset.file_url}
-                  alt={asset.name}
-                  fill
-                  className="object-cover"
-                />
-                {isSelected && (
-                  <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
-                    <span className="text-white text-sm">✓</span>
-                  </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                  <span className="text-white text-xs">{asset.name}</span>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filtered.map((asset) => {
+          const isSelected = state.backImageUrl === asset.file_url;
+          return (
+            <button
+              key={asset.id}
+              onClick={() => dispatch({ type: "SET_BACK_IMAGE", url: asset.file_url })}
+              className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
+                isSelected
+                  ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
+                  : "border-transparent hover:border-brand-gray"
+              }`}
+            >
+              <Image
+                src={asset.file_url}
+                alt={asset.name}
+                fill
+                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="object-cover"
+              />
+              {isSelected && (
+                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
+                  <span className="text-white text-sm">✓</span>
                 </div>
-              </button>
-            );
-          })}
+              )}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                <span className="text-white text-xs">{asset.name}</span>
+              </div>
+            </button>
+          );
+        })}
 
-          {/* Upload custom */}
-          <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
-            <div className="text-center">
-              <span className="text-3xl text-brand-gray">+</span>
-              <p className="text-xs text-brand-gray mt-2">Upload your own</p>
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-      )}
+        {/* Upload custom */}
+        <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
+          <div className="text-center">
+            <span className="text-3xl text-brand-gray">+</span>
+            <p className="text-xs text-brand-gray mt-2">Upload your own</p>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleUpload}
+            className="hidden"
+          />
+        </label>
+      </div>
     </div>
   );
 }

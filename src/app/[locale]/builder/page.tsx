@@ -1,12 +1,16 @@
-"use client";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { Asset } from "@/lib/supabase/types";
+import WizardClient from "./WizardClient";
 
-import dynamic from "next/dynamic";
+export default async function BuilderPage() {
+  const supabase = await createServerSupabaseClient();
 
-const WizardShell = dynamic(
-  () => import("@/components/wizard/WizardShell"),
-  { ssr: false }
-);
+  const { data: assets } = await supabase
+    .from("assets")
+    .select("*")
+    .eq("category", "background")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
 
-export default function BuilderPage() {
-  return <WizardShell />;
+  return <WizardClient initialAssets={(assets as Asset[]) ?? []} />;
 }
