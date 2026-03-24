@@ -13,8 +13,11 @@ export default async function middleware(request: NextRequest) {
   const intlResponse = handleI18n(request);
 
   // Step 3: Merge Supabase auth cookies into the i18n response
+  // IMPORTANT: Pass the full cookie object (name, value, AND options like
+  // path, httpOnly, secure, sameSite, maxAge). Without options, mobile
+  // browsers silently drop the cookies.
   supabaseResponse.cookies.getAll().forEach((cookie) => {
-    intlResponse.cookies.set(cookie.name, cookie.value);
+    intlResponse.cookies.set(cookie);
   });
 
   return intlResponse;
