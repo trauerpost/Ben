@@ -1,13 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { Link } from "@/i18n/routing";
-
-const adminLinks = [
-  { label: "Dashboard", href: "/admin" },
-  { label: "Customers", href: "/admin/customers" },
-  { label: "Templates", href: "/admin/templates" },
-  { label: "Orders", href: "/admin/orders" },
-];
+import AdminSidebar from "@/components/admin/AdminSidebar";
 
 export default async function AdminLayout({
   children,
@@ -33,25 +26,16 @@ export default async function AdminLayout({
     redirect("/dashboard");
   }
 
+  // Count new orders (status = 'paid') for badge
+  const { count: newOrderCount } = await supabase
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "paid");
+
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
-      <aside className="w-56 border-r border-brand-border bg-brand-light-gray p-4">
-        <p className="text-xs font-medium text-brand-gray uppercase tracking-wider mb-4">
-          Admin
-        </p>
-        <nav className="flex flex-col gap-1">
-          {adminLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="px-3 py-2 rounded-lg text-sm text-brand-gray hover:text-brand-dark hover:bg-white transition-colors"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
-      <div className="flex-1 p-6">{children}</div>
+    <div className="flex min-h-[calc(100dvh-4rem)]">
+      <AdminSidebar newOrderCount={newOrderCount ?? 0} />
+      <div className="flex-1 p-6 md:ml-0">{children}</div>
     </div>
   );
 }

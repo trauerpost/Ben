@@ -56,7 +56,7 @@ export default function WizardShell() {
   );
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
       {/* Step indicator */}
       <div className="border-b border-brand-border bg-white">
         <StepIndicator currentStep={state.currentStep} />

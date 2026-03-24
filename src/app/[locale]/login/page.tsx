@@ -5,7 +5,7 @@ export default function LoginPage() {
   const t = useTranslations("login");
 
   return (
-    <section className="min-h-[calc(100vh-4rem)] flex">
+    <section className="min-h-[calc(100dvh-4rem)] flex">
       {/* Left panel - brand visual (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-brand-primary to-brand-primary-hover relative items-center justify-center p-12">
         <div className="relative z-10 max-w-md text-center">
