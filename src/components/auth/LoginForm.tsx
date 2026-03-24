@@ -30,7 +30,11 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
+    // Hard navigation ensures the browser sends the freshly-set auth cookies
+    // to the server. router.push() does client-side navigation which may not
+    // include the new cookies in the server request, causing getUser() to
+    // return null and redirect back to /login.
+    window.location.href = "/dashboard";
   }
 
   return (
