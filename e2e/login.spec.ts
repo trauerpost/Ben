@@ -117,7 +117,7 @@ test.describe("Admin (authenticated)", () => {
 
     // Navigate to admin
     await page.goto("/de/admin");
-    await expect(page.getByText("Admin Dashboard")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
   });
 });
 

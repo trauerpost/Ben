@@ -31,6 +31,16 @@ export interface Database {
         Insert: OrderInsert;
         Update: OrderUpdate;
       };
+      promo_codes: {
+        Row: PromoCode;
+        Insert: PromoCodeInsert;
+        Update: PromoCodeUpdate;
+      };
+      invoices: {
+        Row: Invoice;
+        Insert: InvoiceInsert;
+        Update: InvoiceUpdate;
+      };
       pricing: {
         Row: Pricing;
         Insert: PricingInsert;
@@ -246,7 +256,7 @@ export interface CustomerUpdate {
 
 // ── Orders ──
 
-export type OrderStatus = "draft" | "pending_payment" | "paid" | "in_production" | "shipped" | "completed" | "cancelled";
+export type OrderStatus = "draft" | "pending_payment" | "paid" | "in_production" | "ready_for_pickup" | "shipped" | "completed" | "cancelled";
 export type CardType = "sterbebild" | "trauerkarte" | "dankkarte";
 export type PaymentMethod = "stripe" | "credit" | "invoice";
 
@@ -266,6 +276,11 @@ export interface Order {
   payment_id: string | null;
   invoice_url: string | null;
   notes: string | null;
+  promo_code_id: string | null;
+  invoice_id: string | null;
+  shipment_notes: string | null;
+  shipped_at: string | null;
+  pickup_ready_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -286,6 +301,11 @@ export interface OrderInsert {
   payment_id?: string | null;
   invoice_url?: string | null;
   notes?: string | null;
+  promo_code_id?: string | null;
+  invoice_id?: string | null;
+  shipment_notes?: string | null;
+  shipped_at?: string | null;
+  pickup_ready_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -306,8 +326,98 @@ export interface OrderUpdate {
   payment_id?: string | null;
   invoice_url?: string | null;
   notes?: string | null;
+  promo_code_id?: string | null;
+  invoice_id?: string | null;
+  shipment_notes?: string | null;
+  shipped_at?: string | null;
+  pickup_ready_at?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+// ── Promo Codes ──
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  currency: string;
+  max_uses: number | null;
+  current_uses: number;
+  customer_id: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PromoCodeInsert {
+  id?: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  currency?: string;
+  max_uses?: number | null;
+  current_uses?: number;
+  customer_id?: string | null;
+  expires_at?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+export interface PromoCodeUpdate {
+  id?: string;
+  code?: string;
+  discount_type?: "percent" | "fixed";
+  discount_value?: number;
+  currency?: string;
+  max_uses?: number | null;
+  current_uses?: number;
+  customer_id?: string | null;
+  expires_at?: string | null;
+  is_active?: boolean;
+  created_at?: string;
+}
+
+// ── Invoices ──
+
+export interface Invoice {
+  id: string;
+  order_id: string;
+  customer_id: string | null;
+  invoice_number: string;
+  amount_cents: number;
+  currency: string;
+  status: "draft" | "issued" | "paid" | "cancelled";
+  pdf_url: string | null;
+  issued_at: string;
+  created_at: string;
+}
+
+export interface InvoiceInsert {
+  id?: string;
+  order_id: string;
+  customer_id?: string | null;
+  invoice_number?: string;
+  amount_cents: number;
+  currency?: string;
+  status?: "draft" | "issued" | "paid" | "cancelled";
+  pdf_url?: string | null;
+  issued_at?: string;
+  created_at?: string;
+}
+
+export interface InvoiceUpdate {
+  id?: string;
+  order_id?: string;
+  customer_id?: string | null;
+  invoice_number?: string;
+  amount_cents?: number;
+  currency?: string;
+  status?: "draft" | "issued" | "paid" | "cancelled";
+  pdf_url?: string | null;
+  issued_at?: string;
+  created_at?: string;
 }
 
 // ── Pricing ──
