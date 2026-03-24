@@ -31,5 +31,13 @@ export default defineConfig({
       name: "mobile-chrome",
       use: { ...devices["Pixel 5"] },
     },
+    {
+      name: "webkit",
+      use: { browserName: "webkit" },
+    },
+    {
+      name: "firefox",
+      use: { browserName: "firefox" },
+    },
   ],
 });
