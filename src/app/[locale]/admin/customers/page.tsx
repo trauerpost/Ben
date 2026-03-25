@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { Link } from "@/i18n/routing";
 import type { Customer } from "@/lib/supabase/types";
 
 export default async function AdminCustomersPage() {
@@ -33,7 +34,11 @@ export default async function AdminCustomersPage() {
                   key={c.id}
                   className="border-b border-brand-border hover:bg-brand-light-gray transition-colors"
                 >
-                  <td className="py-3 px-2">{c.name}</td>
+                  <td className="py-3 px-2">
+                    <Link href={`/admin/customers/${c.id}`} className="text-brand-primary hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
                   <td className="py-3 px-2">{c.email}</td>
                   <td className="py-3 px-2">{c.company_name ?? "—"}</td>
                   <td className="py-3 px-2 capitalize">{c.customer_type}</td>
