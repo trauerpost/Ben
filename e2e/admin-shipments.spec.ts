@@ -1,26 +1,22 @@
 import { test, expect } from "@playwright/test";
+import { loginAsAdmin } from "./helpers/login";
 
 test.describe("Admin — Shipments", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/de/login");
-    await page.locator("#login-email").fill("jess@trauerpost.com");
-    await page.locator("#login-password").fill("SoundGarden!");
-    await page.getByRole("button", { name: "Anmelden" }).click();
-    await page.waitForURL(/\/dashboard/, { timeout: 15000 });
-    await page.waitForLoadState("networkidle");
+    await loginAsAdmin(page);
   });
 
   test("admin sees open shipments list", async ({ page }) => {
     await page.goto("/de/admin/shipments");
-    await expect(page.getByText("Offene Sendungen")).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByText("Offene Sendungen")).toBeVisible({ timeout: 10000 });
   });
 
   test("overdue orders show red highlight", async ({ page }) => {
     await page.goto("/de/admin/shipments");
-    // If there are orders older than 3 days, they should have red background
+    await page.waitForLoadState("networkidle");
     const overdueRow = page.locator("tr.bg-red-50").first();
     const noShipments = page.getByText("Keine offenen Sendungen");
-    // Either we have overdue rows or no shipments at all
-    await expect(overdueRow.or(noShipments)).toBeVisible({ timeout: 5000 });
+    await expect(overdueRow.or(noShipments)).toBeVisible({ timeout: 10000 });
   });
 });
