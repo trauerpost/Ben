@@ -5,12 +5,18 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import LanguageSwitcher from "./LanguageSwitcher";
 
-export default function Header() {
+interface HeaderProps {
+  isLoggedIn?: boolean;
+  isAdmin?: boolean;
+}
+
+export default function Header({ isLoggedIn = false, isAdmin = false }: HeaderProps) {
   const t = useTranslations("common");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
     { label: t("nav.templates"), href: "/templates" as const },
+    { label: t("nav.products"), href: "/products" as const },
     { label: t("nav.builder"), href: "/builder" as const },
     { label: t("nav.pricing"), href: "/pricing" as const },
     { label: t("nav.contact"), href: "/contact" as const },
@@ -37,12 +43,31 @@ export default function Header() {
 
         <div className="hidden md:flex items-center gap-4">
           <LanguageSwitcher />
-          <Link
-            href="/login"
-            className="text-sm bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary-hover transition-colors"
-          >
-            {t("nav.login")}
-          </Link>
+          {isLoggedIn ? (
+            <>
+              {isAdmin && (
+                <Link
+                  href="/admin"
+                  className="text-sm text-brand-gray hover:text-brand-dark transition-colors"
+                >
+                  {t("nav.admin")}
+                </Link>
+              )}
+              <Link
+                href="/dashboard"
+                className="text-sm bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary-hover transition-colors"
+              >
+                {t("nav.dashboard")}
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="text-sm bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary-hover transition-colors"
+            >
+              {t("nav.login")}
+            </Link>
+          )}
         </div>
 
         <button
@@ -88,13 +113,34 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              className="text-brand-primary font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {t("nav.login")}
-            </Link>
+            {isLoggedIn ? (
+              <>
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="text-brand-gray hover:text-brand-dark transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t("nav.admin")}
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard"
+                  className="text-brand-primary font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t("nav.dashboard")}
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="text-brand-primary font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t("nav.login")}
+              </Link>
+            )}
             <LanguageSwitcher />
           </nav>
         </div>

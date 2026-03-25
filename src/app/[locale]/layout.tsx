@@ -3,7 +3,7 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { Inter } from "next/font/google";
-import Header from "@/components/layout/Header";
+import HeaderWrapper from "@/components/layout/HeaderWrapper";
 import Footer from "@/components/layout/Footer";
 import "../globals.css";
 
@@ -32,7 +32,7 @@ export default async function LocaleLayout({
         className={`${inter.className} bg-white text-brand-dark antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <Header />
+          <HeaderWrapper />
           <main className="pt-16 min-h-screen">{children}</main>
           <Footer />
         </NextIntlClientProvider>
