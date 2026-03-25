@@ -132,6 +132,25 @@
       "cta": "Schreiben Sie uns"
     }
   },
+  "products": {
+    "title": "Produkte",
+    "subtitle": "Hochwertige Trauerprodukte — einfach online bestellen",
+    "startingAt": "ab",
+    "details": "Details",
+    "selectSize": "Größe wählen",
+    "selectMaterial": "Material wählen",
+    "uploadPhoto": "Foto hochladen",
+    "uploadPhotoHint": "JPG, PNG oder WebP — max. 10 MB",
+    "quantity": "Menge",
+    "estimatedPrice": "ca.",
+    "order": "Bestellen",
+    "loginToOrder": "Anmelden zum Bestellen",
+    "orderSuccess": "Bestellung aufgegeben!",
+    "photoRequired": "Ein Foto ist erforderlich für dieses Produkt.",
+    "photoTooLarge": "Die Datei ist zu groß (max. 10 MB).",
+    "photoInvalidType": "Nur JPG, PNG oder WebP erlaubt.",
+    "uploading": "Wird hochgeladen..."
+  },
   "admin": {
     "sidebar": {
       "title": "Admin",

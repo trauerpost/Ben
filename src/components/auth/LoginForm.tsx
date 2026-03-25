@@ -34,8 +34,16 @@ export default function LoginForm() {
     // to the server. router.push() does client-side navigation which may not
     // include the new cookies in the server request, causing getUser() to
     // return null and redirect back to /login.
+    // Check for redirect parameter (e.g. from product page)
+    const params = new URLSearchParams(window.location.search);
+    const redirectPath = params.get("redirect");
     const locale = window.location.pathname.split("/")[1] || "de";
-    window.location.href = `/${locale}/dashboard`;
+
+    if (redirectPath) {
+      window.location.href = `/${locale}${redirectPath}`;
+    } else {
+      window.location.href = `/${locale}/dashboard`;
+    }
   }
 
   return (

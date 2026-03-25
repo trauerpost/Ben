@@ -132,6 +132,25 @@
       "cta": "Write to us"
     }
   },
+  "products": {
+    "title": "Products",
+    "subtitle": "Premium memorial products — order easily online",
+    "startingAt": "from",
+    "details": "Details",
+    "selectSize": "Select size",
+    "selectMaterial": "Select material",
+    "uploadPhoto": "Upload photo",
+    "uploadPhotoHint": "JPG, PNG or WebP — max. 10 MB",
+    "quantity": "Quantity",
+    "estimatedPrice": "approx.",
+    "order": "Order",
+    "loginToOrder": "Sign in to order",
+    "orderSuccess": "Order placed!",
+    "photoRequired": "A photo is required for this product.",
+    "photoTooLarge": "File is too large (max. 10 MB).",
+    "photoInvalidType": "Only JPG, PNG or WebP allowed.",
+    "uploading": "Uploading..."
+  },
   "admin": {
     "sidebar": {
       "title": "Admin",
