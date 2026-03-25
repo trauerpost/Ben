@@ -11,7 +11,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (!email || !password) {
     return NextResponse.redirect(
-      new URL(`/${locale}/login?error=missing`, request.url)
+      new URL(`/${locale}/login?error=missing`, request.url), 303
     );
   }
 
@@ -40,13 +40,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/${locale}/login?error=${encodeURIComponent(error.message)}`, request.url)
+      new URL(`/${locale}/login?error=${encodeURIComponent(error.message)}`, request.url), 303
     );
   }
 
   // Redirect to dashboard (or redirect path)
   const target = redirectPath ? `/${locale}${redirectPath}` : `/${locale}/dashboard`;
-  const response = NextResponse.redirect(new URL(target, request.url));
+  const response = NextResponse.redirect(new URL(target, request.url), 303);
 
   // Set all auth cookies on the redirect response
   for (const cookie of pendingCookies) {
