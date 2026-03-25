@@ -41,6 +41,11 @@ export interface Database {
         Insert: InvoiceInsert;
         Update: InvoiceUpdate;
       };
+      products: {
+        Row: Product;
+        Insert: ProductInsert;
+        Update: ProductUpdate;
+      };
       pricing: {
         Row: Pricing;
         Insert: PricingInsert;
@@ -266,7 +271,8 @@ export interface Order {
   guest_email: string | null;
   guest_name: string | null;
   status: OrderStatus;
-  card_type: CardType;
+  card_type: CardType | null;
+  product_id: string | null;
   card_data: Record<string, unknown>;
   pdf_url: string | null;
   quantity: number;
@@ -291,7 +297,8 @@ export interface OrderInsert {
   guest_email?: string | null;
   guest_name?: string | null;
   status?: OrderStatus;
-  card_type: CardType;
+  card_type?: CardType | null;
+  product_id?: string | null;
   card_data?: Record<string, unknown>;
   pdf_url?: string | null;
   quantity?: number;
@@ -316,7 +323,8 @@ export interface OrderUpdate {
   guest_email?: string | null;
   guest_name?: string | null;
   status?: OrderStatus;
-  card_type?: CardType;
+  card_type?: CardType | null;
+  product_id?: string | null;
   card_data?: Record<string, unknown>;
   pdf_url?: string | null;
   quantity?: number;
@@ -453,4 +461,74 @@ export interface PricingUpdate {
   currency?: string;
   is_active?: boolean;
   created_at?: string;
+}
+
+// ── Products ──
+
+export type ProductCategory = "cross_photo" | "card_pack" | "accessory" | "print_service";
+
+export interface SizeOption {
+  id: string;
+  label: string;
+  price_cents: number;
+}
+
+export interface MaterialOption {
+  id: string;
+  label: string;
+  price_cents: number;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: ProductCategory;
+  price_cents: number;
+  currency: string;
+  requires_photo: boolean;
+  size_options: SizeOption[];
+  material_options: MaterialOption[];
+  preview_image_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductInsert {
+  id?: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  category: ProductCategory;
+  price_cents: number;
+  currency?: string;
+  requires_photo?: boolean;
+  size_options?: SizeOption[];
+  material_options?: MaterialOption[];
+  preview_image_url?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductUpdate {
+  id?: string;
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  category?: ProductCategory;
+  price_cents?: number;
+  currency?: string;
+  requires_photo?: boolean;
+  size_options?: SizeOption[];
+  material_options?: MaterialOption[];
+  preview_image_url?: string | null;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
 }
