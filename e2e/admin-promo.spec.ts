@@ -7,6 +7,7 @@ test.describe("Admin — Promo Codes", () => {
     await page.locator("#login-password").fill("SoundGarden!");
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
   });
 
   test("admin sees promo codes page", async ({ page }) => {
@@ -21,17 +22,18 @@ test.describe("Admin — Promo Codes", () => {
   });
 
   test("duplicate code shows error (negative test)", async ({ page }) => {
+    const uniqueCode = `DUP${Date.now().toString(36).toUpperCase()}`;
     await page.goto("/de/admin/promo-codes");
     // Create first code
     await page.getByText("Code erstellen").click();
-    await page.locator("input[type=text]").fill("TESTDUP");
+    await page.locator("input[type=text]").fill(uniqueCode);
     await page.locator("input[type=number]").first().fill("10");
     await page.getByRole("button", { name: "Erstellen" }).click();
-    // Wait for modal to close and reopen
-    await page.waitForTimeout(1000);
+    // Wait for modal to close (table should refresh with new code)
+    await expect(page.getByText(uniqueCode)).toBeVisible({ timeout: 5000 });
     // Try same code again
     await page.getByText("Code erstellen").click();
-    await page.locator("input[type=text]").fill("TESTDUP");
+    await page.locator("input[type=text]").fill(uniqueCode);
     await page.locator("input[type=number]").first().fill("10");
     await page.getByRole("button", { name: "Erstellen" }).click();
     // Should show error about duplicate

@@ -51,7 +51,7 @@ test.describe("Login — Mobile Safari (iPhone 14)", () => {
     await page.reload();
 
     // Should still be on dashboard, not redirected to login
-    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
     expect(page.url()).toContain("/dashboard");
   });
 

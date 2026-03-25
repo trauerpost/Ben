@@ -3,10 +3,11 @@ import { test, expect } from "@playwright/test";
 // Helper: login as admin
 async function loginAsAdmin(page: import("@playwright/test").Page) {
   await page.goto("/de/login");
-  await page.locator("#login-email").fill("test@trauerpost.com");
-  await page.locator("#login-password").fill("Test1234!");
+  await page.locator("#login-email").fill("jess@trauerpost.com");
+  await page.locator("#login-password").fill("SoundGarden!");
   await page.getByRole("button", { name: "Anmelden" }).click();
   await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+  await page.waitForLoadState("networkidle");
 }
 
 test.describe("Admin Orders", () => {
@@ -56,7 +57,7 @@ test.describe("Admin Orders", () => {
     const { createClient } = require("@supabase/supabase-js");
     const sb = createClient(
       "https://iqltlhfqhzcyqgryrkky.supabase.co",
-      process.env.SUPABASE_SERVICE_KEY!
+      process.env.supabase_Secert || process.env.SUPABASE_SERVICE_KEY!
     );
     const { data: order } = await sb
       .from("orders")
@@ -122,7 +123,7 @@ test.describe("Admin Orders", () => {
     const { createClient } = require("@supabase/supabase-js");
     const sb = createClient(
       "https://iqltlhfqhzcyqgryrkky.supabase.co",
-      process.env.SUPABASE_SERVICE_KEY!
+      process.env.supabase_Secert || process.env.SUPABASE_SERVICE_KEY!
     );
     const { data: order } = await sb
       .from("orders")

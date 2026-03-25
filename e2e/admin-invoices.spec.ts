@@ -7,6 +7,7 @@ test.describe("Admin — Invoices", () => {
     await page.locator("#login-password").fill("SoundGarden!");
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
   });
 
   test("admin sees invoices page", async ({ page }) => {

@@ -7,6 +7,7 @@ test.describe("Admin Nav Link", () => {
     await page.locator("#login-password").fill("SoundGarden!");
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
 
     // After login redirect, reload to ensure server-rendered header picks up auth cookies
     await page.reload({ waitUntil: "networkidle" });

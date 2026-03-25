@@ -18,31 +18,35 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const supabase = createClient();
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (authError) {
-      setError(authError.message);
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Hard navigation ensures the browser sends the freshly-set auth cookies
+      // to the server. router.push() does client-side navigation which may not
+      // include the new cookies in the server request, causing getUser() to
+      // return null and redirect back to /login.
+      const params = new URLSearchParams(window.location.search);
+      const redirectPath = params.get("redirect");
+      const locale = window.location.pathname.split("/")[1] || "de";
+
+      if (redirectPath) {
+        window.location.href = `/${locale}${redirectPath}`;
+      } else {
+        window.location.href = `/${locale}/dashboard`;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
       setLoading(false);
-      return;
-    }
-
-    // Hard navigation ensures the browser sends the freshly-set auth cookies
-    // to the server. router.push() does client-side navigation which may not
-    // include the new cookies in the server request, causing getUser() to
-    // return null and redirect back to /login.
-    // Check for redirect parameter (e.g. from product page)
-    const params = new URLSearchParams(window.location.search);
-    const redirectPath = params.get("redirect");
-    const locale = window.location.pathname.split("/")[1] || "de";
-
-    if (redirectPath) {
-      window.location.href = `/${locale}${redirectPath}`;
-    } else {
-      window.location.href = `/${locale}/dashboard`;
     }
   }
 

@@ -7,6 +7,7 @@ test.describe("Admin — Customer Management", () => {
     await page.locator("#login-password").fill("SoundGarden!");
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
   });
 
   test("customer list has clickable names", async ({ page }) => {
@@ -37,11 +38,13 @@ test.describe("Admin — Customer Management", () => {
     await page.locator("table a").first().click();
     await page.waitForURL(/\/admin\/customers\//, { timeout: 10000 });
     await page.getByText("Guthaben aufladen").click();
-    // Try to submit with invalid amount
-    await page.locator("input[type=number]").fill("0");
+    // Bypass HTML min=1 validation by setting value via JS
+    const numInput = page.locator("input[type=number]");
+    await numInput.fill("0");
+    await numInput.evaluate((el: HTMLInputElement) => { el.value = "0"; el.removeAttribute("min"); });
     await page.locator("textarea").fill("test");
     await page.getByRole("button", { name: "Guthaben aufladen" }).last().click();
-    // Should show error
+    // Should show error from server-side validation
     await expect(page.locator(".bg-red-50")).toBeVisible({ timeout: 5000 });
   });
 });

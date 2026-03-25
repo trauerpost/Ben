@@ -7,6 +7,7 @@ test.describe("Admin — Products", () => {
     await page.locator("#login-password").fill("SoundGarden!");
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
+    await page.waitForLoadState("networkidle");
   });
 
   test("admin products page shows Grabkreuzfoto", async ({ page }) => {

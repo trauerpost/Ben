@@ -33,7 +33,7 @@ test.describe("Login — Edge Cases", () => {
     await page.waitForTimeout(2000);
     // The key assertion: user should still have access to dashboard
     await page.goto("/de/dashboard");
-    await expect(page.getByText("Dashboard")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({ timeout: 10000 });
   });
 
   test("unauthenticated mobile user accessing /dashboard redirects to /login", async ({ page }) => {
