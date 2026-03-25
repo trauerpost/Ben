@@ -8,7 +8,10 @@
       "builder": "Design",
       "pricing": "Pricing",
       "contact": "Contact",
-      "login": "Sign in"
+      "login": "Sign in",
+      "dashboard": "Dashboard",
+      "admin": "Admin",
+      "products": "Products"
     },
     "footer": {
       "about": "About us",
@@ -139,7 +142,8 @@
       "promoCodes": "Promo Codes",
       "invoices": "Invoices",
       "shipments": "Open Shipments",
-      "reports": "Reports"
+      "reports": "Reports",
+      "products": "Products"
     },
     "dashboard": {
       "title": "Dashboard",

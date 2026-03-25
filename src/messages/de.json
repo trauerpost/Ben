@@ -8,7 +8,10 @@
       "builder": "Gestalten",
       "pricing": "Preise",
       "contact": "Kontakt",
-      "login": "Anmelden"
+      "login": "Anmelden",
+      "dashboard": "Dashboard",
+      "admin": "Admin",
+      "products": "Produkte"
     },
     "footer": {
       "about": "Über uns",
@@ -139,7 +142,8 @@
       "promoCodes": "Gutscheincodes",
       "invoices": "Rechnungen",
       "shipments": "Offene Sendungen",
-      "reports": "Berichte"
+      "reports": "Berichte",
+      "products": "Produkte"
     },
     "dashboard": {
       "title": "Dashboard",
