@@ -19,7 +19,7 @@ test.describe("Admin — Customer Management", () => {
     const link = page.locator("table a").first();
     await link.click();
     await page.waitForURL(/\/admin\/customers\//, { timeout: 10000 });
-    await expect(page.getByText("Guthaben")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText("Kundeninformationen")).toBeVisible({ timeout: 10000 });
   });
 
   test("add credits modal opens", async ({ page }) => {

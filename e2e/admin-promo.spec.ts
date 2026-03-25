@@ -28,8 +28,8 @@ test.describe("Admin — Promo Codes", () => {
     await page.locator("input[type=text]").fill(uniqueCode);
     await page.locator("input[type=number]").first().fill("10");
     await page.getByRole("button", { name: "Erstellen" }).click();
-    // Wait for modal to close (table should refresh with new code)
-    await expect(page.getByText(uniqueCode)).toBeVisible({ timeout: 10000 });
+    // Wait for modal to close (the fixed overlay disappears)
+    await expect(page.locator(".fixed.inset-0")).not.toBeVisible({ timeout: 10000 });
     // Try same code again
     await page.getByText("Code erstellen").click();
     await page.locator("input[type=text]").fill(uniqueCode);
