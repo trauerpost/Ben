@@ -1,5 +1,4 @@
 import { useTranslations } from "next-intl";
-import { loginAction } from "@/app/[locale]/login/actions";
 
 interface LoginFormProps {
   locale: string;
@@ -11,7 +10,7 @@ export default function LoginForm({ locale, error, redirect }: LoginFormProps) {
   const t = useTranslations("login");
 
   return (
-    <form action={loginAction} className="space-y-5">
+    <form method="POST" className="space-y-5">
       <input type="hidden" name="locale" value={locale} />
       {redirect && <input type="hidden" name="redirect" value={redirect} />}
 
@@ -59,6 +58,7 @@ export default function LoginForm({ locale, error, redirect }: LoginFormProps) {
 
       <button
         type="submit"
+        formAction="/api/auth/login"
         className="w-full py-3 bg-brand-primary text-white font-medium rounded-lg hover:bg-brand-primary-hover shadow-sm hover:shadow transition-all"
       >
         {t("submit")}
