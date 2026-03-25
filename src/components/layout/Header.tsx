@@ -70,11 +70,28 @@ export default function Header({ isLoggedIn = false, isAdmin = false }: HeaderPr
           )}
         </div>
 
-        <button
-          className="md:hidden p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
+        {/* Mobile: auth button always visible (not behind hamburger) */}
+        <div className="flex md:hidden items-center gap-2">
+          {isLoggedIn ? (
+            <Link
+              href="/dashboard"
+              className="text-xs bg-brand-primary text-white px-3 py-1.5 rounded-lg"
+            >
+              {t("nav.dashboard")}
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="text-xs bg-brand-primary text-white px-3 py-1.5 rounded-lg"
+            >
+              {t("nav.login")}
+            </Link>
+          )}
+          <button
+            className="p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
           <svg
             className="w-6 h-6"
             fill="none"
@@ -97,7 +114,8 @@ export default function Header({ isLoggedIn = false, isAdmin = false }: HeaderPr
               />
             )}
           </svg>
-        </button>
+          </button>
+        </div>
       </div>
 
       {mobileMenuOpen && (
