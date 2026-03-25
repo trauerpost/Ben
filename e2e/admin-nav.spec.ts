@@ -8,6 +8,9 @@ test.describe("Admin Nav Link", () => {
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
+    // After login redirect, reload to ensure server-rendered header picks up auth cookies
+    await page.reload({ waitUntil: "networkidle" });
+
     const adminLink = page.getByRole("link", { name: "Admin" });
     await expect(adminLink).toBeVisible();
 
