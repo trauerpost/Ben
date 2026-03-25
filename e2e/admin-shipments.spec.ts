@@ -9,7 +9,7 @@ test.describe("Admin — Shipments", () => {
   test("admin sees open shipments list", async ({ page }) => {
     await page.goto("/de/admin/shipments");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByText("Offene Sendungen")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Offene Sendungen" })).toBeVisible({ timeout: 10000 });
   });
 
   test("overdue orders show red highlight", async ({ page }) => {

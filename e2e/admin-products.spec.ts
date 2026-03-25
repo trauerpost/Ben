@@ -15,6 +15,7 @@ test.describe("Admin — Products", () => {
   test("products link in admin sidebar", async ({ page }) => {
     await page.goto("/de/admin");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("link", { name: "Produkte" })).toBeVisible({ timeout: 10000 });
+    // Check sidebar link specifically (not the nav link)
+    await expect(page.getByRole("complementary").getByRole("link", { name: "Produkte" })).toBeVisible({ timeout: 10000 });
   });
 });

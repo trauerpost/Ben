@@ -9,7 +9,7 @@ test.describe("Admin — Invoices", () => {
   test("admin sees invoices page", async ({ page }) => {
     await page.goto("/de/admin/invoices");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByText("Rechnungen")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Rechnungen" })).toBeVisible({ timeout: 10000 });
   });
 
   test("invoices page shows table or empty state", async ({ page }) => {

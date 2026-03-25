@@ -9,7 +9,7 @@ test.describe("Admin — Promo Codes", () => {
   test("admin sees promo codes page", async ({ page }) => {
     await page.goto("/de/admin/promo-codes");
     await page.waitForLoadState("networkidle");
-    await expect(page.getByText("Gutscheincodes")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole("heading", { name: "Gutscheincodes" })).toBeVisible({ timeout: 10000 });
   });
 
   test("admin can open create code modal", async ({ page }) => {
