@@ -290,6 +290,17 @@
       "noShipments": "Keine offenen Sendungen.",
       "overdue": "Überfällig"
     },
+    "products": {
+      "title": "Produkte",
+      "name": "Name",
+      "category": "Kategorie",
+      "price": "Preis",
+      "active": "Aktiv",
+      "actions": "Aktionen",
+      "addProduct": "Produkt hinzufügen",
+      "editProduct": "Produkt bearbeiten",
+      "noProducts": "Noch keine Produkte."
+    },
     "reports": {
       "title": "Berichte",
       "ordersPerMonth": "Bestellungen pro Monat",

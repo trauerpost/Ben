@@ -290,6 +290,17 @@
       "noShipments": "No open shipments.",
       "overdue": "Overdue"
     },
+    "products": {
+      "title": "Products",
+      "name": "Name",
+      "category": "Category",
+      "price": "Price",
+      "active": "Active",
+      "actions": "Actions",
+      "addProduct": "Add Product",
+      "editProduct": "Edit Product",
+      "noProducts": "No products yet."
+    },
     "reports": {
       "title": "Reports",
       "ordersPerMonth": "Orders Per Month",
