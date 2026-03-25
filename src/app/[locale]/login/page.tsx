@@ -1,4 +1,5 @@
 import LoginForm from "@/components/auth/LoginForm";
+import LoginDebug from "@/components/auth/LoginDebug";
 import { getTranslations } from "next-intl/server";
 
 interface LoginPageProps {
@@ -58,6 +59,8 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
           </h2>
 
           <LoginForm locale={locale} error={error} redirect={redirect} />
+
+          <LoginDebug />
 
           <p className="mt-8 text-center text-sm text-brand-gray">
             {t("noAccount")}{" "}
