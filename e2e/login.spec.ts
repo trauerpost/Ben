@@ -93,8 +93,8 @@ test.describe("Dashboard (authenticated)", () => {
     await page.getByRole("button", { name: "Anmelden" }).click();
     await page.waitForURL(/\/dashboard/, { timeout: 15000 });
 
-    // Should see dashboard content
-    await expect(page.getByText("Dashboard")).toBeVisible();
+    // Should see dashboard content (use heading to avoid matching nav link)
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });
 });
 
