@@ -1,68 +1,22 @@
-"use client";
-
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useTranslations } from "next-intl";
 
-export default function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+interface LoginFormProps {
+  locale: string;
+  error?: string | null;
+  redirect?: string | null;
+}
+
+export default function LoginForm({ locale, error, redirect }: LoginFormProps) {
   const t = useTranslations("login");
 
-  // Read server-side error from URL params (fallback form submission)
-  const urlError = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("error")
-    : null;
-
-  const locale = typeof window !== "undefined"
-    ? (window.location.pathname.split("/")[1] || "de")
-    : "de";
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        setError(authError.message);
-        setLoading(false);
-        return;
-      }
-
-      const params = new URLSearchParams(window.location.search);
-      const redirectPath = params.get("redirect");
-      const target = redirectPath ? `/${locale}${redirectPath}` : `/${locale}/dashboard`;
-      window.location.href = target;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
-      setLoading(false);
-    }
-  }
-
-  const displayError = error || (urlError && urlError !== "missing" ? urlError : "");
-
   return (
-    <form
-      action="/api/auth/login"
-      method="POST"
-      onSubmit={handleSubmit}
-      className="space-y-5"
-    >
-      {/* Hidden fields for server-side fallback */}
+    <form action="/api/auth/login" method="POST" className="space-y-5">
       <input type="hidden" name="locale" value={locale} />
+      {redirect && <input type="hidden" name="redirect" value={redirect} />}
 
-      {displayError && (
+      {error && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-          {displayError}
+          {error}
         </div>
       )}
 
@@ -77,8 +31,6 @@ export default function LoginForm() {
           id="login-email"
           name="email"
           type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
           placeholder={t("emailPlaceholder")}
           required
           className="w-full px-4 py-2.5 rounded-lg border border-brand-border bg-white text-brand-dark placeholder:text-brand-gray/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-colors"
@@ -93,19 +45,11 @@ export default function LoginForm() {
           >
             {t("password")}
           </label>
-          <button
-            type="button"
-            className="text-xs text-brand-primary hover:text-brand-primary-hover font-medium transition-colors"
-          >
-            {t("forgotPassword")}
-          </button>
         </div>
         <input
           id="login-password"
           name="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
           placeholder={t("passwordPlaceholder")}
           required
           className="w-full px-4 py-2.5 rounded-lg border border-brand-border bg-white text-brand-dark placeholder:text-brand-gray/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-colors"
@@ -114,10 +58,9 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        disabled={loading}
-        className="w-full py-3 bg-brand-primary text-white font-medium rounded-lg hover:bg-brand-primary-hover shadow-sm hover:shadow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-brand-primary text-white font-medium rounded-lg hover:bg-brand-primary-hover shadow-sm hover:shadow transition-all"
       >
-        {loading ? t("loading") : t("submit")}
+        {t("submit")}
       </button>
     </form>
   );
