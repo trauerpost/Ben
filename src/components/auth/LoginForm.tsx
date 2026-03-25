@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 
 export default function LoginForm() {
@@ -10,20 +9,24 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [debug, setDebug] = useState("");
-  const router = useRouter();
   const t = useTranslations("login");
+
+  // Read server-side error from URL params (fallback form submission)
+  const urlError = typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("error")
+    : null;
+
+  const locale = typeof window !== "undefined"
+    ? (window.location.pathname.split("/")[1] || "de")
+    : "de";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setDebug("1: submitting...");
     setLoading(true);
 
     try {
-      setDebug("2: creating supabase client...");
       const supabase = createClient();
-      setDebug("3: calling signInWithPassword...");
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -31,33 +34,35 @@ export default function LoginForm() {
 
       if (authError) {
         setError(authError.message);
-        setDebug(`4: auth error: ${authError.message}`);
         setLoading(false);
         return;
       }
 
-      setDebug("5: auth OK, redirecting...");
-
       const params = new URLSearchParams(window.location.search);
       const redirectPath = params.get("redirect");
-      const locale = window.location.pathname.split("/")[1] || "de";
       const target = redirectPath ? `/${locale}${redirectPath}` : `/${locale}/dashboard`;
-
-      setDebug(`6: navigating to ${target}`);
       window.location.href = target;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(`Login failed: ${msg}`);
-      setDebug(`ERROR: ${msg}`);
+      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
       setLoading(false);
     }
   }
 
+  const displayError = error || (urlError && urlError !== "missing" ? urlError : "");
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {error && (
+    <form
+      action="/api/auth/login"
+      method="POST"
+      onSubmit={handleSubmit}
+      className="space-y-5"
+    >
+      {/* Hidden fields for server-side fallback */}
+      <input type="hidden" name="locale" value={locale} />
+
+      {displayError && (
         <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-          {error}
+          {displayError}
         </div>
       )}
 
@@ -70,6 +75,7 @@ export default function LoginForm() {
         </label>
         <input
           id="login-email"
+          name="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -96,6 +102,7 @@ export default function LoginForm() {
         </div>
         <input
           id="login-password"
+          name="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -112,10 +119,6 @@ export default function LoginForm() {
       >
         {loading ? t("loading") : t("submit")}
       </button>
-
-      {debug && (
-        <p className="text-xs text-gray-400 mt-2 font-mono">{debug}</p>
-      )}
     </form>
   );
 }
