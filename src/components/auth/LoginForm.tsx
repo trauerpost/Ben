@@ -10,16 +10,20 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [debug, setDebug] = useState("");
   const router = useRouter();
   const t = useTranslations("login");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setDebug("1: submitting...");
     setLoading(true);
 
     try {
+      setDebug("2: creating supabase client...");
       const supabase = createClient();
+      setDebug("3: calling signInWithPassword...");
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -27,25 +31,24 @@ export default function LoginForm() {
 
       if (authError) {
         setError(authError.message);
+        setDebug(`4: auth error: ${authError.message}`);
         setLoading(false);
         return;
       }
 
-      // Hard navigation ensures the browser sends the freshly-set auth cookies
-      // to the server. router.push() does client-side navigation which may not
-      // include the new cookies in the server request, causing getUser() to
-      // return null and redirect back to /login.
+      setDebug("5: auth OK, redirecting...");
+
       const params = new URLSearchParams(window.location.search);
       const redirectPath = params.get("redirect");
       const locale = window.location.pathname.split("/")[1] || "de";
+      const target = redirectPath ? `/${locale}${redirectPath}` : `/${locale}/dashboard`;
 
-      if (redirectPath) {
-        window.location.href = `/${locale}${redirectPath}`;
-      } else {
-        window.location.href = `/${locale}/dashboard`;
-      }
+      setDebug(`6: navigating to ${target}`);
+      window.location.href = target;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed. Please try again.");
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Login failed: ${msg}`);
+      setDebug(`ERROR: ${msg}`);
       setLoading(false);
     }
   }
@@ -109,6 +112,10 @@ export default function LoginForm() {
       >
         {loading ? t("loading") : t("submit")}
       </button>
+
+      {debug && (
+        <p className="text-xs text-gray-400 mt-2 font-mono">{debug}</p>
+      )}
     </form>
   );
 }
