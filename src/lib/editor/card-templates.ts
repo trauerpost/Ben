@@ -7,13 +7,17 @@ export type SlotType = "photo" | "text" | "decoration";
 export interface TemplateSlot {
   id: string;
   type: SlotType;
-  gridArea: string;          // CSS grid-area, e.g., "1 / 1 / 2 / 2"
-  placeholder: string;       // "Foto hier", "[Ihr Name]"
-  textFields?: string[];     // which TextContent fields this slot renders, e.g., ["heading", "name", "dates"]
+  gridArea: string;
+  placeholder: string;
+  textFields?: string[];
+  textAlign?: "left" | "center" | "right";  // per-slot override; renderer uses slot.textAlign ?? textContent.textAlign
+  styleOverrides?: Record<string, { weight?: string; style?: string; transform?: string }>;
+  includePhoto?: boolean;      // T6: text slot with small photo at bottom
+  photoMaxHeight?: string;     // e.g., "30%"
 }
 
 export interface PanelTemplate {
-  panelId: "front" | "back" | "inside-left" | "inside-right";
+  panelId: "front" | "back" | "inside-left" | "inside-right" | "spread";
   gridTemplateRows: string;
   gridTemplateColumns: string;
   defaultBackground: "white" | "image";
@@ -24,8 +28,9 @@ export interface CardTemplate {
   id: string;
   name: string;
   description: string;
-  cardTypes: CardType[];     // which card types can use this template
+  cardTypes: CardType[];
   cardFormat: CardFormat;
+  renderMode: "spread" | "pages";  // spread = single page, pages = multi-page
   panels: PanelTemplate[];
 }
 
@@ -37,6 +42,7 @@ const TEMPLATE_S1: CardTemplate = {
   description: "Dekoration + Text links, Foto + Spruch rechts",
   cardTypes: ["sterbebild"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -67,6 +73,7 @@ const TEMPLATE_S2: CardTemplate = {
   description: "Großes Foto links, Name & Daten rechts",
   cardTypes: ["sterbebild"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -96,6 +103,7 @@ const TEMPLATE_S3: CardTemplate = {
   description: "Kleines Foto links, Text rechts mit Spruch",
   cardTypes: ["sterbebild"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -125,6 +133,7 @@ const TEMPLATE_S4: CardTemplate = {
   description: "Kein Foto — nur Text und Spruch",
   cardTypes: ["sterbebild"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -155,6 +164,7 @@ const TEMPLATE_E1: CardTemplate = {
   description: "Hintergrundbild vorne, Text hinten",
   cardTypes: ["trauerkarte", "dankkarte"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -181,6 +191,7 @@ const TEMPLATE_E2: CardTemplate = {
   description: "Foto + Text vorne, Spruch hinten",
   cardTypes: ["trauerkarte", "dankkarte"],
   cardFormat: "single",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -210,6 +221,7 @@ const TEMPLATE_F1: CardTemplate = {
   description: "Hintergrundbild + Foto + Text + Spruch",
   cardTypes: ["trauerkarte", "dankkarte"],
   cardFormat: "folded",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",
@@ -253,6 +265,7 @@ const TEMPLATE_F2: CardTemplate = {
   description: "Foto + Name links, Text rechts",
   cardTypes: ["trauerkarte", "dankkarte"],
   cardFormat: "folded",
+  renderMode: "pages",
   panels: [
     {
       panelId: "front",

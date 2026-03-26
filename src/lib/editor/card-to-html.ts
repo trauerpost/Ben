@@ -25,6 +25,23 @@ function renderFontLinks(fontFamily: string): string {
   return `<link href="https://fonts.googleapis.com/css2?family=${encoded}:wght@400;700&display=swap" rel="stylesheet">`;
 }
 
+// ── Per-field typography styles ──
+
+const FIELD_STYLES: Record<string, { weight: string; style: string; transform: string }> = {
+  heading:             { weight: "normal", style: "normal",  transform: "none" },
+  relationshipLabels:  { weight: "normal", style: "normal",  transform: "none" },
+  name:                { weight: "bold",   style: "normal",  transform: "none" },
+  dates:               { weight: "normal", style: "normal",  transform: "none" },
+  birthDate:           { weight: "normal", style: "normal",  transform: "none" },
+  deathDate:           { weight: "normal", style: "normal",  transform: "none" },
+  locationBirth:       { weight: "normal", style: "italic",  transform: "none" },
+  locationDeath:       { weight: "normal", style: "italic",  transform: "none" },
+  quote:               { weight: "normal", style: "italic",  transform: "none" },
+  quoteAuthor:         { weight: "normal", style: "normal",  transform: "none" },
+  closingVerse:        { weight: "normal", style: "italic",  transform: "none" },
+  dividerSymbol:       { weight: "normal", style: "normal",  transform: "none" },
+};
+
 // ── Font size map for each TextContent field ──
 
 const FIELD_FONT_SIZE_MAP: Record<string, keyof TextContent> = {
@@ -32,7 +49,14 @@ const FIELD_FONT_SIZE_MAP: Record<string, keyof TextContent> = {
   name: "nameFontSize",
   dates: "datesFontSize",
   quote: "quoteFontSize",
-  dividerSymbol: "datesFontSize", // divider uses dates size
+  dividerSymbol: "datesFontSize",
+  birthDate: "datesFontSize",
+  deathDate: "datesFontSize",
+  locationBirth: "locationFontSize",
+  locationDeath: "locationFontSize",
+  quoteAuthor: "quoteAuthorFontSize",
+  closingVerse: "closingVerseFontSize",
+  relationshipLabels: "headingFontSize",
 };
 
 function getFieldFontSize(textContent: TextContent, field: string): number {
@@ -49,6 +73,17 @@ function getFieldValue(textContent: TextContent, field: string): string {
   return typeof val === "string" ? val : "";
 }
 
+function getFieldStyle(field: string, overrides?: Record<string, { weight?: string; style?: string; transform?: string }>): { weight: string; style: string; transform: string } {
+  const base = FIELD_STYLES[field] ?? { weight: "normal", style: "normal", transform: "none" };
+  const override = overrides?.[field];
+  if (!override) return base;
+  return {
+    weight: override.weight ?? base.weight,
+    style: override.style ?? base.style,
+    transform: override.transform ?? base.transform,
+  };
+}
+
 // ── Slot renderers ──
 
 function renderPhotoSlot(base64: string, gridArea: string): string {
@@ -61,23 +96,33 @@ function renderPhotoSlot(base64: string, gridArea: string): string {
 function renderTextSlot(
   textContent: TextContent,
   slot: TemplateSlot,
+  photoBase64?: string,
 ): string {
   const fields = slot.textFields ?? [];
-  const { fontFamily, fontColor, textAlign } = textContent;
+  const { fontFamily, fontColor } = textContent;
+  const align = slot.textAlign ?? textContent.textAlign;
 
   const fieldDivs = fields
     .map((field) => {
       const value = getFieldValue(textContent, field);
       if (!value) return "";
       const fontSize = getFieldFontSize(textContent, field);
+      const fStyle = getFieldStyle(field, slot.styleOverrides);
       const escaped = value.replace(/\n/g, "<br>");
-      return `<div style="font-size:${fontSize}px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word;">${escaped}</div>`;
+      return `<div style="font-size:${fontSize}px;font-weight:${fStyle.weight};font-style:${fStyle.style};text-transform:${fStyle.transform};line-height:1.6;white-space:pre-wrap;word-wrap:break-word;margin-bottom:2mm;">${escaped}</div>`;
     })
     .filter(Boolean)
     .join("\n        ");
 
-  return `<div style="grid-area:${slot.gridArea};padding:6mm;display:flex;flex-direction:column;align-items:${textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center"};justify-content:center;font-family:'${fontFamily}',serif;color:${fontColor};text-align:${textAlign};box-sizing:border-box;overflow:hidden;">
+  // T6 compound slot: text + small photo at bottom
+  let photoHtml = "";
+  if (slot.includePhoto && photoBase64) {
+    photoHtml = `<div style="margin-top:auto;max-height:30%;"><img src="${photoBase64}" style="object-fit:cover;width:100%;max-height:100%;" /></div>`;
+  }
+
+  return `<div style="grid-area:${slot.gridArea};padding:6mm;display:flex;flex-direction:column;align-items:${align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"};justify-content:center;font-family:'${fontFamily}',serif;color:${fontColor};text-align:${align};box-sizing:border-box;overflow:hidden;">
         ${fieldDivs}
+        ${photoHtml}
       </div>`;
 }
 
@@ -121,7 +166,7 @@ async function renderPanel(
         slotHtmlParts.push(renderPhotoSlot(photoBase64, slot.gridArea));
         break;
       case "text":
-        slotHtmlParts.push(renderTextSlot(state.textContent, slot));
+        slotHtmlParts.push(renderTextSlot(state.textContent, slot, photoBase64));
         break;
       case "decoration":
         slotHtmlParts.push(renderDecorationSlot(decoBase64, slot.gridArea));
@@ -205,8 +250,14 @@ export async function renderCardHTML(state: WizardState): Promise<string> {
       pages += `<div style="width:${panelW}mm;height:${panelH}mm;background:white;"></div>`;
     }
     pages += `</div>`;
+  } else if (template.renderMode === "spread") {
+    // Spread: ONE page — the single panel IS the full spread
+    const spreadPanel = template.panels[0];
+    if (spreadPanel) {
+      pages += await renderPanel(spreadPanel, state, photoBase64, decoBase64, bgBase64, dims.widthMm, panelH);
+    }
   } else {
-    // Single card: each panel = its own page
+    // Single card (pages mode): each panel = its own page
     for (let i = 0; i < template.panels.length; i++) {
       const panel = template.panels[i];
       pages += await renderPanel(panel, state, photoBase64, decoBase64, bgBase64, panelW, panelH);

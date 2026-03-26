@@ -47,18 +47,30 @@ export const CARD_CONFIGS: Record<
 // ── Text Content (structured fields) ──
 
 export interface TextContent {
+  // Existing fields (used by S1-S4, E1-E2, F1-F2)
   heading: string;
   headingFontSize: number;
   name: string;
   nameFontSize: number;
   dates: string;
   datesFontSize: number;
-  dividerSymbol: string; // "✦✦✦" | "———" | "❀❀❀" | ""
+  dividerSymbol: string;
   quote: string;
   quoteFontSize: number;
   fontFamily: string;
   fontColor: string;
   textAlign: "left" | "center" | "right";
+  // NEW fields (for T1-T6 spread templates)
+  relationshipLabels: string;
+  birthDate: string;
+  deathDate: string;
+  locationBirth: string;
+  locationDeath: string;
+  quoteAuthor: string;
+  closingVerse: string;
+  locationFontSize: number;
+  closingVerseFontSize: number;
+  quoteAuthorFontSize: number;
 }
 
 export const DEFAULT_TEXT_CONTENT: TextContent = {
@@ -74,6 +86,17 @@ export const DEFAULT_TEXT_CONTENT: TextContent = {
   fontFamily: "Playfair Display",
   fontColor: "#1A1A1A",
   textAlign: "center",
+  // New field defaults
+  relationshipLabels: "",
+  birthDate: "",
+  deathDate: "",
+  locationBirth: "",
+  locationDeath: "",
+  quoteAuthor: "",
+  closingVerse: "",
+  locationFontSize: 10,
+  closingVerseFontSize: 10,
+  quoteAuthorFontSize: 9,
 };
 
 // ── Fonts & Colors ──
@@ -144,8 +167,8 @@ export type WizardAction =
   | { type: "SET_BACKGROUND"; background: WizardState["background"] }
   | { type: "SET_PHOTO"; url: string }
   | { type: "SET_PHOTO_CROP"; crop: WizardState["photo"]["crop"] }
-  | { type: "SET_TEXT_STRING"; field: "heading" | "name" | "dates" | "dividerSymbol" | "quote" | "fontFamily" | "fontColor"; value: string }
-  | { type: "SET_TEXT_NUMBER"; field: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize"; value: number }
+  | { type: "SET_TEXT_STRING"; field: "heading" | "name" | "dates" | "dividerSymbol" | "quote" | "fontFamily" | "fontColor" | "relationshipLabels" | "birthDate" | "deathDate" | "locationBirth" | "locationDeath" | "quoteAuthor" | "closingVerse"; value: string }
+  | { type: "SET_TEXT_NUMBER"; field: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize" | "locationFontSize" | "closingVerseFontSize" | "quoteAuthorFontSize"; value: number }
   | { type: "SET_TEXT_ALIGN"; align: "left" | "center" | "right" }
   | { type: "SET_DECORATION"; assetId: string | null; assetUrl: string | null }
   | { type: "SET_BORDER"; id: string | null; url: string | null }
@@ -235,7 +258,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 3;
+const DRAFT_VERSION = 4;
 
 interface DraftEnvelope {
   version: number;
