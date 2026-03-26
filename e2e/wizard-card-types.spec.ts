@@ -9,9 +9,10 @@ test.describe("Card Type Selection (Step 1)", () => {
   });
 
   test("shows 3 card types", async ({ page }) => {
-    await expect(page.getByText("Erinnerungsbild")).toBeVisible();
-    await expect(page.getByText("Trauerkarte")).toBeVisible();
-    await expect(page.getByText("Dankeskarte")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Kartentyp wählen/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Erinnerungsbild/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Trauerkarte/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Dankeskarte/i })).toBeVisible();
   });
 
   test("next button disabled until card type selected", async ({ page }) => {
@@ -63,7 +64,7 @@ test.describe("Card Type Selection (Step 1)", () => {
     // Step 6: Preview — should show 2 panels (front + back)
     await expect(page.getByRole("heading", { name: "Preview Your Card" })).toBeVisible();
     await expect(page.getByText("Front")).toBeVisible();
-    await expect(page.getByText("Back")).toBeVisible();
+    await expect(page.getByText("Back", { exact: true })).toBeVisible();
     // No 3D mode for single cards
     await expect(page.getByRole("button", { name: /3D/i })).not.toBeVisible();
   });
@@ -95,7 +96,7 @@ test.describe("Card Type Selection (Step 1)", () => {
     await expect(page.getByText("Front")).toBeVisible();
     await expect(page.getByText("Inside Left")).toBeVisible();
     await expect(page.getByText("Inside Right")).toBeVisible();
-    await expect(page.getByText("Back")).toBeVisible();
+    await expect(page.getByText("Back", { exact: true })).toBeVisible();
     // 3D mode available for folded
     await expect(page.getByRole("button", { name: /3D/i })).toBeVisible();
   });
@@ -156,7 +157,7 @@ test.describe("Card Type Selection (Step 1)", () => {
     await page.getByRole("button", { name: "Next →" }).click();
     await page.getByRole("button", { name: "Next →" }).click();
 
-    // Order step — should show login required (not logged in)
-    await expect(page.getByText(/anmelden|sign in/i)).toBeVisible({ timeout: 10000 });
+    // Order step — should show login button (not logged in)
+    await expect(page.getByRole("button", { name: /Jetzt anmelden/i })).toBeVisible({ timeout: 10000 });
   });
 });
