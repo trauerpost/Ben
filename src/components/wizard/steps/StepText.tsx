@@ -1,6 +1,6 @@
 "use client";
 
-import { WIZARD_FONTS, FONT_COLORS } from "@/lib/editor/wizard-state";
+import { WIZARD_FONTS, FONT_COLORS, getCardDimensions } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 
 interface StepTextProps {
@@ -120,7 +120,15 @@ export default function StepText({ state, dispatch }: StepTextProps) {
 
         {/* Live preview */}
         <div className="flex items-start justify-center">
-          <div className="w-full max-w-sm aspect-[3/4] rounded-xl border border-brand-border bg-white shadow-lg p-8 flex items-center justify-center">
+          <div
+            className="w-full max-w-sm rounded-xl border border-brand-border bg-white shadow-lg p-8 flex items-center justify-center"
+            style={{
+              aspectRatio: (() => {
+                const dims = getCardDimensions(state);
+                return dims ? `${dims.widthMm}/${dims.heightMm}` : "3/4";
+              })(),
+            }}
+          >
             <p
               className="whitespace-pre-wrap leading-relaxed w-full"
               style={{

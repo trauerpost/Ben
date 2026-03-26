@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import CardRenderer, { getPanelsForCard } from "../CardRenderer";
+import type { CardPanel } from "../CardRenderer";
 import type { WizardState } from "@/lib/editor/wizard-state";
 
 interface StepPreviewProps {
@@ -10,53 +12,25 @@ interface StepPreviewProps {
 
 type PreviewMode = "flat" | "flip" | "3d";
 
-function CardBack({ backImageUrl }: { backImageUrl: string | null }) {
-  return backImageUrl ? (
-    <Image src={backImageUrl} alt="Back" fill className="object-cover" sizes="300px" />
-  ) : (
-    <div className="w-full h-full bg-brand-light-gray flex items-center justify-center text-brand-gray text-sm">
-      No image
-    </div>
-  );
-}
-
-function CardInsideLeft({ photoUrl }: { photoUrl: string | null }) {
-  return photoUrl ? (
-    <Image src={photoUrl} alt="Photo" fill className="object-cover" sizes="150px" />
-  ) : (
-    <div className="w-full h-full flex items-center justify-center text-brand-gray text-xs">
-      Photo
-    </div>
-  );
-}
-
-function CardInsideRight({ state }: { state: WizardState }) {
-  return (
-    <div className="w-full h-full p-4 flex items-center justify-center bg-white">
-      <p
-        className="whitespace-pre-wrap leading-relaxed w-full"
-        style={{
-          fontFamily: state.fontFamily,
-          fontSize: `${Math.min(state.fontSize, 12)}px`,
-          color: state.fontColor,
-          textAlign: state.textAlign,
-        }}
-      >
-        {state.text || "Text"}
-      </p>
-    </div>
-  );
-}
+const PANEL_LABELS: Record<CardPanel, string> = {
+  front: "Front",
+  back: "Back",
+  "inside-left": "Inside Left",
+  "inside-right": "Inside Right",
+};
 
 export default function StepPreview({ state }: StepPreviewProps) {
   const [mode, setMode] = useState<PreviewMode>("flat");
   const [flipped, setFlipped] = useState(false);
   const [foldAngle, setFoldAngle] = useState(0);
 
+  const panels = getPanelsForCard(state);
+  const isFolded = state.cardFormat === "folded";
+
   const modes: { key: PreviewMode; label: string; icon: string }[] = [
     { key: "flat", label: "Overview", icon: "▦" },
     { key: "flip", label: "Flip", icon: "↻" },
-    { key: "3d", label: "3D", icon: "◆" },
+    ...(isFolded ? [{ key: "3d" as PreviewMode, label: "3D", icon: "◆" }] : []),
   ];
 
   return (
@@ -90,36 +64,33 @@ export default function StepPreview({ state }: StepPreviewProps) {
         ))}
       </div>
 
-      {/* Flat preview */}
+      {/* Flat preview — all panels side by side */}
       {mode === "flat" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <p className="text-sm text-brand-gray mb-3 font-medium">Back</p>
-            <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-brand-border shadow-lg bg-brand-light-gray">
-              <CardBack backImageUrl={state.backImageUrl} />
+        <div className={`grid gap-6 ${
+          panels.length === 4 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" :
+          panels.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
+          "grid-cols-1"
+        }`}>
+          {panels.map((panel) => (
+            <div key={panel} className="text-center">
+              <p className="text-sm text-brand-gray mb-3 font-medium">
+                {PANEL_LABELS[panel]}
+              </p>
+              <CardRenderer state={state} panel={panel} scale={1} />
             </div>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-brand-gray mb-3 font-medium">Inside Left</p>
-            <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-brand-border shadow-lg bg-white">
-              <CardInsideLeft photoUrl={state.photoUrl} />
-            </div>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-brand-gray mb-3 font-medium">Inside Right</p>
-            <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-brand-border shadow-lg bg-white">
-              <CardInsideRight state={state} />
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
-      {/* Flip preview */}
+      {/* Flip preview — front/back flip */}
       {mode === "flip" && (
         <div className="flex flex-col items-center gap-6">
           <div
-            className="relative w-72 h-96 cursor-pointer"
-            style={{ perspective: "1200px" }}
+            className="relative w-72 cursor-pointer"
+            style={{
+              perspective: "1200px",
+              aspectRatio: state.cardType === "sterbebild" ? "140/105" : "185/115",
+            }}
             onClick={() => setFlipped(!flipped)}
           >
             <div
@@ -129,27 +100,23 @@ export default function StepPreview({ state }: StepPreviewProps) {
                 transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              {/* Front face (back of card) */}
+              {/* Front face */}
               <div
-                className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl border border-brand-border"
+                className="absolute inset-0"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <CardBack backImageUrl={state.backImageUrl} />
+                <CardRenderer state={state} panel="front" />
               </div>
 
-              {/* Rear face (inside) */}
+              {/* Back face */}
               <div
-                className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl border border-brand-border bg-white"
+                className="absolute inset-0"
                 style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
-                <div className="flex h-full">
-                  <div className="w-1/2 border-r border-brand-border relative">
-                    <CardInsideLeft photoUrl={state.photoUrl} />
-                  </div>
-                  <div className="w-1/2">
-                    <CardInsideRight state={state} />
-                  </div>
-                </div>
+                <CardRenderer
+                  state={state}
+                  panel={isFolded ? "inside-left" : "back"}
+                />
               </div>
             </div>
           </div>
@@ -159,10 +126,9 @@ export default function StepPreview({ state }: StepPreviewProps) {
         </div>
       )}
 
-      {/* 3D folding card mockup */}
-      {mode === "3d" && (
+      {/* 3D folding card — only for folded cards */}
+      {mode === "3d" && isFolded && (
         <div className="flex flex-col items-center gap-8">
-          {/* 3D Scene */}
           <div
             className="relative"
             style={{
@@ -177,35 +143,37 @@ export default function StepPreview({ state }: StepPreviewProps) {
                 transform: "rotateX(15deg) rotateY(-20deg)",
               }}
             >
-              {/* Right panel (inside right - text) — base, lies flat */}
+              {/* Right panel (inside right - text) — base */}
               <div
-                className="relative w-56 h-72 rounded-r-xl overflow-hidden border border-brand-border bg-white shadow-xl"
+                className="relative w-56 overflow-hidden border border-brand-border bg-white shadow-xl rounded-r-xl"
                 style={{
+                  aspectRatio: "185/115",
                   transformStyle: "preserve-3d",
                   transform: "translateX(14rem)",
                 }}
               >
-                <CardInsideRight state={state} />
+                <CardRenderer state={state} panel="inside-right" />
               </div>
 
-              {/* Left panel (inside left - photo) — folds from the left edge */}
+              {/* Left panel (inside left - photo) — folds */}
               <div
-                className="absolute top-0 left-0 w-56 h-72 origin-right"
+                className="absolute top-0 left-0 w-56 origin-right"
                 style={{
+                  aspectRatio: "185/115",
                   transformStyle: "preserve-3d",
                   transform: `translateX(0) rotateY(${-foldAngle}deg)`,
                   transition: "transform 0.1s ease-out",
                 }}
               >
-                {/* Front of left panel (photo - visible when open) */}
+                {/* Front of left panel (photo) */}
                 <div
                   className="absolute inset-0 rounded-l-xl overflow-hidden border border-brand-border bg-white shadow-xl"
                   style={{ backfaceVisibility: "hidden" }}
                 >
-                  <CardInsideLeft photoUrl={state.photoUrl} />
+                  <CardRenderer state={state} panel="inside-left" />
                 </div>
 
-                {/* Back of left panel (back image - visible when folded) */}
+                {/* Back of left panel (cover image) */}
                 <div
                   className="absolute inset-0 rounded-r-xl overflow-hidden border border-brand-border shadow-xl"
                   style={{
@@ -213,7 +181,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                     transform: "rotateY(180deg)",
                   }}
                 >
-                  <CardBack backImageUrl={state.backImageUrl} />
+                  <CardRenderer state={state} panel="front" />
                 </div>
               </div>
             </div>
@@ -228,7 +196,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                   ? "Folding..."
                   : foldAngle < 160
                     ? "Almost closed"
-                    : "Closed — the back is visible"}
+                    : "Closed — the front is visible"}
             </label>
             <input
               type="range"
