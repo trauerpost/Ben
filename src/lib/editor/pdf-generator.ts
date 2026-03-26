@@ -37,7 +37,7 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "networkidle2" });
 
     const pdfBuffer = await page.pdf({
       width: `${pageWidthMm}mm`,
