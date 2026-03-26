@@ -1,22 +1,25 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { TOTAL_STEPS } from "@/lib/editor/wizard-state";
-
-const STEP_LABELS = [
-  "Size",
-  "Background",
-  "Photo",
-  "Text",
-  "Decorations",
-  "Preview",
-  "Order",
-];
 
 interface StepIndicatorProps {
   currentStep: number;
 }
 
 export default function StepIndicator({ currentStep }: StepIndicatorProps) {
+  const t = useTranslations("wizard.steps");
+
+  const stepKeys = [
+    "cardType",
+    "background",
+    "photo",
+    "text",
+    "decorations",
+    "preview",
+    "order",
+  ];
+
   return (
     <div className="flex items-center justify-center gap-1 md:gap-3 py-4 px-4">
       {Array.from({ length: TOTAL_STEPS }, (_, i) => {
@@ -43,7 +46,7 @@ export default function StepIndicator({ currentStep }: StepIndicatorProps) {
                   isActive ? "text-brand-primary font-medium" : "text-brand-gray"
                 }`}
               >
-                {STEP_LABELS[i]}
+                {t(stepKeys[i])}
               </span>
             </div>
             {step < TOTAL_STEPS && (

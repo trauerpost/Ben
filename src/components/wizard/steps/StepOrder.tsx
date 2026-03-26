@@ -14,7 +14,9 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
   const [guestEmail, setGuestEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const sizeLabel = state.size === "postcard" ? "Postkarte (A6)" : "Groß (A5)";
+  const cardTypeLabel = state.cardType
+    ? { sterbebild: "Erinnerungsbild", trauerkarte: "Trauerkarte", dankkarte: "Dankeskarte" }[state.cardType]
+    : "—";
 
   async function handlePlaceOrder() {
     if (!guestEmail.trim()) {
@@ -41,12 +43,8 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
         {/* Order summary */}
         <div className="rounded-xl border border-brand-border p-6 space-y-4">
           <div className="flex justify-between">
-            <span className="text-brand-gray">Card size</span>
-            <span className="text-brand-dark font-medium">{sizeLabel}</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-brand-gray">Card type</span>
-            <span className="text-brand-dark font-medium">Memorial card</span>
+            <span className="text-brand-dark font-medium">{cardTypeLabel}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-brand-gray">Quantity</span>

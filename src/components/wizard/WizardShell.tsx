@@ -13,7 +13,7 @@ import {
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 
 // Lazy imports for steps
-import StepSize from "./steps/StepSize";
+import StepCardType from "./steps/StepCardType";
 import StepBackImage from "./steps/StepBackImage";
 import StepPhoto from "./steps/StepPhoto";
 import StepText from "./steps/StepText";
@@ -42,7 +42,7 @@ export default function WizardShell() {
   const renderStep = useCallback(
     (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
       switch (stepState.currentStep) {
-        case 1: return <StepSize state={stepState} dispatch={stepDispatch} />;
+        case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
         case 2: return <StepBackImage state={stepState} dispatch={stepDispatch} />;
         case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
         case 4: return <StepText state={stepState} dispatch={stepDispatch} />;

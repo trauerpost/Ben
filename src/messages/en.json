@@ -151,6 +151,58 @@
     "photoInvalidType": "Only JPG, PNG or WebP allowed.",
     "uploading": "Uploading..."
   },
+  "wizard": {
+    "steps": {
+      "cardType": "Card Type",
+      "background": "Background",
+      "photo": "Photo",
+      "text": "Text",
+      "decorations": "Decorations",
+      "preview": "Preview",
+      "order": "Order"
+    },
+    "cardType": {
+      "title": "Choose Card Type",
+      "subtitle": "Select the type of memorial card you'd like to create.",
+      "types": {
+        "sterbebild": {
+          "label": "Memorial Card",
+          "description": "Small memorial image — 140 × 105 mm"
+        },
+        "trauerkarte": {
+          "label": "Mourning Card",
+          "description": "Mourning card for announcements — single or folded"
+        },
+        "dankkarte": {
+          "label": "Thank-you Card",
+          "description": "Gratitude card for condolences — single or folded"
+        }
+      },
+      "formatTitle": "Choose Format",
+      "formats": {
+        "single": "Single",
+        "folded": "Folded"
+      }
+    },
+    "text": {
+      "templateTitle": "Choose Template",
+      "templateConfirm": "Replace current text?"
+    },
+    "preview": {
+      "downloadPdf": "Download PDF",
+      "downloading": "Generating PDF...",
+      "downloadError": "PDF generation failed. Please try again."
+    },
+    "order": {
+      "loginRequired": "Please sign in to place an order.",
+      "loginButton": "Sign in",
+      "success": "Order placed!",
+      "orderNumber": "Order number",
+      "downloadPdf": "Download PDF",
+      "newCard": "Create new card",
+      "error": "Order failed. Please try again."
+    }
+  },
   "admin": {
     "sidebar": {
       "title": "Admin",

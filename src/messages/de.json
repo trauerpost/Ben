@@ -151,6 +151,58 @@
     "photoInvalidType": "Nur JPG, PNG oder WebP erlaubt.",
     "uploading": "Wird hochgeladen..."
   },
+  "wizard": {
+    "steps": {
+      "cardType": "Kartentyp",
+      "background": "Hintergrund",
+      "photo": "Foto",
+      "text": "Text",
+      "decorations": "Dekoration",
+      "preview": "Vorschau",
+      "order": "Bestellen"
+    },
+    "cardType": {
+      "title": "Kartentyp wählen",
+      "subtitle": "Wählen Sie den Typ Ihrer Trauerkarte.",
+      "types": {
+        "sterbebild": {
+          "label": "Erinnerungsbild",
+          "description": "Kleines Gedenkbild — 140 × 105 mm"
+        },
+        "trauerkarte": {
+          "label": "Trauerkarte",
+          "description": "Trauerkarte zur Bekanntgabe — einfach oder gefaltet"
+        },
+        "dankkarte": {
+          "label": "Dankeskarte",
+          "description": "Dankeskarte für die Anteilnahme — einfach oder gefaltet"
+        }
+      },
+      "formatTitle": "Format wählen",
+      "formats": {
+        "single": "Einfach (single)",
+        "folded": "Gefaltet (folded)"
+      }
+    },
+    "text": {
+      "templateTitle": "Vorlage wählen",
+      "templateConfirm": "Aktuelle Eingabe ersetzen?"
+    },
+    "preview": {
+      "downloadPdf": "PDF herunterladen",
+      "downloading": "PDF wird erstellt...",
+      "downloadError": "PDF-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    },
+    "order": {
+      "loginRequired": "Bitte melden Sie sich an, um eine Bestellung aufzugeben.",
+      "loginButton": "Jetzt anmelden",
+      "success": "Bestellung aufgegeben!",
+      "orderNumber": "Bestellnummer",
+      "downloadPdf": "PDF herunterladen",
+      "newCard": "Neue Karte erstellen",
+      "error": "Bestellung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    }
+  },
   "admin": {
     "sidebar": {
       "title": "Admin",

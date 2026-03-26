@@ -1,9 +1,71 @@
-export type CardSize = "postcard" | "large";
+// Internal values match DB constraint: sterbebild, trauerkarte, dankkarte
+export type CardType = "sterbebild" | "trauerkarte" | "dankkarte";
+export type CardFormat = "single" | "folded";
 
-export const CARD_DIMENSIONS = {
-  postcard: { width: 420, height: 298, label: "Postkarte (A6)", mm: "105 × 148 mm" },
-  large: { width: 594, height: 420, label: "Groß (A5)", mm: "148 × 210 mm" },
-} as const;
+export interface CardDimensions {
+  widthMm: number;
+  heightMm: number;
+  label: string;
+  description: string;
+}
+
+export const CARD_CONFIGS: Record<
+  CardType,
+  {
+    label: string;
+    availableFormats: CardFormat[];
+    formats: Partial<Record<CardFormat, CardDimensions>>;
+  }
+> = {
+  sterbebild: {
+    label: "Erinnerungsbild",
+    availableFormats: ["single"],
+    formats: {
+      single: {
+        widthMm: 140,
+        heightMm: 105,
+        label: "Erinnerungsbild",
+        description: "140 × 105 mm",
+      },
+    },
+  },
+  trauerkarte: {
+    label: "Trauerkarte",
+    availableFormats: ["single", "folded"],
+    formats: {
+      single: {
+        widthMm: 185,
+        heightMm: 115,
+        label: "Trauerkarte (einfach)",
+        description: "185 × 115 mm",
+      },
+      folded: {
+        widthMm: 370,
+        heightMm: 115,
+        label: "Trauerkarte (gefaltet)",
+        description: "370 × 115 mm (gefaltet: 185 × 115 mm)",
+      },
+    },
+  },
+  dankkarte: {
+    label: "Dankeskarte",
+    availableFormats: ["single", "folded"],
+    formats: {
+      single: {
+        widthMm: 185,
+        heightMm: 115,
+        label: "Dankeskarte (einfach)",
+        description: "185 × 115 mm",
+      },
+      folded: {
+        widthMm: 370,
+        heightMm: 115,
+        label: "Dankeskarte (gefaltet)",
+        description: "370 × 115 mm (gefaltet: 185 × 115 mm)",
+      },
+    },
+  },
+};
 
 export const WIZARD_FONTS = [
   "Playfair Display",
@@ -35,7 +97,8 @@ export const TOTAL_STEPS = 7;
 
 export interface WizardState {
   currentStep: number;
-  size: CardSize | null;
+  cardType: CardType | null;
+  cardFormat: CardFormat | null;
   backImageUrl: string | null;
   photoUrl: string | null;
   photoCrop: { x: number; y: number; width: number; height: number } | null;
@@ -55,7 +118,8 @@ export interface WizardState {
 }
 
 export type WizardAction =
-  | { type: "SET_SIZE"; size: CardSize }
+  | { type: "SET_CARD_TYPE"; cardType: CardType }
+  | { type: "SET_CARD_FORMAT"; cardFormat: CardFormat }
   | { type: "SET_BACK_IMAGE"; url: string }
   | { type: "SET_PHOTO"; url: string }
   | { type: "SET_PHOTO_CROP"; crop: WizardState["photoCrop"] }
@@ -75,7 +139,8 @@ export type WizardAction =
 
 export const initialWizardState: WizardState = {
   currentStep: 1,
-  size: null,
+  cardType: null,
+  cardFormat: null,
   backImageUrl: null,
   photoUrl: null,
   photoCrop: null,
@@ -89,7 +154,13 @@ export const initialWizardState: WizardState = {
 
 export function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
-    case "SET_SIZE": return { ...state, size: action.size };
+    case "SET_CARD_TYPE": {
+      const config = CARD_CONFIGS[action.cardType];
+      // Auto-set format: sterbebild only has "single"
+      const autoFormat = config.availableFormats.length === 1 ? config.availableFormats[0] : state.cardFormat;
+      return { ...state, cardType: action.cardType, cardFormat: autoFormat };
+    }
+    case "SET_CARD_FORMAT": return { ...state, cardFormat: action.cardFormat };
     case "SET_BACK_IMAGE": return { ...state, backImageUrl: action.url };
     case "SET_PHOTO": return { ...state, photoUrl: action.url };
     case "SET_PHOTO_CROP": return { ...state, photoCrop: action.crop };
@@ -112,7 +183,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
 
 export function isStepValid(state: WizardState, step: number): boolean {
   switch (step) {
-    case 1: return state.size !== null;
+    case 1: return state.cardType !== null;
     case 2: return state.backImageUrl !== null;
     case 3: return true; // photo is optional
     case 4: return state.text.trim().length > 0;
@@ -123,18 +194,39 @@ export function isStepValid(state: WizardState, step: number): boolean {
   }
 }
 
+export function getCardDimensions(state: WizardState): CardDimensions | null {
+  if (!state.cardType) return null;
+  const config = CARD_CONFIGS[state.cardType];
+  const format = state.cardFormat ?? config.availableFormats[0];
+  return config.formats[format] ?? null;
+}
+
 const STORAGE_KEY = "trauerpost_wizard_draft";
+const DRAFT_VERSION = 2;
+
+interface DraftEnvelope {
+  version: number;
+  state: WizardState;
+}
 
 export function saveDraft(state: WizardState): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const envelope: DraftEnvelope = { version: DRAFT_VERSION, state };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
   } catch { /* ignore */ }
 }
 
 export function loadDraft(): WizardState | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    // R5 fix: check version — discard outdated drafts
+    if (parsed.version === DRAFT_VERSION && parsed.state) {
+      return parsed.state;
+    }
+    // Old format or wrong version — discard
+    localStorage.removeItem(STORAGE_KEY);
   } catch { /* ignore */ }
   return null;
 }
