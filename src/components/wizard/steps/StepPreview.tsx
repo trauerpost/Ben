@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { useTranslations } from "next-intl";
 import CardRenderer, { getPanelsForCard } from "../CardRenderer";
 import type { CardPanel } from "../CardRenderer";
 import type { WizardState } from "@/lib/editor/wizard-state";
@@ -20,12 +20,56 @@ const PANEL_LABELS: Record<CardPanel, string> = {
 };
 
 export default function StepPreview({ state }: StepPreviewProps) {
+  const t = useTranslations("wizard.preview");
   const [mode, setMode] = useState<PreviewMode>("flat");
   const [flipped, setFlipped] = useState(false);
   const [foldAngle, setFoldAngle] = useState(0);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const panels = getPanelsForCard(state);
   const isFolded = state.cardFormat === "folded";
+
+  async function handleDownloadPdf(): Promise<void> {
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const res = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+
+      if (contentType.includes("application/pdf")) {
+        // Direct PDF download (fallback when storage upload failed)
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `trauerpost-${state.cardType}-${Date.now()}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // JSON response with pdfUrl
+        const data = await res.json();
+        if (data.pdfUrl) {
+          window.open(data.pdfUrl, "_blank");
+        }
+      }
+    } catch {
+      setPdfError(t("downloadError"));
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   const modes: { key: PreviewMode; label: string; icon: string }[] = [
     { key: "flat", label: "Overview", icon: "▦" },
@@ -235,6 +279,20 @@ export default function StepPreview({ state }: StepPreviewProps) {
           </div>
         </div>
       )}
+
+      {/* PDF Download button */}
+      <div className="flex flex-col items-center gap-3 mt-10">
+        <button
+          onClick={handleDownloadPdf}
+          disabled={pdfLoading}
+          className="px-8 py-3 rounded-xl bg-brand-primary text-white font-medium hover:bg-brand-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {pdfLoading ? t("downloading") : t("downloadPdf")}
+        </button>
+        {pdfError && (
+          <p className="text-sm text-red-600">{pdfError}</p>
+        )}
+      </div>
     </div>
   );
 }

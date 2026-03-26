@@ -1,38 +1,34 @@
-import { jsPDF } from "jspdf";
-import "svg2pdf.js";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
+import { renderCardHTML } from "./card-to-html";
+import { getCardDimensions } from "./wizard-state";
+import type { WizardState } from "./wizard-state";
 
-// A6 card dimensions in mm
-const CARD_WIDTH_MM = 148;
-const CARD_HEIGHT_MM = 105;
+export async function generateCardPDF(state: WizardState): Promise<Buffer> {
+  const dims = getCardDimensions(state);
+  if (!dims) throw new Error("Cannot determine card dimensions");
 
-export async function generatePDF(svgString: string): Promise<Blob> {
-  const doc = new jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: [CARD_WIDTH_MM, CARD_HEIGHT_MM],
+  const html = await renderCardHTML(state);
+
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: true,
   });
 
-  const parser = new DOMParser();
-  const svgElement = parser.parseFromString(svgString, "image/svg+xml")
-    .documentElement as unknown as SVGElement;
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
 
-  await doc.svg(svgElement, {
-    x: 0,
-    y: 0,
-    width: CARD_WIDTH_MM,
-    height: CARD_HEIGHT_MM,
-  });
+    const pdfBuffer = await page.pdf({
+      width: `${dims.widthMm}mm`,
+      height: `${dims.heightMm}mm`,
+      printBackground: true,
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
+    });
 
-  return doc.output("blob");
-}
-
-export function downloadPDF(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    return Buffer.from(pdfBuffer);
+  } finally {
+    await browser.close();
+  }
 }
