@@ -1,10 +1,21 @@
 import { renderCardHTML } from "./card-to-html";
 import { getCardDimensions } from "./wizard-state";
+import { getTemplateById } from "./card-templates";
 import type { WizardState } from "./wizard-state";
 
 export async function generateCardPDF(state: WizardState): Promise<Buffer> {
   const dims = getCardDimensions(state);
   if (!dims) throw new Error("Cannot determine card dimensions");
+
+  const template = state.templateId ? getTemplateById(state.templateId) : null;
+  if (!template) throw new Error("No template selected");
+
+  const isFolded = template.cardFormat === "folded";
+
+  // For folded cards, PDF page = full width (both panels side by side)
+  // For single cards, PDF page = single panel width
+  const pageWidthMm = isFolded ? dims.widthMm : dims.widthMm;
+  const pageHeightMm = dims.heightMm;
 
   const html = await renderCardHTML(state);
 
@@ -29,8 +40,8 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
     await page.setContent(html, { waitUntil: "networkidle0" });
 
     const pdfBuffer = await page.pdf({
-      width: `${dims.widthMm}mm`,
-      height: `${dims.heightMm}mm`,
+      width: `${pageWidthMm}mm`,
+      height: `${pageHeightMm}mm`,
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });

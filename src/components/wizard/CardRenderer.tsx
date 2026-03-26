@@ -1,14 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { CARD_CONFIGS, getCardDimensions } from "@/lib/editor/wizard-state";
+import { getCardDimensions, CARD_CONFIGS } from "@/lib/editor/wizard-state";
 import type { WizardState } from "@/lib/editor/wizard-state";
-
-export type CardPanel = "front" | "back" | "inside-left" | "inside-right";
+import { getTemplateById } from "@/lib/editor/card-templates";
+import type { PanelTemplate, TemplateSlot } from "@/lib/editor/card-templates";
+import TextBlockRenderer from "./TextBlockRenderer";
 
 interface CardRendererProps {
+  templateId: string;
+  panelId: string;
   state: WizardState;
-  panel: CardPanel;
   scale?: number;
 }
 
@@ -18,7 +20,6 @@ function getPanelDimensions(state: WizardState): { widthMm: number; heightMm: nu
   const format = state.cardFormat ?? config.availableFormats[0];
 
   if (format === "folded") {
-    // Each panel is half the total width
     const full = config.formats[format];
     if (!full) return { widthMm: 185, heightMm: 115 };
     return { widthMm: full.widthMm / 2, heightMm: full.heightMm };
@@ -28,74 +29,80 @@ function getPanelDimensions(state: WizardState): { widthMm: number; heightMm: nu
   return dims ?? { widthMm: 140, heightMm: 105 };
 }
 
-function BackgroundLayer({ url }: { url: string | null }) {
-  if (!url) {
-    return <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />;
-  }
-  return (
-    <Image
-      src={url}
-      alt="Background"
-      fill
-      className="object-cover"
-      sizes="400px"
-    />
-  );
-}
-
-function PhotoLayer({ url }: { url: string | null }) {
+function PhotoSlot({ url, placeholder }: { url: string | null; placeholder: string }) {
   if (!url) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-brand-gray text-xs">
-        Photo
+      <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400 text-sm">
+        {placeholder}
       </div>
     );
   }
   return (
-    <Image
-      src={url}
-      alt="Photo"
-      fill
-      className="object-cover"
-      sizes="200px"
-    />
-  );
-}
-
-function TextLayer({ state, maxFontSize }: { state: WizardState; maxFontSize?: number }) {
-  const fontSize = maxFontSize ? Math.min(state.fontSize, maxFontSize) : state.fontSize;
-  return (
-    <div className="w-full h-full p-4 flex items-center justify-center">
-      <p
-        className="whitespace-pre-wrap leading-relaxed w-full"
-        style={{
-          fontFamily: state.fontFamily,
-          fontSize: `${fontSize}px`,
-          color: state.fontColor,
-          textAlign: state.textAlign,
-        }}
-      >
-        {state.text || "Text"}
-      </p>
+    <div className="relative w-full h-full">
+      <Image
+        src={url}
+        alt="Foto"
+        fill
+        className="object-cover"
+        sizes="300px"
+      />
     </div>
   );
 }
 
-function DecorationOverlay({ state }: { state: WizardState }) {
-  const { borderUrl, cornerUrls, dividerUrls } = state.decorations;
-  if (!borderUrl && cornerUrls.length === 0 && dividerUrls.length === 0) return null;
+function DecorationSlot({ url, placeholder }: { url: string | null; placeholder: string }) {
+  if (!url) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300 text-xs">
+        {placeholder}
+      </div>
+    );
+  }
+  return (
+    <div className="relative w-full h-full flex items-center justify-center">
+      <Image
+        src={url}
+        alt="Dekoration"
+        fill
+        className="object-contain"
+        sizes="200px"
+      />
+    </div>
+  );
+}
+
+function renderSlot(slot: TemplateSlot, state: WizardState): React.ReactNode {
+  switch (slot.type) {
+    case "photo":
+      return <PhotoSlot url={state.photo.url} placeholder={slot.placeholder} />;
+    case "text":
+      return (
+        <TextBlockRenderer
+          textContent={state.textContent}
+          fields={slot.textFields ?? []}
+        />
+      );
+    case "decoration":
+      return <DecorationSlot url={state.decoration.assetUrl} placeholder={slot.placeholder} />;
+    default:
+      return null;
+  }
+}
+
+function BorderOverlay({ state }: { state: WizardState }) {
+  if (!state.border.url && state.corners.urls.length === 0) return null;
 
   return (
     <>
-      {borderUrl && (
-        <div className="absolute inset-0 pointer-events-none">
-          <Image src={borderUrl} alt="" fill className="object-contain" sizes="400px" />
+      {state.border.url && (
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <Image src={state.border.url} alt="" fill className="object-contain" sizes="400px" />
         </div>
       )}
-      {cornerUrls.map((url, i) => (
+      {state.corners.urls.map((url, i) => (
         <div
           key={`corner-${i}`}
-          className="absolute w-12 h-12 pointer-events-none"
+          className="absolute w-12 h-12 pointer-events-none z-10"
           style={{
             top: i < 2 ? 0 : undefined,
             bottom: i >= 2 ? 0 : undefined,
@@ -112,79 +119,25 @@ function DecorationOverlay({ state }: { state: WizardState }) {
 }
 
 /**
- * Renders a single panel of a card at the correct aspect ratio.
- *
- * Panel layouts by card type:
- * - Erinnerungsbild (single): front = background + name/dates, back = photo + text
- * - Trauerkarte/Dankeskarte (single): front = background + title, back = text
- * - Trauerkarte/Dankeskarte (folded): front = background + title, inside-left = photo, inside-right = text, back = blank
+ * Renders a single panel of a card using CSS Grid based on a template definition.
  */
-export default function CardRenderer({ state, panel, scale = 1 }: CardRendererProps) {
+export default function CardRenderer({ templateId, panelId, state, scale = 1 }: CardRendererProps) {
+  const template = getTemplateById(templateId);
+  if (!template) {
+    return <div className="text-red-500 text-sm p-4">Template &quot;{templateId}&quot; not found</div>;
+  }
+
+  const panel = template.panels.find((p) => p.panelId === panelId);
+  if (!panel) {
+    return <div className="text-red-500 text-sm p-4">Panel &quot;{panelId}&quot; not found</div>;
+  }
+
   const dims = getPanelDimensions(state);
   const aspectRatio = dims.widthMm / dims.heightMm;
-  const isFolded = state.cardFormat === "folded";
-  const isSterbebild = state.cardType === "sterbebild";
 
-  function renderPanelContent(): React.ReactNode {
-    if (isSterbebild) {
-      // Erinnerungsbild: front = background + decorations, back = photo (left) + text (right)
-      if (panel === "front") {
-        return (
-          <div className="relative w-full h-full">
-            <BackgroundLayer url={state.backImageUrl} />
-            <DecorationOverlay state={state} />
-          </div>
-        );
-      }
-      // back
-      return (
-        <div className="flex w-full h-full bg-white">
-          <div className="w-1/2 relative border-r border-brand-border">
-            <PhotoLayer url={state.photoUrl} />
-          </div>
-          <div className="w-1/2">
-            <TextLayer state={state} maxFontSize={14} />
-          </div>
-        </div>
-      );
-    }
-
-    // Trauerkarte / Dankeskarte
-    if (panel === "front") {
-      return (
-        <div className="relative w-full h-full">
-          <BackgroundLayer url={state.backImageUrl} />
-          <DecorationOverlay state={state} />
-        </div>
-      );
-    }
-
-    if (isFolded) {
-      if (panel === "inside-left") {
-        return (
-          <div className="relative w-full h-full bg-white">
-            <PhotoLayer url={state.photoUrl} />
-          </div>
-        );
-      }
-      if (panel === "inside-right") {
-        return (
-          <div className="w-full h-full bg-white">
-            <TextLayer state={state} maxFontSize={14} />
-          </div>
-        );
-      }
-      // back cover
-      return <div className="w-full h-full bg-white" />;
-    }
-
-    // Single card back
-    return (
-      <div className="w-full h-full bg-white">
-        <TextLayer state={state} />
-      </div>
-    );
-  }
+  // Background style
+  const hasBackgroundImage = state.background.type === "image" && state.background.imageUrl;
+  const backgroundColor = state.background.type === "color" ? state.background.color : undefined;
 
   return (
     <div
@@ -192,19 +145,53 @@ export default function CardRenderer({ state, panel, scale = 1 }: CardRendererPr
       style={{
         aspectRatio: `${aspectRatio}`,
         maxWidth: `${dims.widthMm * scale * 2}px`,
+        backgroundColor: backgroundColor,
       }}
     >
-      {renderPanelContent()}
+      {/* Background image layer */}
+      {hasBackgroundImage && state.background.imageUrl && (
+        <div className="absolute inset-0 z-0">
+          <Image
+            src={state.background.imageUrl}
+            alt="Hintergrund"
+            fill
+            className="object-cover"
+            sizes="400px"
+          />
+        </div>
+      )}
+
+      {/* Grid content layer */}
+      <div
+        className="relative w-full h-full z-[1]"
+        style={{
+          display: "grid",
+          gridTemplateRows: panel.gridTemplateRows,
+          gridTemplateColumns: panel.gridTemplateColumns,
+        }}
+      >
+        {panel.slots.map((slot) => (
+          <div
+            key={slot.id}
+            className="relative overflow-hidden"
+            style={{ gridArea: slot.gridArea }}
+          >
+            {renderSlot(slot, state)}
+          </div>
+        ))}
+      </div>
+
+      {/* Border & corner overlays */}
+      <BorderOverlay state={state} />
     </div>
   );
 }
 
 /**
- * Returns the list of panels to render for a given wizard state.
+ * Returns the panel IDs for a given template.
  */
-export function getPanelsForCard(state: WizardState): CardPanel[] {
-  if (state.cardFormat === "folded") {
-    return ["front", "inside-left", "inside-right", "back"];
-  }
-  return ["front", "back"];
+export function getPanelsForTemplate(templateId: string): string[] {
+  const template = getTemplateById(templateId);
+  if (!template) return [];
+  return template.panels.map((p) => p.panelId);
 }

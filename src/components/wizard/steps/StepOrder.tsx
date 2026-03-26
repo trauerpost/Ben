@@ -29,8 +29,9 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
 
   const cardTypeLabel = state.cardType
     ? CARD_CONFIGS[state.cardType].label
-    : "—";
+    : "\u2014";
   const dims = getCardDimensions(state);
+  const displayName = state.textContent.name || "\u2014";
 
   // Check auth on mount
   useEffect(() => {
@@ -40,7 +41,6 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
       if (user) {
         setUserId(user.id);
         setUserEmail(user.email ?? null);
-        // Try to get name from customers table
         const { data: customer } = await supabase
           .from("customers")
           .select("name")
@@ -74,7 +74,6 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
       if (pdfRes.ok) {
         const contentType = pdfRes.headers.get("content-type") || "";
         if (contentType.includes("application/pdf")) {
-          // Direct PDF buffer — convert to base64 for email attachment
           const buf = await pdfRes.arrayBuffer();
           pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
         } else if (contentType.includes("application/json")) {
@@ -103,14 +102,12 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
           card_type: state.cardType,
           card_data: {
             cardFormat: state.cardFormat,
-            backImageUrl: state.backImageUrl,
-            photoUrl: state.photoUrl,
-            text: state.text,
-            fontFamily: state.fontFamily,
-            fontSize: state.fontSize,
-            fontColor: state.fontColor,
-            textAlign: state.textAlign,
-            decorations: state.decorations,
+            templateId: state.templateId,
+            background: state.background,
+            photo: state.photo,
+            textContent: state.textContent,
+            decoration: state.decoration,
+            border: state.border,
           },
           quantity,
           pdf_url: pdfUrl,
@@ -148,7 +145,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
     }
   }
 
-  // Not authenticated — show login prompt
+  // Not authenticated
   if (authChecked && !userId) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center">
@@ -172,12 +169,12 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
     );
   }
 
-  // Order placed — success state
+  // Order placed -- success
   if (orderResult) {
     return (
       <div className="max-w-md mx-auto px-6 py-16 text-center space-y-6">
         <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-          <span className="text-2xl text-green-600">✓</span>
+          <span className="text-2xl text-green-600">&#10003;</span>
         </div>
         <h2 className="text-2xl font-medium text-brand-dark">{t("success")}</h2>
         <p className="text-brand-gray">
@@ -207,33 +204,37 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
-        Place Your Order
+        {t("title")}
       </h2>
       <p className="text-brand-gray text-center mb-10">
-        Review and confirm your order details.
+        {t("subtitle")}
       </p>
 
       <div className="space-y-6">
         {/* Order summary */}
         <div className="rounded-xl border border-brand-border p-6 space-y-4">
           <div className="flex justify-between">
-            <span className="text-brand-gray">Card type</span>
+            <span className="text-brand-gray">{t("cardTypeLabel")}</span>
             <span className="text-brand-dark font-medium">{cardTypeLabel}</span>
           </div>
           {dims && (
             <div className="flex justify-between">
-              <span className="text-brand-gray">Dimensions</span>
+              <span className="text-brand-gray">{t("dimensions")}</span>
               <span className="text-brand-dark font-medium">{dims.description}</span>
             </div>
           )}
+          <div className="flex justify-between">
+            <span className="text-brand-gray">{t("nameLabel")}</span>
+            <span className="text-brand-dark font-medium">{displayName}</span>
+          </div>
           <div className="flex justify-between items-center">
-            <span className="text-brand-gray">Quantity</span>
+            <span className="text-brand-gray">{t("quantity")}</span>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 5))}
                 className="w-8 h-8 rounded-lg border border-brand-border flex items-center justify-center hover:bg-brand-light-gray transition-colors"
               >
-                −
+                &minus;
               </button>
               <input
                 type="number"
@@ -254,7 +255,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
 
         {/* Logged-in user info */}
         <div className="rounded-xl border border-brand-border p-6 space-y-2">
-          <h3 className="text-lg font-medium text-brand-dark">Contact Details</h3>
+          <h3 className="text-lg font-medium text-brand-dark">{t("contactTitle")}</h3>
           {userName && <p className="text-brand-dark">{userName}</p>}
           {userEmail && <p className="text-brand-gray text-sm">{userEmail}</p>}
         </div>
@@ -268,11 +269,11 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
           disabled={submitting}
           className="w-full py-4 bg-brand-primary text-white rounded-xl text-lg font-medium hover:bg-brand-primary-hover transition-colors disabled:opacity-50"
         >
-          {submitting ? "Processing..." : "Place Order"}
+          {submitting ? t("processing") : t("placeOrder")}
         </button>
 
         <p className="text-xs text-brand-gray text-center">
-          You will receive a PDF preview and invoice by email.
+          {t("emailNote")}
         </p>
       </div>
     </div>

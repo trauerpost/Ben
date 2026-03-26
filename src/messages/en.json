@@ -174,6 +174,7 @@
   "wizard": {
     "steps": {
       "cardType": "Card Type",
+      "template": "Template",
       "background": "Background",
       "photo": "Photo",
       "text": "Text",
@@ -204,23 +205,78 @@
         "folded": "Folded"
       }
     },
+    "template": {
+      "title": "Choose Template",
+      "subtitle": "Select a layout for your card.",
+      "noCardType": "Please select a card type and format first.",
+      "empty": "No templates available for this combination.",
+      "panel": "panel",
+      "panels": "panels"
+    },
+    "background": {
+      "title": "Choose Background",
+      "subtitle": "Select a color or image for your card background.",
+      "modeImage": "Image",
+      "modeColor": "Color",
+      "upload": "Upload your own",
+      "showAll": "Show all {count} backgrounds"
+    },
     "text": {
+      "title": "Add Text",
+      "subtitle": "Enter the text for your card.",
       "templateTitle": "Choose Template",
-      "templateConfirm": "Replace current text?"
+      "templateConfirm": "Replace current text?",
+      "heading": "Heading",
+      "headingPlaceholder": "e.g. In loving memory of",
+      "name": "Name",
+      "namePlaceholder": "Name of the deceased",
+      "dates": "Dates",
+      "datesPlaceholder": "e.g. * 01/01/1940  † 01/01/2025",
+      "divider": "Divider",
+      "noDivider": "None",
+      "quote": "Quote / Prayer",
+      "quotePlaceholder": "Poem, prayer, or personal words...",
+      "font": "Font",
+      "color": "Color",
+      "alignment": "Alignment",
+      "previewEmpty": "Your text will appear here..."
+    },
+    "decorations": {
+      "title": "Decorations",
+      "subtitle": "Add symbols and borders to your card. This step is optional.",
+      "tabSymbols": "Symbols",
+      "tabBorders": "Borders",
+      "none": "None",
+      "loading": "Loading decorations...",
+      "empty": "No decorations available in this category.",
+      "comingSoon": "More decorations coming soon."
     },
     "preview": {
+      "title": "Preview Your Card",
+      "subtitle": "Review your card before ordering.",
+      "noTemplate": "Please select a template first.",
       "downloadPdf": "Download PDF",
       "downloading": "Generating PDF...",
       "downloadError": "PDF generation failed. Please try again."
     },
     "order": {
+      "title": "Place Your Order",
+      "subtitle": "Review and confirm your order details.",
       "loginRequired": "Please sign in to place an order.",
       "loginButton": "Sign in",
       "success": "Order placed!",
       "orderNumber": "Order number",
       "downloadPdf": "Download PDF",
       "newCard": "Create new card",
-      "error": "Order failed. Please try again."
+      "error": "Order failed. Please try again.",
+      "cardTypeLabel": "Card type",
+      "dimensions": "Dimensions",
+      "nameLabel": "Name",
+      "quantity": "Quantity",
+      "contactTitle": "Contact Details",
+      "processing": "Processing...",
+      "placeOrder": "Place Order",
+      "emailNote": "You will receive a PDF preview and invoice by email."
     }
   },
   "admin": {

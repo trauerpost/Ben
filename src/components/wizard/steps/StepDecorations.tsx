@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import type { Asset } from "@/lib/supabase/types";
@@ -11,14 +12,14 @@ interface StepDecorationsProps {
   dispatch: React.Dispatch<WizardAction>;
 }
 
-type Tab = "border" | "ornament" | "symbol";
+type Tab = "symbol" | "border";
 
 export default function StepDecorations({ state, dispatch }: StepDecorationsProps) {
-  const [activeTab, setActiveTab] = useState<Tab>("border");
+  const t = useTranslations("wizard.decorations");
+  const [activeTab, setActiveTab] = useState<Tab>("symbol");
   const [assets, setAssets] = useState<Record<Tab, Asset[]>>({
-    border: [],
-    ornament: [],
     symbol: [],
+    border: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -35,9 +36,9 @@ export default function StepDecorations({ state, dispatch }: StepDecorationsProp
 
       const items = (data as Asset[]) ?? [];
       setAssets({
+        // Symbols and ornaments go into the decoration slot
+        symbol: items.filter((a) => a.category === "symbol" || a.category === "ornament"),
         border: items.filter((a) => a.category === "border"),
-        ornament: items.filter((a) => a.category === "ornament"),
-        symbol: items.filter((a) => a.category === "symbol"),
       });
       setLoading(false);
     }
@@ -45,18 +46,33 @@ export default function StepDecorations({ state, dispatch }: StepDecorationsProp
   }, []);
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "border", label: "Borders" },
-    { key: "ornament", label: "Corners" },
-    { key: "symbol", label: "Dividers" },
+    { key: "symbol", label: t("tabSymbols") },
+    { key: "border", label: t("tabBorders") },
   ];
+
+  function handleSelectSymbol(asset: Asset | null) {
+    dispatch({
+      type: "SET_DECORATION",
+      assetId: asset?.id ?? null,
+      assetUrl: asset ? (asset.file_url) : null,
+    });
+  }
+
+  function handleSelectBorder(asset: Asset | null) {
+    dispatch({
+      type: "SET_BORDER",
+      id: asset?.id ?? null,
+      url: asset ? (asset.file_url) : null,
+    });
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
-        Decorations
+        {t("title")}
       </h2>
       <p className="text-brand-gray text-center mb-8">
-        Add borders, corner ornaments, and dividers around your text. This step is optional.
+        {t("subtitle")}
       </p>
 
       {/* Tabs */}
@@ -77,59 +93,42 @@ export default function StepDecorations({ state, dispatch }: StepDecorationsProp
       </div>
 
       {loading ? (
-        <p className="text-center text-brand-gray py-12">Loading decorations...</p>
+        <p className="text-center text-brand-gray py-12">{t("loading")}</p>
       ) : assets[activeTab].length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-brand-gray mb-2">No {activeTab} decorations available yet.</p>
-          <p className="text-xs text-brand-gray">Decorations will be added soon.</p>
+          <p className="text-brand-gray mb-2">{t("empty")}</p>
+          <p className="text-xs text-brand-gray">{t("comingSoon")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {/* None option */}
           <button
             onClick={() => {
-              if (activeTab === "border") dispatch({ type: "SET_DECORATION_BORDER", id: null, url: null });
+              if (activeTab === "border") handleSelectBorder(null);
+              else handleSelectSymbol(null);
             }}
             className={`aspect-square rounded-xl border-2 flex items-center justify-center transition-all ${
-              (activeTab === "border" && !state.decorations.borderId)
+              (activeTab === "border" && !state.border.id) ||
+              (activeTab === "symbol" && !state.decoration.assetId)
                 ? "border-brand-primary bg-brand-primary-light"
                 : "border-brand-border bg-brand-light-gray hover:border-brand-gray"
             }`}
           >
-            <span className="text-sm text-brand-gray">None</span>
+            <span className="text-sm text-brand-gray">{t("none")}</span>
           </button>
 
           {assets[activeTab].map((asset) => {
             const isSelected =
               activeTab === "border"
-                ? state.decorations.borderId === asset.id
-                : activeTab === "ornament"
-                ? state.decorations.cornerIds.includes(asset.id)
-                : state.decorations.dividerIds.includes(asset.id);
+                ? state.border.id === asset.id
+                : state.decoration.assetId === asset.id;
 
             return (
               <button
                 key={asset.id}
                 onClick={() => {
-                  if (activeTab === "border") {
-                    dispatch({ type: "SET_DECORATION_BORDER", id: asset.id, url: asset.file_url });
-                  } else if (activeTab === "ornament") {
-                    const ids = isSelected
-                      ? state.decorations.cornerIds.filter((id) => id !== asset.id)
-                      : [...state.decorations.cornerIds, asset.id];
-                    const urls = isSelected
-                      ? state.decorations.cornerUrls.filter((_, i) => state.decorations.cornerIds[i] !== asset.id)
-                      : [...state.decorations.cornerUrls, asset.file_url];
-                    dispatch({ type: "SET_DECORATION_CORNERS", ids, urls });
-                  } else {
-                    const ids = isSelected
-                      ? state.decorations.dividerIds.filter((id) => id !== asset.id)
-                      : [...state.decorations.dividerIds, asset.id];
-                    const urls = isSelected
-                      ? state.decorations.dividerUrls.filter((_, i) => state.decorations.dividerIds[i] !== asset.id)
-                      : [...state.decorations.dividerUrls, asset.file_url];
-                    dispatch({ type: "SET_DECORATION_DIVIDERS", ids, urls });
-                  }
+                  if (activeTab === "border") handleSelectBorder(asset);
+                  else handleSelectSymbol(asset);
                 }}
                 className={`relative aspect-square rounded-xl border-2 overflow-hidden transition-all hover:shadow-md ${
                   isSelected
@@ -145,7 +144,7 @@ export default function StepDecorations({ state, dispatch }: StepDecorationsProp
                 />
                 {isSelected && (
                   <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-brand-primary flex items-center justify-center">
-                    <span className="text-white text-xs">✓</span>
+                    <span className="text-white text-xs">&#10003;</span>
                   </div>
                 )}
               </button>

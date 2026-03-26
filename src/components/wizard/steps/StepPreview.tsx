@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import CardRenderer, { getPanelsForCard } from "../CardRenderer";
-import type { CardPanel } from "../CardRenderer";
+import CardRenderer, { getPanelsForTemplate } from "../CardRenderer";
 import type { WizardState } from "@/lib/editor/wizard-state";
 
 interface StepPreviewProps {
@@ -12,7 +11,7 @@ interface StepPreviewProps {
 
 type PreviewMode = "flat" | "flip" | "3d";
 
-const PANEL_LABELS: Record<CardPanel, string> = {
+const PANEL_LABELS: Record<string, string> = {
   front: "Front",
   back: "Back",
   "inside-left": "Inside Left",
@@ -27,7 +26,8 @@ export default function StepPreview({ state }: StepPreviewProps) {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
-  const panels = getPanelsForCard(state);
+  const templateId = state.templateId ?? "";
+  const panels = getPanelsForTemplate(templateId);
   const isFolded = state.cardFormat === "folded";
 
   async function handleDownloadPdf(): Promise<void> {
@@ -47,7 +47,6 @@ export default function StepPreview({ state }: StepPreviewProps) {
       const contentType = res.headers.get("content-type") || "";
 
       if (contentType.includes("application/pdf")) {
-        // Direct PDF download (fallback when storage upload failed)
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -58,7 +57,6 @@ export default function StepPreview({ state }: StepPreviewProps) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else {
-        // JSON response with pdfUrl
         const data = await res.json();
         if (data.pdfUrl) {
           window.open(data.pdfUrl, "_blank");
@@ -71,19 +69,27 @@ export default function StepPreview({ state }: StepPreviewProps) {
     }
   }
 
+  if (!templateId) {
+    return (
+      <div className="max-w-md mx-auto px-6 py-16 text-center">
+        <p className="text-brand-gray">{t("noTemplate")}</p>
+      </div>
+    );
+  }
+
   const modes: { key: PreviewMode; label: string; icon: string }[] = [
-    { key: "flat", label: "Overview", icon: "▦" },
-    { key: "flip", label: "Flip", icon: "↻" },
-    ...(isFolded ? [{ key: "3d" as PreviewMode, label: "3D", icon: "◆" }] : []),
+    { key: "flat", label: "Overview", icon: "\u25A6" },
+    { key: "flip", label: "Flip", icon: "\u21BB" },
+    ...(isFolded ? [{ key: "3d" as PreviewMode, label: "3D", icon: "\u25C6" }] : []),
   ];
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
-        Preview Your Card
+        {t("title")}
       </h2>
       <p className="text-brand-gray text-center mb-8">
-        Review your card before ordering.
+        {t("subtitle")}
       </p>
 
       {/* Mode selector */}
@@ -115,12 +121,12 @@ export default function StepPreview({ state }: StepPreviewProps) {
           panels.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
           "grid-cols-1"
         }`}>
-          {panels.map((panel) => (
-            <div key={panel} className="text-center">
+          {panels.map((panelId) => (
+            <div key={panelId} className="text-center">
               <p className="text-sm text-brand-gray mb-3 font-medium">
-                {PANEL_LABELS[panel]}
+                {PANEL_LABELS[panelId] ?? panelId}
               </p>
-              <CardRenderer state={state} panel={panel} scale={1} />
+              <CardRenderer templateId={templateId} panelId={panelId} state={state} scale={1} />
             </div>
           ))}
         </div>
@@ -149,7 +155,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                 className="absolute inset-0"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <CardRenderer state={state} panel="front" />
+                <CardRenderer templateId={templateId} panelId="front" state={state} />
               </div>
 
               {/* Back face */}
@@ -158,8 +164,9 @@ export default function StepPreview({ state }: StepPreviewProps) {
                 style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
               >
                 <CardRenderer
+                  templateId={templateId}
+                  panelId={isFolded ? "inside-left" : "back"}
                   state={state}
-                  panel={isFolded ? "inside-left" : "back"}
                 />
               </div>
             </div>
@@ -187,7 +194,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                 transform: "rotateX(15deg) rotateY(-20deg)",
               }}
             >
-              {/* Right panel (inside right - text) — base */}
+              {/* Right panel (inside right - text) -- base */}
               <div
                 className="relative w-56 overflow-hidden border border-brand-border bg-white shadow-xl rounded-r-xl"
                 style={{
@@ -196,10 +203,10 @@ export default function StepPreview({ state }: StepPreviewProps) {
                   transform: "translateX(14rem)",
                 }}
               >
-                <CardRenderer state={state} panel="inside-right" />
+                <CardRenderer templateId={templateId} panelId="inside-right" state={state} />
               </div>
 
-              {/* Left panel (inside left - photo) — folds */}
+              {/* Left panel (inside left - photo) -- folds */}
               <div
                 className="absolute top-0 left-0 w-56 origin-right"
                 style={{
@@ -214,7 +221,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                   className="absolute inset-0 rounded-l-xl overflow-hidden border border-brand-border bg-white shadow-xl"
                   style={{ backfaceVisibility: "hidden" }}
                 >
-                  <CardRenderer state={state} panel="inside-left" />
+                  <CardRenderer templateId={templateId} panelId="inside-left" state={state} />
                 </div>
 
                 {/* Back of left panel (cover image) */}
@@ -225,7 +232,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
                     transform: "rotateY(180deg)",
                   }}
                 >
-                  <CardRenderer state={state} panel="front" />
+                  <CardRenderer templateId={templateId} panelId="front" state={state} />
                 </div>
               </div>
             </div>
@@ -235,12 +242,12 @@ export default function StepPreview({ state }: StepPreviewProps) {
           <div className="w-80 text-center">
             <label className="text-sm text-brand-gray block mb-3">
               {foldAngle < 30
-                ? "Open — drag to fold the card"
+                ? "Open \u2014 drag to fold the card"
                 : foldAngle < 120
                   ? "Folding..."
                   : foldAngle < 160
                     ? "Almost closed"
-                    : "Closed — the front is visible"}
+                    : "Closed \u2014 the front is visible"}
             </label>
             <input
               type="range"
@@ -260,8 +267,8 @@ export default function StepPreview({ state }: StepPreviewProps) {
           <div className="flex gap-3">
             {[
               { label: "Open", angle: 0 },
-              { label: "45°", angle: 45 },
-              { label: "90°", angle: 90 },
+              { label: "45\u00B0", angle: 45 },
+              { label: "90\u00B0", angle: 90 },
               { label: "Closed", angle: 180 },
             ].map((preset) => (
               <button

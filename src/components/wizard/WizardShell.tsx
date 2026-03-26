@@ -12,8 +12,8 @@ import {
 } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 
-// Lazy imports for steps
 import StepCardType from "./steps/StepCardType";
+import StepTemplate from "./steps/StepTemplate";
 import StepBackImage from "./steps/StepBackImage";
 import StepPhoto from "./steps/StepPhoto";
 import StepText from "./steps/StepText";
@@ -43,12 +43,13 @@ export default function WizardShell() {
     (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
       switch (stepState.currentStep) {
         case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
-        case 2: return <StepBackImage state={stepState} dispatch={stepDispatch} />;
-        case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
-        case 4: return <StepText state={stepState} dispatch={stepDispatch} />;
-        case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
-        case 6: return <StepPreview state={stepState} />;
-        case 7: return <StepOrder state={stepState} dispatch={stepDispatch} />;
+        case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
+        case 3: return <StepBackImage state={stepState} dispatch={stepDispatch} />;
+        case 4: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
+        case 5: return <StepText state={stepState} dispatch={stepDispatch} />;
+        case 6: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
+        case 7: return <StepPreview state={stepState} />;
+        case 8: return <StepOrder state={stepState} dispatch={stepDispatch} />;
         default: return null;
       }
     },
@@ -75,7 +76,7 @@ export default function WizardShell() {
             disabled={state.currentStep === 1}
             className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray"
           >
-            ← Back
+            &larr; Back
           </button>
 
           <span className="text-sm text-brand-gray">
@@ -88,7 +89,7 @@ export default function WizardShell() {
               disabled={!canGoNext}
               className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-brand-primary text-white hover:bg-brand-primary-hover"
             >
-              Next →
+              Next &rarr;
             </button>
           ) : (
             <button

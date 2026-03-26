@@ -34,11 +34,11 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
       </p>
 
       <div className="flex flex-col items-center gap-8">
-        {state.photoUrl ? (
+        {state.photo.url ? (
           <div className="relative">
             <div className="w-64 h-80 rounded-xl overflow-hidden shadow-lg border border-brand-border">
               <Image
-                src={state.photoUrl}
+                src={state.photo.url}
                 alt="Uploaded photo"
                 fill
                 className="object-cover"

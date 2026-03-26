@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import { BACKGROUND_COLORS } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 
 interface BackgroundImage {
@@ -41,10 +43,12 @@ const INITIAL_SHOW = 5;
 interface StepBackImageProps {
   state: WizardState;
   dispatch: React.Dispatch<WizardAction>;
-  initialAssets?: unknown[];
 }
 
 export default function StepBackImage({ state, dispatch }: StepBackImageProps) {
+  const t = useTranslations("wizard.background");
+  const bgType = state.background.type;
+
   const [activeTag, setActiveTag] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
 
@@ -58,6 +62,34 @@ export default function StepBackImage({ state, dispatch }: StepBackImageProps) {
   const visible = showAll ? filtered : filtered.slice(0, INITIAL_SHOW);
   const hasMore = filtered.length > INITIAL_SHOW && !showAll;
 
+  function setBackgroundType(type: "color" | "image") {
+    if (type === "color") {
+      dispatch({
+        type: "SET_BACKGROUND",
+        background: { type: "color", color: state.background.color || "#FFFFFF", imageUrl: null },
+      });
+    } else {
+      dispatch({
+        type: "SET_BACKGROUND",
+        background: { type: "image", color: state.background.color, imageUrl: state.background.imageUrl },
+      });
+    }
+  }
+
+  function selectColor(color: string) {
+    dispatch({
+      type: "SET_BACKGROUND",
+      background: { type: "color", color, imageUrl: null },
+    });
+  }
+
+  function selectImage(url: string) {
+    dispatch({
+      type: "SET_BACKGROUND",
+      background: { type: "image", color: state.background.color, imageUrl: url },
+    });
+  }
+
   function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -66,103 +98,154 @@ export default function StepBackImage({ state, dispatch }: StepBackImageProps) {
       return;
     }
     const url = URL.createObjectURL(file);
-    dispatch({ type: "SET_BACK_IMAGE", url });
+    selectImage(url);
   }
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
-        Choose Background
+        {t("title")}
       </h2>
       <p className="text-brand-gray text-center mb-8">
-        This image will be the back of your card.
+        {t("subtitle")}
       </p>
 
-      {/* Tag filters */}
-      <div className="flex gap-2 flex-wrap justify-center mb-8">
+      {/* Toggle: Color / Image */}
+      <div className="flex justify-center gap-2 mb-8">
         <button
-          onClick={() => { setActiveTag("all"); setShowAll(false); }}
-          className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-            activeTag === "all"
+          onClick={() => setBackgroundType("image")}
+          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            bgType === "image"
               ? "bg-brand-primary text-white"
               : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
           }`}
         >
-          All
+          {t("modeImage")}
         </button>
-        {allTags.map((tag) => (
-          <button
-            key={tag}
-            onClick={() => { setActiveTag(tag); setShowAll(false); }}
-            className={`px-3 py-1.5 rounded-full text-sm capitalize transition-colors ${
-              activeTag === tag
-                ? "bg-brand-primary text-white"
-                : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
-            }`}
-          >
-            {tag}
-          </button>
-        ))}
+        <button
+          onClick={() => setBackgroundType("color")}
+          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            bgType === "color"
+              ? "bg-brand-primary text-white"
+              : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
+          }`}
+        >
+          {t("modeColor")}
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {visible.map((bg) => {
-          const isSelected = state.backImageUrl === bg.full;
-          return (
+      {/* Color palette */}
+      {bgType === "color" && (
+        <div className="flex justify-center gap-4 mb-8">
+          {BACKGROUND_COLORS.map((c) => {
+            const isSelected = state.background.color === c.value;
+            return (
+              <button
+                key={c.value}
+                onClick={() => selectColor(c.value)}
+                title={c.name}
+                className={`w-14 h-14 rounded-xl border-3 transition-all ${
+                  isSelected
+                    ? "border-brand-primary ring-2 ring-brand-primary/30 scale-110 shadow-md"
+                    : "border-brand-border hover:border-brand-gray hover:shadow"
+                }`}
+                style={{ backgroundColor: c.value }}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {/* Image gallery */}
+      {bgType === "image" && (
+        <>
+          {/* Tag filters */}
+          <div className="flex gap-2 flex-wrap justify-center mb-8">
             <button
-              key={bg.id}
-              onClick={() => dispatch({ type: "SET_BACK_IMAGE", url: bg.full })}
-              className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
-                isSelected
-                  ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
-                  : "border-transparent hover:border-brand-gray"
+              onClick={() => { setActiveTag("all"); setShowAll(false); }}
+              className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                activeTag === "all"
+                  ? "bg-brand-primary text-white"
+                  : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
               }`}
             >
-              <Image
-                src={bg.thumb}
-                alt={bg.name}
-                fill
-                sizes="(max-width: 768px) 45vw, 20vw"
-                className="object-cover"
-                loading="lazy"
-              />
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
-                  <span className="text-white text-sm">✓</span>
-                </div>
-              )}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                <span className="text-white text-xs">{bg.name}</span>
-              </div>
+              All
             </button>
-          );
-        })}
-
-        {/* Upload custom */}
-        <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
-          <div className="text-center">
-            <span className="text-3xl text-brand-gray">+</span>
-            <p className="text-xs text-brand-gray mt-2">Upload your own</p>
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => { setActiveTag(tag); setShowAll(false); }}
+                className={`px-3 py-1.5 rounded-full text-sm capitalize transition-colors ${
+                  activeTag === tag
+                    ? "bg-brand-primary text-white"
+                    : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleUpload}
-            className="hidden"
-          />
-        </label>
-      </div>
 
-      {/* Show more button */}
-      {hasMore && (
-        <div className="text-center mt-6">
-          <button
-            onClick={() => setShowAll(true)}
-            className="px-6 py-2.5 rounded-lg text-sm font-medium bg-brand-light-gray text-brand-gray hover:text-brand-dark hover:bg-brand-border transition-colors"
-          >
-            Show all {filtered.length} backgrounds
-          </button>
-        </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {visible.map((bg) => {
+              const isSelected = state.background.imageUrl === bg.full;
+              return (
+                <button
+                  key={bg.id}
+                  onClick={() => selectImage(bg.full)}
+                  className={`relative aspect-[3/4] rounded-xl overflow-hidden border-3 transition-all hover:shadow-lg ${
+                    isSelected
+                      ? "border-brand-primary shadow-md ring-2 ring-brand-primary/30"
+                      : "border-transparent hover:border-brand-gray"
+                  }`}
+                >
+                  <Image
+                    src={bg.thumb}
+                    alt={bg.name}
+                    fill
+                    sizes="(max-width: 768px) 45vw, 20vw"
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                  {isSelected && (
+                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-brand-primary flex items-center justify-center shadow">
+                      <span className="text-white text-sm">&#10003;</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                    <span className="text-white text-xs">{bg.name}</span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Upload custom */}
+            <label className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-dashed border-brand-border hover:border-brand-primary flex items-center justify-center cursor-pointer transition-colors bg-brand-light-gray">
+              <div className="text-center">
+                <span className="text-3xl text-brand-gray">+</span>
+                <p className="text-xs text-brand-gray mt-2">{t("upload")}</p>
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {/* Show more button */}
+          {hasMore && (
+            <div className="text-center mt-6">
+              <button
+                onClick={() => setShowAll(true)}
+                className="px-6 py-2.5 rounded-lg text-sm font-medium bg-brand-light-gray text-brand-gray hover:text-brand-dark hover:bg-brand-border transition-colors"
+              >
+                {t("showAll", { count: filtered.length })}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
