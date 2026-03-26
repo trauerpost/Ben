@@ -69,14 +69,18 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
       });
 
       let pdfUrl: string | null = null;
+      let pdfBase64: string | null = null;
 
       if (pdfRes.ok) {
         const contentType = pdfRes.headers.get("content-type") || "";
-        if (contentType.includes("application/json")) {
+        if (contentType.includes("application/pdf")) {
+          // Direct PDF buffer — convert to base64 for email attachment
+          const buf = await pdfRes.arrayBuffer();
+          pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        } else if (contentType.includes("application/json")) {
           const pdfData = await pdfRes.json();
           pdfUrl = pdfData.pdfUrl ?? null;
         }
-        // If direct PDF buffer, we skip the URL (user can still download from preview)
       }
 
       // 2. Get customer_id
@@ -117,7 +121,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
 
       if (orderError) throw orderError;
 
-      // 4. Send email (non-blocking)
+      // 4. Send email with PDF attached (non-blocking)
       fetch("/api/send-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -127,7 +131,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
           orderId: order.id,
           cardType: cardTypeLabel,
           quantity,
-          pdfUrl,
+          pdfBase64,
         }),
       }).catch(() => {
         // Email failure is non-blocking

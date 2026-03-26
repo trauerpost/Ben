@@ -19,6 +19,9 @@ test.describe("E2E: Erinnerungsbild — full flow", () => {
     // Login as test user
     await loginAsUser(page);
 
+    // Block email sending during order flow — only the dedicated email test sends real mail
+    await page.route("**/api/send-email", (route) => route.fulfill({ status: 200, body: '{"success":true}' }));
+
     // Go to builder
     await page.goto("/de/builder");
     await page.evaluate(() => localStorage.clear());
@@ -87,6 +90,7 @@ test.describe("E2E: Erinnerungsbild — full flow", () => {
 test.describe("E2E: Trauerkarte folded — full flow", () => {
   test("create folded card → 4 panel preview → order", async ({ page }) => {
     await loginAsUser(page);
+    await page.route("**/api/send-email", (route) => route.fulfill({ status: 200, body: '{"success":true}' }));
     await page.goto("/de/builder");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
@@ -143,6 +147,7 @@ test.describe("E2E: Trauerkarte folded — full flow", () => {
 test.describe("E2E: Dankeskarte single — full flow", () => {
   test("create single thank-you card → order", async ({ page }) => {
     await loginAsUser(page);
+    await page.route("**/api/send-email", (route) => route.fulfill({ status: 200, body: '{"success":true}' }));
     await page.goto("/de/builder");
     await page.evaluate(() => localStorage.clear());
     await page.reload();
@@ -257,15 +262,41 @@ test.describe("E2E: PDF generation API", () => {
 });
 
 test.describe("E2E: Email API", () => {
-  test("POST /api/send-email sends real email", async ({ request }) => {
+  test("POST /api/send-email sends email with PDF to business", async ({ request }) => {
+    // First generate a real PDF
+    const pdfRes = await request.post("/api/generate-pdf", {
+      data: {
+        state: {
+          currentStep: 6,
+          cardType: "sterbebild",
+          cardFormat: "single",
+          backImageUrl: null,
+          photoUrl: null,
+          photoCrop: null,
+          text: "E2E Test\n\nMaria Müller\n* 1940  † 2026",
+          fontFamily: "Playfair Display",
+          fontSize: 16,
+          fontColor: "#1A1A1A",
+          textAlign: "center",
+          decorations: { borderId: null, borderUrl: null, cornerIds: [], cornerUrls: [], dividerIds: [], dividerUrls: [] },
+        },
+      },
+    });
+    expect(pdfRes.status()).toBe(200);
+
+    // Convert PDF to base64
+    const pdfBody = await pdfRes.body();
+    const pdfBase64 = pdfBody.toString("base64");
+
+    // Send email with PDF attached
     const res = await request.post("/api/send-email", {
       data: {
         to: "ofir393@gmail.com",
-        customerName: "E2E Test",
+        customerName: "E2E Test — Maria Müller",
         orderId: "e2e-test-00000000",
         cardType: "Erinnerungsbild",
         quantity: 25,
-        pdfUrl: null,
+        pdfBase64,
       },
     });
 
