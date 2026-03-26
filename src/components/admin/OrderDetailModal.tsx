@@ -135,7 +135,13 @@ export default function OrderDetailModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-brand-gray mb-1">{t("type")}</p>
-              <p className="text-sm font-medium capitalize">{order.card_type}</p>
+              <p className="text-sm font-medium capitalize">{order.card_type ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-xs text-brand-gray mb-1">Format</p>
+              <p className="text-sm font-medium capitalize">
+                {(order.card_data as Record<string, unknown>)?.cardFormat as string ?? "—"}
+              </p>
             </div>
             <div>
               <p className="text-xs text-brand-gray mb-1">{t("qty")}</p>
@@ -155,6 +161,19 @@ export default function OrderDetailModal({
                 {order.payment_method ?? "—"}
               </p>
             </div>
+            {order.pdf_url && (
+              <div>
+                <p className="text-xs text-brand-gray mb-1">PDF</p>
+                <a
+                  href={order.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-brand-primary hover:underline"
+                >
+                  Download PDF
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Customer Info */}
