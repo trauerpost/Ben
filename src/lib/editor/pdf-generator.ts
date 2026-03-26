@@ -1,5 +1,3 @@
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
 import { renderCardHTML } from "./card-to-html";
 import { getCardDimensions } from "./wizard-state";
 import type { WizardState } from "./wizard-state";
@@ -10,11 +8,21 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
 
   const html = await renderCardHTML(state);
 
-  const browser = await puppeteer.launch({
-    args: chromium.args,
-    executablePath: await chromium.executablePath(),
-    headless: true,
-  });
+  // Try @sparticuz/chromium first (Vercel serverless), fall back to local puppeteer
+  let browser;
+  try {
+    const puppeteerCore = await import("puppeteer-core");
+    const chromium = await import("@sparticuz/chromium");
+    browser = await puppeteerCore.default.launch({
+      args: chromium.default.args,
+      executablePath: await chromium.default.executablePath(),
+      headless: true,
+    });
+  } catch {
+    // Local dev: use full puppeteer with bundled Chromium
+    const puppeteer = await import("puppeteer");
+    browser = await puppeteer.default.launch({ headless: true });
+  }
 
   try {
     const page = await browser.newPage();
