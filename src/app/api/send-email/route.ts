@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sendOrderEmails } from "@/lib/email/send-order-email";
 
-// Email transport placeholder
-// Wire in Resend/SendGrid when ready: npm install resend
-
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    const { to, subject, orderId, pdfUrl } = await request.json();
+    const { to, customerName, orderId, cardType, quantity, pdfUrl } = await request.json();
 
     if (!to || !orderId) {
       return NextResponse.json(
@@ -14,14 +12,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Send email with PDF attachment + invoice
-    console.log(`[EMAIL] To: ${to} | Subject: ${subject} | Order: ${orderId} | PDF: ${pdfUrl}`);
-
-    return NextResponse.json({
-      success: true,
-      message: "Email placeholder — wire in transport when ready",
+    await sendOrderEmails({
+      customerEmail: to,
+      customerName: customerName ?? "",
+      orderId,
+      cardType: cardType ?? "Karte",
+      quantity: quantity ?? 1,
+      pdfUrl: pdfUrl ?? null,
     });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("[send-email] Error:", error);
     return NextResponse.json(
       { error: "Failed to send email" },
       { status: 500 }
