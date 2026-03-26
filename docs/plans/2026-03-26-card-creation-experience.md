@@ -17,11 +17,13 @@
 - M2: Summary table updated to include Task 5.5 (email).
 
 **Review-plan fixes applied:**
-- R1: PDF generation moved to SERVER-SIDE (API route) to avoid CORS with Unsplash images.
+- R1: PDF generation moved to SERVER-SIDE with **Puppeteer** (headless Chrome) — WYSIWYG, no CORS.
 - R2: Resend sender domain — use `onboarding@resend.dev` for MVP, verify `trauerpost.com` later.
 - R3: Login required before ordering — no guest orders (simpler RLS, more secure).
 - R4: Error handling added to PDF generation + email sending.
 - R5: localStorage draft versioning to prevent crashes after state schema changes.
+- R6: Replaced jsPDF + svg2pdf.js with Puppeteer + @sparticuz/chromium (serverless-compatible).
+- R7: Added `vercel.json` config for PDF route (30s timeout, 1024MB memory).
 
 ---
 
@@ -316,103 +318,118 @@ git commit -m "feat: text templates per card type — auto-fill with editable pl
 
 ---
 
-## Batch 4: PDF Generation (print-ready, SERVER-SIDE)
+## Batch 4: PDF Generation (print-ready, SERVER-SIDE with Puppeteer)
 
-> **R1 fix:** PDF generated on the server, NOT in the browser. Server-side Node.js can fetch
-> Unsplash images without CORS restrictions. The client sends the wizard state to an API route,
-> the server builds the SVG, converts to PDF, uploads to Supabase Storage, and returns the URL.
+> **R1 fix:** PDF generated on the server — no CORS issues with images.
+> **Review fix:** Uses **Puppeteer** (headless Chrome) instead of jsPDF — WYSIWYG: what you see in preview = what prints.
 
-### Task 4.1: Create server-side SVG renderer for card panels
+### Task 4.1: Create server-side HTML renderer for card panels
 
 **Files:**
-- Create: `src/lib/editor/card-to-svg.ts` (runs on server only — uses Node.js fetch)
+- Create: `src/lib/editor/card-to-html.ts` (server only)
 
 **Steps:**
 
-1. Function: `async cardPanelToSVG(state: WizardState, panel: string): Promise<string>`
-2. Generates an SVG string at the exact mm dimensions (using `viewBox`)
-3. Embeds:
-   - Background image: **fetch from URL on server** → convert to base64 data URL (no CORS issue)
-   - Photo: fetch from Supabase Storage URL → base64
-   - Text as `<text>` elements with font, size, color, alignment
-   - Decorations as `<image>` elements (fetch → base64)
-4. SVG must be self-contained (all images as base64, no external references)
-5. Error handling: if any image fetch fails → use placeholder color background + log warning
+1. Function: `async renderCardHTML(state: WizardState): Promise<string>`
+2. Returns a complete self-contained HTML document with inline CSS
+3. Layout matches CardRenderer from Batch 2 but as HTML string:
 
-### Task 4.2: Create PDF generation API route
+   **Single card:** Two `<div>` sections with `page-break-after: always` between them
+   - CSS: `@page { size: {width}mm {height}mm; margin: 0; }`
+
+   **Folded card:** Two pages — outside spread + inside spread
+   - CSS: `@page { size: 370mm 115mm; margin: 0; }`
+
+4. Images embedded as base64 (fetched server-side — no CORS):
+   ```typescript
+   async function imageToBase64(url: string): Promise<string> {
+     const res = await fetch(url);
+     const buf = Buffer.from(await res.arrayBuffer());
+     return `data:${res.headers.get("content-type") || "image/jpeg"};base64,${buf.toString("base64")}`;
+   }
+   ```
+5. Error handling: image fetch fails → solid color fallback + log warning
+6. Fonts: embed Google Fonts via `<link>` tag (Puppeteer loads them)
+
+### Task 4.2: Create PDF generation API route with Puppeteer
 
 **Files:**
 - Modify: `src/app/api/generate-pdf/route.ts` (replace placeholder)
-- Modify: `src/lib/editor/pdf-generator.ts` (server-side only now)
+- Create: `src/lib/editor/pdf-generator.ts` (rewrite — Puppeteer)
 
-**Steps:**
+**Dependencies:**
+```bash
+npm install puppeteer-core @sparticuz/chromium
+npm uninstall jspdf svg2pdf.js
+```
 
-1. The API route receives wizard state as JSON, generates PDF server-side, uploads to Supabase Storage, returns the PDF URL:
-
-```typescript
-// POST /api/generate-pdf — receives wizard state, returns { pdfUrl }
-// Server-side: no CORS issues with image fetching
-
-export async function generateCardPDF(state: WizardState): Promise<Buffer> {
-  const dims = getCardDimensions(state);
-
-  if (state.cardFormat === "folded") {
-    // Create multi-page PDF: page 1 = outside (front + back), page 2 = inside (left + right)
-    const doc = new jsPDF({
-      orientation: dims.widthMm > dims.heightMm ? "landscape" : "portrait",
-      unit: "mm",
-      format: [dims.widthMm, dims.heightMm],
-    });
-
-    // IMPORTANT: doc.svg() expects SVGElement, not string. Parse first.
-    const parser = new DOMParser();
-
-    // Page 1: Outside spread (back cover left, front cover right)
-    const outsideSVGStr = await cardPanelToSVG(state, "outside-spread");
-    const outsideSVG = parser.parseFromString(outsideSVGStr, "image/svg+xml").documentElement;
-    await doc.svg(outsideSVG as unknown as SVGElement, { x: 0, y: 0, width: dims.widthMm, height: dims.heightMm });
-
-    // Page 2: Inside spread (inside-left, inside-right)
-    doc.addPage([dims.widthMm, dims.heightMm]);
-    const insideSVGStr = await cardPanelToSVG(state, "inside-spread");
-    const insideSVG = parser.parseFromString(insideSVGStr, "image/svg+xml").documentElement;
-    await doc.svg(insideSVG as unknown as SVGElement, { x: 0, y: 0, width: dims.widthMm, height: dims.heightMm });
-
-    return doc.output("blob");
-  } else {
-    // Single card: page 1 = front, page 2 = back
-    const panelWidth = dims.widthMm;
-    const panelHeight = dims.heightMm;
-
-    const doc = new jsPDF({
-      orientation: panelWidth > panelHeight ? "landscape" : "portrait",
-      unit: "mm",
-      format: [panelWidth, panelHeight],
-    });
-
-    const parser = new DOMParser();
-
-    const frontSVGStr = await cardPanelToSVG(state, "front");
-    const frontSVG = parser.parseFromString(frontSVGStr, "image/svg+xml").documentElement;
-    await doc.svg(frontSVG as unknown as SVGElement, { x: 0, y: 0, width: panelWidth, height: panelHeight });
-
-    doc.addPage([panelWidth, panelHeight]);
-    const backSVGStr = await cardPanelToSVG(state, "back");
-    const backSVG = parser.parseFromString(backSVGStr, "image/svg+xml").documentElement;
-    await doc.svg(backSVG as unknown as SVGElement, { x: 0, y: 0, width: panelWidth, height: panelHeight });
-
-    return Buffer.from(doc.output("arraybuffer"));
+**Vercel config** — create/update `vercel.json`:
+```json
+{
+  "functions": {
+    "src/app/api/generate-pdf/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
   }
 }
 ```
 
-2. The API route (`/api/generate-pdf`) calls `generateCardPDF(state)`, uploads the result to Supabase Storage (`card-pdfs` bucket), and returns `{ pdfUrl }`.
+**Steps:**
+
+1. Puppeteer-based PDF generator:
+
+```typescript
+// src/lib/editor/pdf-generator.ts
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
+import { renderCardHTML } from "./card-to-html";
+import { getCardDimensions } from "./wizard-state";
+import type { WizardState } from "./wizard-state";
+
+export async function generateCardPDF(state: WizardState): Promise<Buffer> {
+  const dims = getCardDimensions(state);
+  const html = await renderCardHTML(state);
+
+  const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
+    headless: true,
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdfBuffer = await page.pdf({
+      width: `${dims.widthMm}mm`,
+      height: `${dims.heightMm}mm`,
+      printBackground: true,
+      margin: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+
+    return Buffer.from(pdfBuffer);
+  } finally {
+    await browser.close();
+  }
+}
+```
+
+2. API route (`POST /api/generate-pdf`):
+   - Auth check (must be logged in)
+   - Validate wizard state (cardType, cardFormat required)
+   - Call `generateCardPDF(state)` → PDF buffer
+   - Upload to Supabase Storage (`card-pdfs/{userId}/{timestamp}.pdf`)
+   - Return `{ pdfUrl }`
 
 3. **R4 fix — Error handling:**
-   - Wrap `generateCardPDF` in try-catch
-   - If image fetch fails → use solid color fallback, log warning
-   - If PDF generation fails entirely → return 500 with clear error message
-   - Client shows: "PDF-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut."
+   - Wrap entire flow in try-catch + `finally { browser.close() }`
+   - If image fetch fails in `renderCardHTML` → solid color fallback + log
+   - If Puppeteer crashes → return 500 with `"PDF-Erstellung fehlgeschlagen"`
+   - If Supabase upload fails → return PDF as direct download buffer
+   - Client shows German error message + retry button
+
+4. **Cleanup:** `npm uninstall jspdf svg2pdf.js` — no longer needed. Remove `pdf-generator.ts` old code, `card-to-svg.ts` if it exists.
 
 ### Task 4.3: Add PDF download to StepPreview
 
