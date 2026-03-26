@@ -1,17 +1,16 @@
-import LoginForm from "@/components/auth/LoginForm";
-import LoginDebug from "@/components/auth/LoginDebug";
+import RegisterForm from "@/components/auth/RegisterForm";
 import { Link } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
 
-interface LoginPageProps {
+interface RegisterPageProps {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ error?: string; redirect?: string }>;
 }
 
-export default async function LoginPage({ params, searchParams }: LoginPageProps) {
+export default async function RegisterPage({ params, searchParams }: RegisterPageProps) {
   const { locale } = await params;
   const { error, redirect } = await searchParams;
-  const t = await getTranslations("login");
+  const t = await getTranslations("register");
 
   return (
     <section className="min-h-[calc(100dvh-4rem)] flex">
@@ -34,16 +33,16 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
             </svg>
           </div>
           <h2 className="text-3xl font-light text-white mb-4">
-            {t("brandHeadline")}
+            {t("title")}
           </h2>
           <p className="text-white/70 text-lg leading-relaxed">
-            {t("brandSubline")}
+            {t("subtitle")}
           </p>
         </div>
         <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[length:32px_32px]" />
       </div>
 
-      {/* Right panel - login form */}
+      {/* Right panel - register form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 sm:px-12">
         <div className="w-full max-w-sm">
           <div className="mb-10 text-center">
@@ -59,17 +58,15 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
             {t("title")}
           </h2>
 
-          <LoginForm locale={locale} error={error} redirect={redirect} />
-
-          <LoginDebug />
+          <RegisterForm locale={locale} error={error} redirect={redirect} />
 
           <p className="mt-8 text-center text-sm text-brand-gray">
-            {t("noAccount")}{" "}
+            {t("hasAccount")}{" "}
             <Link
-              href="/register"
+              href="/login"
               className="text-brand-primary hover:text-brand-primary-hover font-medium"
             >
-              {t("register")}
+              {t("login")}
             </Link>
           </p>
         </div>

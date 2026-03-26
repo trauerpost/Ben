@@ -79,6 +79,26 @@
     "brandHeadline": "Design dignified memories",
     "brandSubline": "Create personal memorial and mourning cards — simple and heartfelt."
   },
+  "register": {
+    "title": "Create Account",
+    "subtitle": "Create an account to design memorial cards.",
+    "name": "Full Name",
+    "namePlaceholder": "John Doe",
+    "email": "Email Address",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "At least 6 characters",
+    "passwordConfirm": "Confirm Password",
+    "passwordConfirmPlaceholder": "Repeat password",
+    "submit": "Register",
+    "loading": "Registering...",
+    "hasAccount": "Already have an account?",
+    "login": "Sign in",
+    "passwordMismatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "nameRequired": "Name is required",
+    "emailExists": "This email is already registered"
+  },
   "pricing": {
     "title": "Pricing — Coming Soon",
     "subtitle": "We are working on our pricing plans. Contact us for a custom quote.",

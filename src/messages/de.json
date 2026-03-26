@@ -79,6 +79,26 @@
     "brandHeadline": "Würdevolle Erinnerungen gestalten",
     "brandSubline": "Erstellen Sie persönliche Trauer- und Erinnerungskarten — einfach und liebevoll."
   },
+  "register": {
+    "title": "Konto erstellen",
+    "subtitle": "Erstellen Sie ein Konto, um Erinnerungskarten zu gestalten.",
+    "name": "Vollständiger Name",
+    "namePlaceholder": "Max Mustermann",
+    "email": "E-Mail-Adresse",
+    "emailPlaceholder": "name@beispiel.de",
+    "password": "Passwort",
+    "passwordPlaceholder": "Mindestens 6 Zeichen",
+    "passwordConfirm": "Passwort bestätigen",
+    "passwordConfirmPlaceholder": "Passwort wiederholen",
+    "submit": "Registrieren",
+    "loading": "Wird registriert...",
+    "hasAccount": "Bereits ein Konto?",
+    "login": "Jetzt anmelden",
+    "passwordMismatch": "Passwörter stimmen nicht überein",
+    "passwordTooShort": "Passwort muss mindestens 6 Zeichen haben",
+    "nameRequired": "Name ist erforderlich",
+    "emailExists": "Diese E-Mail ist bereits registriert"
+  },
   "pricing": {
     "title": "Preise — Demnächst verfügbar",
     "subtitle": "Wir arbeiten an unseren Preispaketen. Kontaktieren Sie uns für ein individuelles Angebot.",
