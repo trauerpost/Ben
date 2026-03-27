@@ -14,6 +14,7 @@ export interface TemplateSlot {
   styleOverrides?: Record<string, { weight?: string; style?: string; transform?: string }>;
   includePhoto?: boolean;      // T6: text slot with small photo at bottom
   photoMaxHeight?: string;     // e.g., "30%"
+  photoPadding?: string;       // e.g., "3mm" for framed look
 }
 
 export interface PanelTemplate {
@@ -388,7 +389,7 @@ const TEMPLATE_T4: CardTemplate = {
       { id: "left-ornament", type: "decoration", gridArea: "1 / 1 / 2 / 2", placeholder: "Symbol" },
       { id: "center-text", type: "text", gridArea: "1 / 2 / 2 / 3", placeholder: "[Name & Daten]",
         textFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath", "dividerSymbol"] },
-      { id: "right-photo", type: "photo", gridArea: "1 / 3 / 2 / 4", placeholder: "Foto hier" },
+      { id: "right-photo", type: "photo", gridArea: "1 / 3 / 2 / 4", placeholder: "Foto hier", photoPadding: "3mm" },
     ],
   }],
 };

@@ -86,11 +86,13 @@ function getFieldStyle(field: string, overrides?: Record<string, { weight?: stri
 
 // ── Slot renderers ──
 
-function renderPhotoSlot(base64: string, gridArea: string): string {
+function renderPhotoSlot(base64: string, gridArea: string, padding = "0"): string {
   if (!base64) {
-    return `<div style="grid-area:${gridArea};display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;">Photo</div>`;
+    return `<div style="grid-area:${gridArea};display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:12px;background:#f5f5f5;">Photo</div>`;
   }
-  return `<div style="grid-area:${gridArea};background-image:url('${base64}');background-size:cover;background-position:center;"></div>`;
+  return `<div style="grid-area:${gridArea};padding:${padding};box-sizing:border-box;">
+    <div style="width:100%;height:100%;background-image:url('${base64}');background-size:cover;background-position:center top;border-radius:2px;"></div>
+  </div>`;
 }
 
 function renderTextSlot(
@@ -109,7 +111,10 @@ function renderTextSlot(
       const fontSize = getFieldFontSize(textContent, field);
       const fStyle = getFieldStyle(field, slot.styleOverrides);
       const escaped = value.replace(/\n/g, "<br>");
-      return `<div style="font-size:${fontSize}px;font-weight:${fStyle.weight};font-style:${fStyle.style};text-transform:${fStyle.transform};line-height:1.6;white-space:pre-wrap;word-wrap:break-word;margin-bottom:2mm;">${escaped}</div>`;
+      const isName = field === "name";
+      const lineHeight = isName ? "1.3" : "1.5";
+      const mb = isName ? "3mm" : "1.5mm";
+      return `<div style="font-size:${fontSize}px;font-weight:${fStyle.weight};font-style:${fStyle.style};text-transform:${fStyle.transform};line-height:${lineHeight};white-space:pre-wrap;word-wrap:break-word;margin-bottom:${mb};">${escaped}</div>`;
     })
     .filter(Boolean)
     .join("\n        ");
@@ -120,7 +125,7 @@ function renderTextSlot(
     photoHtml = `<div style="margin-top:auto;max-height:30%;"><img src="${photoBase64}" style="object-fit:cover;width:100%;max-height:100%;" /></div>`;
   }
 
-  return `<div style="grid-area:${slot.gridArea};padding:6mm;display:flex;flex-direction:column;align-items:${align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"};justify-content:center;font-family:'${fontFamily}',serif;color:${fontColor};text-align:${align};box-sizing:border-box;overflow:hidden;">
+  return `<div style="grid-area:${slot.gridArea};padding:4mm;display:flex;flex-direction:column;align-items:${align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"};justify-content:center;font-family:'${fontFamily}',serif;color:${fontColor};text-align:${align};box-sizing:border-box;overflow:hidden;gap:0.5mm;">
         ${fieldDivs}
         ${photoHtml}
       </div>`;
@@ -163,7 +168,7 @@ async function renderPanel(
   for (const slot of panel.slots) {
     switch (slot.type) {
       case "photo":
-        slotHtmlParts.push(renderPhotoSlot(photoBase64, slot.gridArea));
+        slotHtmlParts.push(renderPhotoSlot(photoBase64, slot.gridArea, slot.photoPadding ?? "0"));
         break;
       case "text":
         slotHtmlParts.push(renderTextSlot(state.textContent, slot, photoBase64));
