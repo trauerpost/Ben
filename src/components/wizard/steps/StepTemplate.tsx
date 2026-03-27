@@ -151,6 +151,7 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
             return (
               <button
                 key={item.id}
+                data-testid={item.id}
                 onClick={() => dispatch({ type: "SET_TEMPLATE", templateId: item.id })}
                 className={`relative p-4 rounded-2xl border-2 transition-all hover:shadow-lg text-left ${
                   isSelected

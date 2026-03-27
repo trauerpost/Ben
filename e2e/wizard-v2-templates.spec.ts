@@ -151,6 +151,94 @@ test.describe("V2 Template Wizard Flow", () => {
     await expect(page.getByText("Divider")).toBeVisible();
   });
 
+  test("TI06 full flow: L-Form → photo → text → preview", async ({ page }) => {
+    // Step 1
+    await page.getByText("Erinnerungsbild").click();
+    await clickNext(page);
+
+    // Step 2: TI06
+    await page.getByTestId("TI06").click();
+    await clickNext(page);
+
+    // Step 3: background
+    await page.waitForTimeout(500);
+    await clickNext(page);
+
+    // Step 4: photo upload
+    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    const fileInput = page.locator('input[type="file"]').first();
+    await fileInput.setInputFiles(TEST_PHOTO);
+    await page.waitForTimeout(1500);
+    await expect(page.locator("canvas")).toBeVisible();
+
+    // Step 5: text
+    await clickNext(page);
+    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+
+    // TI06 required fields: name, birthDate, deathDate, quote
+    await expect(page.locator("label", { hasText: /^Name/ })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Birth Date" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Death Date" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /^Quote$/ })).toBeVisible();
+
+    // Fill name (required)
+    await page.getByPlaceholder("Maria Musterfrau").fill("Test Thilde");
+
+    // Step 6: decorations
+    await clickNext(page);
+    await expect(page.getByText("Step 6 of 8")).toBeVisible();
+
+    // Step 7: preview
+    await clickNext(page);
+    await expect(page.getByText("Step 7 of 8")).toBeVisible();
+    await expect(page.getByText("Live preview")).toBeVisible();
+  });
+
+  test("TI09 full flow: Floral Symmetrisch → photo → text → preview", async ({ page }) => {
+    // Step 1
+    await page.getByText("Erinnerungsbild").click();
+    await clickNext(page);
+
+    // Step 2: TI09
+    await page.getByTestId("TI09").click();
+    await clickNext(page);
+
+    // Step 3: background
+    await page.waitForTimeout(500);
+    await clickNext(page);
+
+    // Step 4: photo upload
+    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    const fileInput = page.locator('input[type="file"]').first();
+    await fileInput.setInputFiles(TEST_PHOTO);
+    await page.waitForTimeout(1500);
+    await expect(page.locator("canvas")).toBeVisible();
+
+    // Step 5: text
+    await clickNext(page);
+    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+
+    // TI09 required fields: heading, name, birthDate, deathDate, closingVerse, quote
+    await expect(page.locator("label", { hasText: "Heading" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /^Name/ })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Birth Date" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Death Date" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Closing Verse" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /^Quote$/ })).toBeVisible();
+
+    // Fill name (required)
+    await page.getByPlaceholder("Maria Musterfrau").fill("Test Renate");
+
+    // Step 6: decorations
+    await clickNext(page);
+    await expect(page.getByText("Step 6 of 8")).toBeVisible();
+
+    // Step 7: preview
+    await clickNext(page);
+    await expect(page.getByText("Step 7 of 8")).toBeVisible();
+    await expect(page.getByText("Live preview")).toBeVisible();
+  });
+
   test("TI08 photo crop shows canvas", async ({ page }) => {
     await page.getByText("Erinnerungsbild").click();
     await clickNext(page);
