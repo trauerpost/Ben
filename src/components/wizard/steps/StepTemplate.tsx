@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { getTemplatesForCard } from "@/lib/editor/card-templates";
 import type { CardTemplate } from "@/lib/editor/card-templates";
+import { getTemplateConfigsForCard, type TemplateConfig } from "@/lib/editor/template-configs";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 
 interface StepTemplateProps {
@@ -10,7 +12,7 @@ interface StepTemplateProps {
   dispatch: React.Dispatch<WizardAction>;
 }
 
-/** Renders a tiny wireframe preview of a template panel layout. */
+/** Wireframe for v1 CSS Grid templates */
 function TemplateWireframe({ template }: { template: CardTemplate }) {
   const frontPanel = template.panels.find((p) => p.panelId === "front");
   if (!frontPanel) return null;
@@ -41,22 +43,87 @@ function TemplateWireframe({ template }: { template: CardTemplate }) {
           {slot.type === "photo" ? "Foto" : slot.type === "text" ? "Text" : "Deko"}
         </div>
       ))}
-      {frontPanel.slots.length === 0 && (
-        <div className="flex items-center justify-center text-[8px] text-gray-300 bg-gray-50 rounded">
-          {frontPanel.defaultBackground === "image" ? "Bild" : "Leer"}
-        </div>
-      )}
     </div>
   );
+}
+
+/** Use real reference images as thumbnails where available */
+const THUMBNAIL_MAP: Record<string, string> = {
+  TI05: "/test-pdfs/TI05-ref.jpg",
+  TI06: "/test-pdfs/TI06-ref.jpg",
+  TI07: "/test-pdfs/TI07-ref.jpg",
+  TI08: "/test-pdfs/TI08-ref.jpg",
+};
+
+/** Preview image for v2 spread templates */
+function SpreadThumbnail({ config }: { config: TemplateConfig }) {
+  const aspect = config.spreadWidthMm / config.spreadHeightMm;
+
+  return (
+    <div
+      className="w-full bg-white border border-brand-border rounded-lg overflow-hidden"
+      style={{ aspectRatio: `${aspect}` }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={THUMBNAIL_MAP[config.id] ?? `/test-pdfs/${config.id}.png`}
+        alt={config.name}
+        className="w-full h-full object-cover"
+      />
+    </div>
+  );
+}
+
+// Unified template item for display
+interface TemplateItem {
+  id: string;
+  name: string;
+  description: string;
+  panelCount: string;
+  source: "v1" | "v2";
+  v1?: CardTemplate;
+  v2?: TemplateConfig;
 }
 
 export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
   const t = useTranslations("wizard.template");
 
-  const templates =
-    state.cardType && state.cardFormat
-      ? getTemplatesForCard(state.cardType, state.cardFormat)
-      : [];
+  const items = useMemo<TemplateItem[]>(() => {
+    if (!state.cardType || !state.cardFormat) return [];
+
+    const result: TemplateItem[] = [];
+
+    // v2 spread templates
+    const v2Configs = getTemplateConfigsForCard(state.cardType, state.cardFormat);
+    for (const cfg of v2Configs) {
+      result.push({
+        id: cfg.id,
+        name: cfg.name,
+        description: cfg.description,
+        panelCount: cfg.requiresPhoto ? "Foto" : "Nur Text",
+        source: "v2",
+        v2: cfg,
+      });
+    }
+
+    // v1 grid templates — only for card types that don't have v2 replacements
+    // sterbebild has TI04-TI09, so skip v1 for sterbebild
+    if (v2Configs.length === 0) {
+      const v1Templates = getTemplatesForCard(state.cardType, state.cardFormat);
+      for (const tpl of v1Templates) {
+        result.push({
+          id: tpl.id,
+          name: tpl.name,
+          description: tpl.description,
+          panelCount: `${tpl.panels.length} ${tpl.panels.length === 1 ? t("panel") : t("panels")}`,
+          source: "v1",
+          v1: tpl,
+        });
+      }
+    }
+
+    return result;
+  }, [state.cardType, state.cardFormat, t]);
 
   if (!state.cardType || !state.cardFormat) {
     return (
@@ -75,16 +142,16 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
         {t("subtitle")}
       </p>
 
-      {templates.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-center text-brand-gray">{t("empty")}</p>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {templates.map((tpl) => {
-            const isSelected = state.templateId === tpl.id;
+          {items.map((item) => {
+            const isSelected = state.templateId === item.id;
             return (
               <button
-                key={tpl.id}
-                onClick={() => dispatch({ type: "SET_TEMPLATE", templateId: tpl.id })}
+                key={item.id}
+                onClick={() => dispatch({ type: "SET_TEMPLATE", templateId: item.id })}
                 className={`relative p-4 rounded-2xl border-2 transition-all hover:shadow-lg text-left ${
                   isSelected
                     ? "border-brand-primary bg-brand-primary-light shadow-md"
@@ -97,16 +164,20 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
                   </div>
                 )}
 
-                <TemplateWireframe template={tpl} />
+                {item.source === "v2" && item.v2 ? (
+                  <SpreadThumbnail config={item.v2} />
+                ) : item.v1 ? (
+                  <TemplateWireframe template={item.v1} />
+                ) : null}
 
                 <h3 className="text-sm font-medium text-brand-dark mt-3">
-                  {tpl.name}
+                  {item.name}
                 </h3>
                 <p className="text-xs text-brand-gray mt-1 line-clamp-2">
-                  {tpl.description}
+                  {item.description}
                 </p>
                 <p className="text-xs text-brand-gray/60 mt-1">
-                  {tpl.panels.length} {tpl.panels.length === 1 ? t("panel") : t("panels")}
+                  {item.panelCount}
                 </p>
               </button>
             );

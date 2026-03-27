@@ -11,6 +11,7 @@ import {
   TOTAL_STEPS,
 } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
+import { getTemplateConfig } from "@/lib/editor/template-configs";
 
 import StepCardType from "./steps/StepCardType";
 import StepTemplate from "./steps/StepTemplate";
@@ -38,6 +39,29 @@ export default function WizardShell() {
   }, [state]);
 
   const canGoNext = isStepValid(state, state.currentStep);
+
+  // Skip photo step (4) for templates that don't require a photo (e.g. TI04)
+  const shouldSkipPhoto = (() => {
+    if (!state.templateId) return false;
+    const config = getTemplateConfig(state.templateId);
+    return config ? !config.requiresPhoto : false;
+  })();
+
+  function handleNext() {
+    if (shouldSkipPhoto && state.currentStep === 3) {
+      dispatch({ type: "SET_STEP", step: 5 }); // skip photo → text
+    } else {
+      dispatch({ type: "NEXT_STEP" });
+    }
+  }
+
+  function handlePrev() {
+    if (shouldSkipPhoto && state.currentStep === 5) {
+      dispatch({ type: "SET_STEP", step: 3 }); // skip photo ← text
+    } else {
+      dispatch({ type: "PREV_STEP" });
+    }
+  }
 
   const renderStep = useCallback(
     (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
@@ -72,7 +96,7 @@ export default function WizardShell() {
       <div className="sticky bottom-0 border-t border-brand-border bg-white px-6 py-4 z-10">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <button
-            onClick={() => dispatch({ type: "PREV_STEP" })}
+            onClick={handlePrev}
             disabled={state.currentStep === 1}
             className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray"
           >
@@ -85,7 +109,7 @@ export default function WizardShell() {
 
           {state.currentStep < TOTAL_STEPS ? (
             <button
-              onClick={() => dispatch({ type: "NEXT_STEP" })}
+              onClick={handleNext}
               disabled={!canGoNext}
               className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-brand-primary text-white hover:bg-brand-primary-hover"
             >

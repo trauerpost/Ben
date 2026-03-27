@@ -262,7 +262,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 5;
+const DRAFT_VERSION = 6;
 
 interface DraftEnvelope {
   version: number;

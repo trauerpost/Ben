@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none" stroke="#1A1A1A" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Center flower -->
+  <circle cx="100" cy="30" r="4" fill="#1A1A1A" stroke="none"/>
+  <ellipse cx="100" cy="20" rx="4" ry="8" fill="none"/>
+  <ellipse cx="100" cy="40" rx="4" ry="8" fill="none"/>
+  <ellipse cx="90" cy="30" rx="8" ry="4" fill="none"/>
+  <ellipse cx="110" cy="30" rx="8" ry="4" fill="none"/>
+  <ellipse cx="93" cy="23" rx="4" ry="7" fill="none" transform="rotate(-45 93 23)"/>
+  <ellipse cx="107" cy="23" rx="4" ry="7" fill="none" transform="rotate(45 107 23)"/>
+  <ellipse cx="93" cy="37" rx="4" ry="7" fill="none" transform="rotate(45 93 37)"/>
+  <ellipse cx="107" cy="37" rx="4" ry="7" fill="none" transform="rotate(-45 107 37)"/>
+  <!-- Left stem with leaves -->
+  <path d="M82 30 Q60 30 30 28" fill="none"/>
+  <path d="M65 30 Q60 22 55 18" fill="none"/>
+  <path d="M55 18 Q60 26 65 30" fill="none"/>
+  <path d="M50 28 Q45 20 40 17" fill="none"/>
+  <path d="M40 17 Q45 24 50 28" fill="none"/>
+  <!-- Right stem with leaves -->
+  <path d="M118 30 Q140 30 170 28" fill="none"/>
+  <path d="M135 30 Q140 22 145 18" fill="none"/>
+  <path d="M145 18 Q140 26 135 30" fill="none"/>
+  <path d="M150 28 Q155 20 160 17" fill="none"/>
+  <path d="M160 17 Q155 24 150 28" fill="none"/>
+</svg>

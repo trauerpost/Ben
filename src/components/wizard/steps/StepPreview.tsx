@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import CardRenderer, { getPanelsForTemplate } from "../CardRenderer";
+import SpreadPreview from "../SpreadPreview";
 import type { WizardState } from "@/lib/editor/wizard-state";
 
 interface StepPreviewProps {
@@ -27,7 +28,8 @@ export default function StepPreview({ state }: StepPreviewProps) {
   const [pdfError, setPdfError] = useState<string | null>(null);
 
   const templateId = state.templateId ?? "";
-  const panels = getPanelsForTemplate(templateId);
+  const isV2 = templateId.startsWith("TI");
+  const panels = isV2 ? [] : getPanelsForTemplate(templateId);
   const isFolded = state.cardFormat === "folded";
 
   async function handleDownloadPdf(): Promise<void> {
@@ -92,30 +94,42 @@ export default function StepPreview({ state }: StepPreviewProps) {
         {t("subtitle")}
       </p>
 
-      {/* Mode selector */}
-      <div className="flex justify-center gap-2 mb-10">
-        {modes.map((m) => (
-          <button
-            key={m.key}
-            onClick={() => {
-              setMode(m.key);
-              setFlipped(false);
-              setFoldAngle(0);
-            }}
-            className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              mode === m.key
-                ? "bg-brand-primary text-white"
-                : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
-            }`}
-          >
-            <span>{m.icon}</span>
-            {m.label}
-          </button>
-        ))}
-      </div>
+      {/* v2 Spread preview — single page templates */}
+      {isV2 && (
+        <div className="flex flex-col items-center gap-6 mb-10">
+          <SpreadPreview state={state} />
+          <p className="text-xs text-brand-gray">
+            Live preview — the PDF will have higher quality fonts and images.
+          </p>
+        </div>
+      )}
+
+      {/* Mode selector (v1 only) */}
+      {!isV2 && (
+        <div className="flex justify-center gap-2 mb-10">
+          {modes.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => {
+                setMode(m.key);
+                setFlipped(false);
+                setFoldAngle(0);
+              }}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                mode === m.key
+                  ? "bg-brand-primary text-white"
+                  : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
+              }`}
+            >
+              <span>{m.icon}</span>
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Flat preview — all panels side by side */}
-      {mode === "flat" && (
+      {!isV2 && mode === "flat" && (
         <div className={`grid gap-6 ${
           panels.length === 4 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" :
           panels.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
@@ -132,8 +146,8 @@ export default function StepPreview({ state }: StepPreviewProps) {
         </div>
       )}
 
-      {/* Flip preview — front/back flip */}
-      {mode === "flip" && (
+      {/* Flip preview — front/back flip (v1 only) */}
+      {!isV2 && mode === "flip" && (
         <div className="flex flex-col items-center gap-6">
           <div
             className="relative w-72 cursor-pointer"
@@ -177,8 +191,8 @@ export default function StepPreview({ state }: StepPreviewProps) {
         </div>
       )}
 
-      {/* 3D folding card — only for folded cards */}
-      {mode === "3d" && isFolded && (
+      {/* 3D folding card — only for folded v1 cards */}
+      {!isV2 && mode === "3d" && isFolded && (
         <div className="flex flex-col items-center gap-8">
           <div
             className="relative"

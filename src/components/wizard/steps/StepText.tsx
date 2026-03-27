@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
   WIZARD_FONTS,
@@ -10,6 +10,7 @@ import {
   DEFAULT_TEXT_CONTENT,
 } from "@/lib/editor/wizard-state";
 import { TEXT_TEMPLATES } from "@/lib/editor/text-templates";
+import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { WizardState, WizardAction, TextContent } from "@/lib/editor/wizard-state";
 
 interface StepTextProps {
@@ -17,12 +18,56 @@ interface StepTextProps {
   dispatch: React.Dispatch<WizardAction>;
 }
 
+// String fields in TextContent that can be edited
+type StringField = Extract<
+  keyof TextContent,
+  | "heading" | "name" | "dates" | "dividerSymbol" | "quote"
+  | "fontFamily" | "fontColor"
+  | "relationshipLabels" | "birthDate" | "deathDate"
+  | "locationBirth" | "locationDeath" | "quoteAuthor" | "closingVerse"
+>;
+
+// Mapping from requiredFields names to their labels, placeholders, and input type
+const FIELD_META: Record<string, {
+  label: string;
+  placeholder: string;
+  type: "text" | "textarea";
+  required?: boolean;
+  sizeField?: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize" | "locationFontSize" | "closingVerseFontSize" | "quoteAuthorFontSize";
+  sizeRange?: [number, number];
+}> = {
+  heading:            { label: "Heading",           placeholder: "In liebevoller Erinnerung", type: "text", sizeField: "headingFontSize", sizeRange: [6, 24] },
+  relationshipLabels: { label: "Relationship",      placeholder: "Unsere liebe Mutter, Oma und Uroma", type: "text" },
+  name:               { label: "Name",              placeholder: "Maria Musterfrau", type: "text", required: true, sizeField: "nameFontSize", sizeRange: [10, 40] },
+  birthDate:          { label: "Birth Date",        placeholder: "* 24. Juli 1952", type: "text" },
+  deathDate:          { label: "Death Date",        placeholder: "† 28. September 2020", type: "text" },
+  locationBirth:      { label: "Birth Place",       placeholder: "in Starnberg", type: "text" },
+  locationDeath:      { label: "Death Place",       placeholder: "in Augsburg", type: "text" },
+  dates:              { label: "Dates",             placeholder: "* 24. Juli 1952 — † 28. September 2020", type: "text", sizeField: "datesFontSize", sizeRange: [8, 24] },
+  dividerSymbol:      { label: "Divider",           placeholder: "", type: "text" },
+  quote:              { label: "Quote",             placeholder: "Das schönste Denkmal, das ein Mensch\nbekommen kann, steht in den Herzen\nder Mitmenschen.", type: "textarea", sizeField: "quoteFontSize", sizeRange: [6, 24] },
+  quoteAuthor:        { label: "Quote Author",      placeholder: "(Albert Schweitzer)", type: "text" },
+  closingVerse:       { label: "Closing Verse",     placeholder: "Wir vermissen dich.", type: "text" },
+};
+
 export default function StepText({ state, dispatch }: StepTextProps) {
   const t = useTranslations("wizard.text");
   const [showConfirm, setShowConfirm] = useState<Partial<TextContent> | null>(null);
 
   const tc = state.textContent;
   const templates = state.cardType ? TEXT_TEMPLATES[state.cardType] : [];
+
+  // Determine which fields to show
+  const isV2 = state.templateId?.startsWith("TI") ?? false;
+  const templateConfig = state.templateId ? getTemplateConfig(state.templateId) : null;
+
+  const visibleFields = useMemo(() => {
+    if (!isV2 || !templateConfig) {
+      // v1 templates: show legacy fields
+      return ["heading", "name", "dates", "dividerSymbol", "quote"];
+    }
+    return templateConfig.requiredFields;
+  }, [isV2, templateConfig]);
 
   function applyTextTemplate(partial: Partial<TextContent>) {
     if (tc.name.trim().length > 0 || tc.heading.trim().length > 0) {
@@ -34,7 +79,6 @@ export default function StepText({ state, dispatch }: StepTextProps) {
 
   function doApply(partial: Partial<TextContent>) {
     const merged = { ...DEFAULT_TEXT_CONTENT, ...partial };
-    // Apply each field via SET_TEXT_STRING
     for (const key of ["heading", "name", "dates", "dividerSymbol", "quote", "fontFamily", "fontColor"] as const) {
       if (merged[key] !== undefined) {
         dispatch({ type: "SET_TEXT_STRING", field: key, value: merged[key] });
@@ -43,12 +87,86 @@ export default function StepText({ state, dispatch }: StepTextProps) {
     setShowConfirm(null);
   }
 
-  function setString(field: "heading" | "name" | "dates" | "quote" | "fontFamily" | "fontColor" | "dividerSymbol", value: string) {
+  function setString(field: StringField, value: string) {
     dispatch({ type: "SET_TEXT_STRING", field, value });
   }
 
-  function setFontSize(field: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize", value: number) {
+  function setFontSize(field: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize" | "locationFontSize" | "closingVerseFontSize" | "quoteAuthorFontSize", value: number) {
     dispatch({ type: "SET_TEXT_NUMBER", field, value });
+  }
+
+  function renderField(fieldName: string) {
+    // Special case: divider symbol picker
+    if (fieldName === "dividerSymbol") {
+      return (
+        <div key="dividerSymbol">
+          <label className="block text-sm font-medium text-brand-dark mb-2">
+            {FIELD_META.dividerSymbol.label}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {DIVIDER_SYMBOLS.map((sym) => (
+              <button
+                key={sym}
+                onClick={() => setString("dividerSymbol", sym)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors min-w-[48px] ${
+                  tc.dividerSymbol === sym
+                    ? "bg-brand-primary text-white"
+                    : "bg-brand-light-gray text-brand-dark hover:bg-brand-border"
+                }`}
+              >
+                {sym || "None"}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const meta = FIELD_META[fieldName];
+    if (!meta) return null;
+
+    const value = tc[fieldName as keyof TextContent] as string;
+
+    return (
+      <div key={fieldName}>
+        <label className="block text-sm font-medium text-brand-dark mb-1">
+          {meta.label}
+          {meta.required && <span className="text-red-500 ml-1">*</span>}
+        </label>
+        {meta.type === "textarea" ? (
+          <textarea
+            value={value ?? ""}
+            onChange={(e) => setString(fieldName as StringField, e.target.value)}
+            rows={4}
+            placeholder={meta.placeholder}
+            className="w-full px-4 py-3 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
+          />
+        ) : (
+          <input
+            type="text"
+            value={value ?? ""}
+            onChange={(e) => setString(fieldName as StringField, e.target.value)}
+            placeholder={meta.placeholder}
+            className="w-full px-4 py-2.5 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+          />
+        )}
+        {meta.sizeField && (
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-brand-gray">
+              {tc[meta.sizeField as keyof TextContent] as number}pt
+            </span>
+            <input
+              type="range"
+              min={meta.sizeRange?.[0] ?? 8}
+              max={meta.sizeRange?.[1] ?? 24}
+              value={tc[meta.sizeField as keyof TextContent] as number}
+              onChange={(e) => setFontSize(meta.sizeField!, parseInt(e.target.value))}
+              className="flex-1 accent-brand-primary"
+            />
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -63,8 +181,8 @@ export default function StepText({ state, dispatch }: StepTextProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Controls */}
         <div className="space-y-6">
-          {/* Template selector */}
-          {templates.length > 0 && (
+          {/* Text template selector (v1 only) */}
+          {!isV2 && templates.length > 0 && (
             <div>
               <label className="block text-sm font-medium text-brand-dark mb-2">
                 {t("templateTitle")}
@@ -80,7 +198,6 @@ export default function StepText({ state, dispatch }: StepTextProps) {
                   </button>
                 ))}
               </div>
-              {/* Confirm replace dialog */}
               {showConfirm && (
                 <div className="mt-2 p-3 rounded-lg border border-amber-300 bg-amber-50">
                   <p className="text-sm text-amber-800 mb-2">{t("templateConfirm")}</p>
@@ -103,127 +220,8 @@ export default function StepText({ state, dispatch }: StepTextProps) {
             </div>
           )}
 
-          {/* Heading */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-1">
-              {t("heading")}
-            </label>
-            <input
-              type="text"
-              value={tc.heading}
-              onChange={(e) => setString("heading", e.target.value)}
-              placeholder={t("headingPlaceholder")}
-              className="w-full px-4 py-2.5 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-            />
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-brand-gray">{tc.headingFontSize}px</span>
-              <input
-                type="range"
-                min={8}
-                max={24}
-                value={tc.headingFontSize}
-                onChange={(e) => setFontSize("headingFontSize", parseInt(e.target.value))}
-                className="flex-1 accent-brand-primary"
-              />
-            </div>
-          </div>
-
-          {/* Name (required) */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-1">
-              {t("name")} <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={tc.name}
-              onChange={(e) => setString("name", e.target.value)}
-              placeholder={t("namePlaceholder")}
-              className="w-full px-4 py-2.5 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-            />
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-brand-gray">{tc.nameFontSize}px</span>
-              <input
-                type="range"
-                min={14}
-                max={40}
-                value={tc.nameFontSize}
-                onChange={(e) => setFontSize("nameFontSize", parseInt(e.target.value))}
-                className="flex-1 accent-brand-primary"
-              />
-            </div>
-          </div>
-
-          {/* Dates */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-1">
-              {t("dates")}
-            </label>
-            <input
-              type="text"
-              value={tc.dates}
-              onChange={(e) => setString("dates", e.target.value)}
-              placeholder={t("datesPlaceholder")}
-              className="w-full px-4 py-2.5 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
-            />
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-brand-gray">{tc.datesFontSize}px</span>
-              <input
-                type="range"
-                min={8}
-                max={24}
-                value={tc.datesFontSize}
-                onChange={(e) => setFontSize("datesFontSize", parseInt(e.target.value))}
-                className="flex-1 accent-brand-primary"
-              />
-            </div>
-          </div>
-
-          {/* Divider symbol picker */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {t("divider")}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {DIVIDER_SYMBOLS.map((sym) => (
-                <button
-                  key={sym}
-                  onClick={() => setString("dividerSymbol", sym)}
-                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors min-w-[48px] ${
-                    tc.dividerSymbol === sym
-                      ? "bg-brand-primary text-white"
-                      : "bg-brand-light-gray text-brand-dark hover:bg-brand-border"
-                  }`}
-                >
-                  {sym || t("noDivider")}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Quote */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-1">
-              {t("quote")}
-            </label>
-            <textarea
-              value={tc.quote}
-              onChange={(e) => setString("quote", e.target.value)}
-              rows={4}
-              placeholder={t("quotePlaceholder")}
-              className="w-full px-4 py-3 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
-            />
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-brand-gray">{tc.quoteFontSize}px</span>
-              <input
-                type="range"
-                min={8}
-                max={24}
-                value={tc.quoteFontSize}
-                onChange={(e) => setFontSize("quoteFontSize", parseInt(e.target.value))}
-                className="flex-1 accent-brand-primary"
-              />
-            </div>
-          </div>
+          {/* Dynamic fields */}
+          {visibleFields.map(renderField)}
 
           {/* Shared: Font family */}
           <div>
@@ -308,35 +306,56 @@ export default function StepText({ state, dispatch }: StepTextProps) {
             }}
           >
             {tc.heading && (
-              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.headingFontSize}px` }}>
+              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.headingFontSize}pt` }}>
                 {tc.heading}
               </p>
             )}
+            {tc.relationshipLabels && (
+              <p className="w-full leading-relaxed text-sm">{tc.relationshipLabels}</p>
+            )}
             {tc.name ? (
-              <p className="w-full font-semibold leading-tight" style={{ fontSize: `${tc.nameFontSize}px` }}>
+              <p className="w-full font-semibold leading-tight" style={{ fontSize: `${tc.nameFontSize}pt` }}>
                 {tc.name}
               </p>
             ) : (
-              <p className="w-full text-brand-gray italic" style={{ fontSize: `${tc.nameFontSize}px` }}>
+              <p className="w-full text-brand-gray italic" style={{ fontSize: `${tc.nameFontSize}pt` }}>
                 {t("namePlaceholder")}
               </p>
             )}
+            {tc.birthDate && (
+              <p className="w-full leading-relaxed text-sm">{tc.birthDate}</p>
+            )}
+            {tc.locationBirth && (
+              <p className="w-full leading-relaxed text-xs text-brand-gray">{tc.locationBirth}</p>
+            )}
+            {tc.deathDate && (
+              <p className="w-full leading-relaxed text-sm">{tc.deathDate}</p>
+            )}
+            {tc.locationDeath && (
+              <p className="w-full leading-relaxed text-xs text-brand-gray">{tc.locationDeath}</p>
+            )}
             {tc.dates && (
-              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.datesFontSize}px` }}>
+              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.datesFontSize}pt` }}>
                 {tc.dates}
               </p>
             )}
             {tc.dividerSymbol && (
-              <p className="w-full leading-relaxed text-brand-gray" style={{ fontSize: `${tc.datesFontSize}px` }}>
+              <p className="w-full leading-relaxed text-brand-gray" style={{ fontSize: `${tc.datesFontSize}pt` }}>
                 {tc.dividerSymbol}
               </p>
             )}
             {tc.quote && (
-              <p className="w-full whitespace-pre-wrap leading-relaxed italic" style={{ fontSize: `${tc.quoteFontSize}px` }}>
+              <p className="w-full whitespace-pre-wrap leading-relaxed italic" style={{ fontSize: `${tc.quoteFontSize}pt` }}>
                 {tc.quote}
               </p>
             )}
-            {!tc.heading && !tc.name && !tc.dates && !tc.quote && (
+            {tc.quoteAuthor && (
+              <p className="w-full text-xs text-brand-gray">{tc.quoteAuthor}</p>
+            )}
+            {tc.closingVerse && (
+              <p className="w-full text-sm italic">{tc.closingVerse}</p>
+            )}
+            {!tc.heading && !tc.name && !tc.dates && !tc.quote && !tc.birthDate && !tc.deathDate && (
               <p className="text-brand-gray italic text-sm">
                 {t("previewEmpty")}
               </p>
