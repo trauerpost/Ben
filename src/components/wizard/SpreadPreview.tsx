@@ -99,9 +99,9 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
       clipStyle.border = el.imageBorder;
     }
 
-    // Apply crop if available
+    // Apply crop if available (guard against division by zero when width/height are 0 or 1)
     const crop = state.photo.crop;
-    if (el.useCrop !== false && crop && crop.width > 0 && crop.height > 0) {
+    if (el.useCrop !== false && crop && crop.width > 0 && crop.width < 1 && crop.height > 0 && crop.height < 1) {
       const sizeX = (1 / crop.width * 100);
       const sizeY = (1 / crop.height * 100);
       const posX = (crop.x / (1 - crop.width) * 100);

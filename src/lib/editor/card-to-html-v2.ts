@@ -65,10 +65,10 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
 
   let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center top;background-repeat:no-repeat;`;
 
-  // Apply user crop if available
+  // Apply user crop if available (guard against division by zero when width/height are 0 or 1)
   if (el.useCrop !== false && state.photo.crop) {
     const { x, y, width, height } = state.photo.crop;
-    if (width > 0 && height > 0) {
+    if (width > 0 && width < 1 && height > 0 && height < 1) {
       const sizeX = (1 / width * 100).toFixed(1);
       const sizeY = (1 / height * 100).toFixed(1);
       const posX = (x / (1 - width) * 100).toFixed(1);

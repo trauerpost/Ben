@@ -20,7 +20,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Upload to Supabase Storage
     const supabaseUrl = process.env.supabase_url || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.supabase_Secert || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.supabase_Secret || process.env.supabase_Secert || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       // Fallback: return PDF as direct download
