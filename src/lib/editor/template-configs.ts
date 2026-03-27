@@ -76,8 +76,8 @@ const TI04: TemplateConfig = {
     { id: "name", type: "text", x: 30, y: 150, w: 520, h: 100, field: "name", fontSize: 20, fontWeight: "normal", fontFamily: "Pinyon Script", textAlign: "left" },
     { id: "quote", type: "text", x: 30, y: 270, w: 520, h: 280, field: "quote", fontSize: 9, fontStyle: "italic", textAlign: "left" },
     { id: "author", type: "text", x: 30, y: 560, w: 520, h: 30, field: "quoteAuthor", fontSize: 7, textAlign: "left" },
-    { id: "birthDate", type: "text", x: 600, y: 350, w: 370, h: 40, field: "birthDate", fontSize: 9, textAlign: "right" },
-    { id: "deathDate", type: "text", x: 600, y: 400, w: 370, h: 40, field: "deathDate", fontSize: 9, textAlign: "right" },
+    { id: "birthDate", type: "text", x: 600, y: 430, w: 370, h: 40, field: "birthDate", fontSize: 9, textAlign: "right" },
+    { id: "deathDate", type: "text", x: 600, y: 480, w: 370, h: 40, field: "deathDate", fontSize: 9, textAlign: "right" },
   ],
 };
 
