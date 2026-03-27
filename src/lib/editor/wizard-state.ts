@@ -2,7 +2,7 @@
 export type CardType = "sterbebild" | "trauerkarte" | "dankkarte";
 export type CardFormat = "single" | "folded";
 
-export const FONT_SIZE_UNIT = "px";
+export const FONT_SIZE_UNIT = "pt"; // pt for print (1pt = 0.353mm)
 
 export interface CardDimensions {
   widthMm: number;
@@ -106,6 +106,10 @@ export const WIZARD_FONTS = [
   "Inter", "Montserrat", "Raleway", "Open Sans",
   "Great Vibes", "Dancing Script", "Tangerine",
   "Fira Sans", "Source Serif Pro",
+  // Added for template engine v2
+  "Pinyon Script", "Alex Brush",
+  "Cormorant SC", "EB Garamond SC",
+  "Cormorant Infant", "Crimson Pro",
 ] as const;
 
 export const FONT_COLORS = [
@@ -258,7 +262,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 4;
+const DRAFT_VERSION = 5;
 
 interface DraftEnvelope {
   version: number;

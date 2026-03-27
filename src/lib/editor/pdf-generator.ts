@@ -1,25 +1,38 @@
 import { renderCardHTML } from "./card-to-html";
+import { renderSpreadHTML, autoShrinkText } from "./card-to-html-v2";
 import { getCardDimensions } from "./wizard-state";
 import { getTemplateById } from "./card-templates";
+import { getTemplateConfig } from "./template-configs";
 import type { WizardState } from "./wizard-state";
 
 export async function generateCardPDF(state: WizardState): Promise<Buffer> {
   const dims = getCardDimensions(state);
   if (!dims) throw new Error("Cannot determine card dimensions");
 
-  const template = state.templateId ? getTemplateById(state.templateId) : null;
-  if (!template) throw new Error("No template selected");
+  const templateId = state.templateId ?? "";
+  const isV2 = templateId.startsWith("TI");
 
-  const isFolded = template.cardFormat === "folded";
+  // Generate HTML — v2 (absolute positioning) or v1 (CSS Grid)
+  let html: string;
+  let pageWidthMm: number;
+  let pageHeightMm: number;
 
-  // For folded cards, PDF page = full width (both panels side by side)
-  // For single cards, PDF page = single panel width
-  const pageWidthMm = isFolded ? dims.widthMm : dims.widthMm;
-  const pageHeightMm = dims.heightMm;
+  if (isV2) {
+    const config = getTemplateConfig(templateId);
+    if (!config) throw new Error(`Template config not found: ${templateId}`);
+    html = await renderSpreadHTML(state);
+    pageWidthMm = config.spreadWidthMm;
+    pageHeightMm = config.spreadHeightMm;
+  } else {
+    const template = getTemplateById(templateId);
+    if (!template) throw new Error("No template selected");
+    html = await renderCardHTML(state);
+    const isFolded = template.cardFormat === "folded";
+    pageWidthMm = isFolded ? dims.widthMm : dims.widthMm;
+    pageHeightMm = dims.heightMm;
+  }
 
-  const html = await renderCardHTML(state);
-
-  // Try @sparticuz/chromium first (Vercel serverless), fall back to local puppeteer
+  // Launch Puppeteer
   let browser;
   try {
     const puppeteerCore = await import("puppeteer-core");
@@ -30,14 +43,19 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
       headless: true,
     });
   } catch {
-    // Local dev: use full puppeteer with bundled Chromium
     const puppeteer = await import("puppeteer");
     browser = await puppeteer.default.launch({ headless: true });
   }
 
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle2" });
+    await page.setContent(html, { waitUntil: "networkidle2", timeout: 60000 });
+
+    // v2: auto-shrink text that overflows
+    if (isV2) {
+      const config = getTemplateConfig(templateId)!;
+      await autoShrinkText(page, config);
+    }
 
     const pdfBuffer = await page.pdf({
       width: `${pageWidthMm}mm`,
