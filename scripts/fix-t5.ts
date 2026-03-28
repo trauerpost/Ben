@@ -6,7 +6,7 @@ import type { WizardState } from "../src/lib/editor/wizard-state";
 
 const state: WizardState = {
   currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T5",
-  photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", crop: null },
+  photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
   background: { type: "color", color: "#FFFFFF", imageUrl: null },
   textContent: {
     ...DEFAULT_TEXT_CONTENT,

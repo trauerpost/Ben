@@ -7,6 +7,7 @@ import {
   type WizardState,
   type WizardAction,
 } from "../wizard-state";
+import type { ManualAdjustments } from "../image-filters";
 
 // Helper: fresh state copy to avoid cross-test mutation
 function freshState(overrides?: Partial<WizardState>): WizardState {
@@ -76,12 +77,17 @@ describe("wizardReducer", () => {
       expect(next.photo.url).toBe("https://example.com/photo.jpg");
     });
 
-    it("preserves existing crop when setting photo url", () => {
+    it("resets crop and filter state when setting new photo url", () => {
       const crop = { x: 10, y: 20, width: 100, height: 100 };
       const state = freshState();
       state.photo.crop = crop;
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
       const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
-      expect(next.photo.crop).toEqual(crop);
+      expect(next.photo.crop).toBeNull();
+      expect(next.photo.filter).toBe("none");
+      expect(next.photo.filterId).toBe("original");
+      expect(next.photo.originalUrl).toBe("https://new-photo.jpg");
     });
   });
 
@@ -258,6 +264,390 @@ describe("wizardReducer", () => {
       // @ts-expect-error — testing unknown action type
       const next = wizardReducer(state, { type: "UNKNOWN_ACTION" } as WizardAction);
       expect(next).toBe(state);
+    });
+  });
+
+  // -- SET_PHOTO_FILTER --
+  describe("SET_PHOTO_FILTER", () => {
+    it("sets filter and filterId", () => {
+      const next = wizardReducer(freshState(), {
+        type: "SET_PHOTO_FILTER",
+        filter: "sepia(1)",
+        filterId: "sepia",
+      });
+      expect(next.photo.filter).toBe("sepia(1)");
+      expect(next.photo.filterId).toBe("sepia");
+    });
+
+    it("preserves other photo fields (url, crop, adjustments)", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/photo.jpg";
+      state.photo.originalUrl = "https://example.com/photo.jpg";
+      state.photo.crop = { x: 10, y: 20, width: 100, height: 100 };
+      state.photo.adjustments = { brightness: 120, contrast: 100, saturation: 100 } as ManualAdjustments;
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_FILTER",
+        filter: "grayscale(1)",
+        filterId: "grayscale",
+      });
+      expect(next.photo.url).toBe("https://example.com/photo.jpg");
+      expect(next.photo.crop).toEqual({ x: 10, y: 20, width: 100, height: 100 });
+      expect(next.photo.adjustments).toEqual({ brightness: 120, contrast: 100, saturation: 100 });
+    });
+  });
+
+  // -- SET_PHOTO_ADJUSTMENTS --
+  describe("SET_PHOTO_ADJUSTMENTS", () => {
+    it("sets adjustments object", () => {
+      const adj: ManualAdjustments = { brightness: 150, contrast: 80, saturation: 120 } as ManualAdjustments;
+      const next = wizardReducer(freshState(), {
+        type: "SET_PHOTO_ADJUSTMENTS",
+        adjustments: adj,
+      });
+      expect(next.photo.adjustments).toEqual(adj);
+    });
+
+    it("preserves filter and filterId", () => {
+      const state = freshState();
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
+      const adj: ManualAdjustments = { brightness: 110, contrast: 90, saturation: 100 } as ManualAdjustments;
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_ADJUSTMENTS",
+        adjustments: adj,
+      });
+      expect(next.photo.filter).toBe("sepia(1)");
+      expect(next.photo.filterId).toBe("sepia");
+    });
+
+    it("allows null adjustments", () => {
+      const state = freshState();
+      state.photo.adjustments = { brightness: 150, contrast: 80, saturation: 120 } as ManualAdjustments;
+      // The action type requires ManualAdjustments, but we test null via SET_PHOTO reset
+      // For direct null, we cast to test the reducer handles it gracefully
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_ADJUSTMENTS",
+        adjustments: null as unknown as ManualAdjustments,
+      });
+      expect(next.photo.adjustments).toBeNull();
+    });
+  });
+
+  // -- SET_PHOTO_PROCESSED --
+  describe("SET_PHOTO_PROCESSED", () => {
+    it("sets url to processed result", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/original.jpg";
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://example.com/processed.jpg",
+        backgroundRemoved: false,
+        backgroundBlurred: false,
+      });
+      expect(next.photo.url).toBe("https://example.com/processed.jpg");
+    });
+
+    it("sets backgroundRemoved flag", () => {
+      const next = wizardReducer(freshState(), {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://processed.jpg",
+        backgroundRemoved: true,
+        backgroundBlurred: false,
+      });
+      expect(next.photo.backgroundRemoved).toBe(true);
+    });
+
+    it("sets backgroundBlurred flag", () => {
+      const next = wizardReducer(freshState(), {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://processed.jpg",
+        backgroundRemoved: false,
+        backgroundBlurred: true,
+      });
+      expect(next.photo.backgroundBlurred).toBe(true);
+    });
+
+    it("preserves originalUrl (does NOT change it)", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/original.jpg";
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://example.com/processed.jpg",
+        backgroundRemoved: true,
+        backgroundBlurred: false,
+      });
+      expect(next.photo.originalUrl).toBe("https://example.com/original.jpg");
+    });
+
+    it("preserves filter and adjustments", () => {
+      const state = freshState();
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
+      state.photo.adjustments = { brightness: 120, contrast: 100, saturation: 100 } as ManualAdjustments;
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://processed.jpg",
+        backgroundRemoved: true,
+        backgroundBlurred: false,
+      });
+      expect(next.photo.filter).toBe("sepia(1)");
+      expect(next.photo.filterId).toBe("sepia");
+      expect(next.photo.adjustments).toEqual({ brightness: 120, contrast: 100, saturation: 100 });
+    });
+  });
+
+  // -- SET_PHOTO_SHARPENED --
+  describe("SET_PHOTO_SHARPENED", () => {
+    it("sets sharpenedUrl", () => {
+      const next = wizardReducer(freshState(), {
+        type: "SET_PHOTO_SHARPENED",
+        sharpenedUrl: "https://example.com/sharpened.jpg",
+      });
+      expect(next.photo.sharpenedUrl).toBe("https://example.com/sharpened.jpg");
+    });
+
+    it("allows null sharpenedUrl (clearing sharpening)", () => {
+      const state = freshState();
+      state.photo.sharpenedUrl = "https://example.com/sharpened.jpg";
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_SHARPENED",
+        sharpenedUrl: null,
+      });
+      expect(next.photo.sharpenedUrl).toBeNull();
+    });
+
+    it("preserves all other photo fields", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/photo.jpg";
+      state.photo.originalUrl = "https://example.com/photo.jpg";
+      state.photo.crop = { x: 5, y: 10, width: 200, height: 150 };
+      state.photo.filter = "grayscale(1)";
+      state.photo.filterId = "grayscale";
+      state.photo.backgroundRemoved = true;
+      state.photo.backgroundBlurred = false;
+      const next = wizardReducer(state, {
+        type: "SET_PHOTO_SHARPENED",
+        sharpenedUrl: "https://example.com/sharpened.jpg",
+      });
+      expect(next.photo.url).toBe("https://example.com/photo.jpg");
+      expect(next.photo.originalUrl).toBe("https://example.com/photo.jpg");
+      expect(next.photo.crop).toEqual({ x: 5, y: 10, width: 200, height: 150 });
+      expect(next.photo.filter).toBe("grayscale(1)");
+      expect(next.photo.filterId).toBe("grayscale");
+      expect(next.photo.backgroundRemoved).toBe(true);
+      expect(next.photo.backgroundBlurred).toBe(false);
+    });
+  });
+
+  // -- RESTORE_ORIGINAL_PHOTO --
+  describe("RESTORE_ORIGINAL_PHOTO", () => {
+    it("reverts url to originalUrl", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/processed.jpg";
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.url).toBe("https://example.com/original.jpg");
+    });
+
+    it("clears sharpenedUrl", () => {
+      const state = freshState();
+      state.photo.sharpenedUrl = "https://example.com/sharpened.jpg";
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.sharpenedUrl).toBeNull();
+    });
+
+    it("clears backgroundRemoved and backgroundBlurred", () => {
+      const state = freshState();
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      state.photo.backgroundRemoved = true;
+      state.photo.backgroundBlurred = true;
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.backgroundRemoved).toBe(false);
+      expect(next.photo.backgroundBlurred).toBe(false);
+    });
+
+    it("preserves filter and filterId (user's filter choice persists)", () => {
+      const state = freshState();
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
+      state.photo.backgroundRemoved = true;
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.filter).toBe("sepia(1)");
+      expect(next.photo.filterId).toBe("sepia");
+    });
+
+    it("preserves adjustments", () => {
+      const state = freshState();
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      state.photo.adjustments = { brightness: 130, contrast: 90, saturation: 110 } as ManualAdjustments;
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.adjustments).toEqual({ brightness: 130, contrast: 90, saturation: 110 });
+    });
+
+    it("preserves crop", () => {
+      const state = freshState();
+      state.photo.originalUrl = "https://example.com/original.jpg";
+      state.photo.crop = { x: 10, y: 20, width: 100, height: 100 };
+      const next = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(next.photo.crop).toEqual({ x: 10, y: 20, width: 100, height: 100 });
+    });
+  });
+
+  // -- REMOVE_PHOTO --
+  describe("REMOVE_PHOTO", () => {
+    it("resets ALL photo fields to initial state", () => {
+      const state = freshState();
+      state.photo.url = "https://example.com/photo.jpg";
+      state.photo.originalUrl = "https://example.com/photo.jpg";
+      state.photo.sharpenedUrl = "https://example.com/sharpened.jpg";
+      state.photo.crop = { x: 10, y: 20, width: 100, height: 100 };
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
+      state.photo.adjustments = { brightness: 150, contrast: 80, saturation: 120 } as ManualAdjustments;
+      state.photo.backgroundRemoved = true;
+      state.photo.backgroundBlurred = true;
+      const next = wizardReducer(state, { type: "REMOVE_PHOTO" });
+      expect(next.photo.url).toBeNull();
+      expect(next.photo.originalUrl).toBeNull();
+      expect(next.photo.sharpenedUrl).toBeNull();
+      expect(next.photo.crop).toBeNull();
+      expect(next.photo.filter).toBe("none");
+      expect(next.photo.filterId).toBe("original");
+      expect(next.photo.adjustments).toBeNull();
+      expect(next.photo.backgroundRemoved).toBe(false);
+      expect(next.photo.backgroundBlurred).toBe(false);
+    });
+  });
+
+  // -- SET_PHOTO (updated behavior) --
+  describe("SET_PHOTO resets all enhancement state", () => {
+    it("new photo resets filter to 'none'", () => {
+      const state = freshState();
+      state.photo.filter = "sepia(1)";
+      state.photo.filterId = "sepia";
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.filter).toBe("none");
+    });
+
+    it("new photo resets filterId to 'original'", () => {
+      const state = freshState();
+      state.photo.filterId = "grayscale";
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.filterId).toBe("original");
+    });
+
+    it("new photo clears sharpenedUrl", () => {
+      const state = freshState();
+      state.photo.sharpenedUrl = "https://example.com/sharpened.jpg";
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.sharpenedUrl).toBeNull();
+    });
+
+    it("new photo clears adjustments", () => {
+      const state = freshState();
+      state.photo.adjustments = { brightness: 150, contrast: 80, saturation: 120 } as ManualAdjustments;
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.adjustments).toBeNull();
+    });
+
+    it("new photo clears background flags", () => {
+      const state = freshState();
+      state.photo.backgroundRemoved = true;
+      state.photo.backgroundBlurred = true;
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.backgroundRemoved).toBe(false);
+      expect(next.photo.backgroundBlurred).toBe(false);
+    });
+
+    it("new photo sets originalUrl to same value as url", () => {
+      const next = wizardReducer(freshState(), { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.originalUrl).toBe("https://new-photo.jpg");
+      expect(next.photo.url).toBe("https://new-photo.jpg");
+    });
+
+    it("new photo resets crop to null", () => {
+      const state = freshState();
+      state.photo.crop = { x: 10, y: 20, width: 100, height: 100 };
+      const next = wizardReducer(state, { type: "SET_PHOTO", url: "https://new-photo.jpg" });
+      expect(next.photo.crop).toBeNull();
+    });
+  });
+
+  // -- Photo state consistency --
+  describe("Photo state consistency", () => {
+    it("full workflow: SET_PHOTO -> SET_PHOTO_FILTER -> SET_PHOTO_PROCESSED -> RESTORE -> verify consistent", () => {
+      // Step 1: Set initial photo
+      let state = wizardReducer(freshState(), { type: "SET_PHOTO", url: "https://example.com/photo.jpg" });
+      expect(state.photo.url).toBe("https://example.com/photo.jpg");
+      expect(state.photo.originalUrl).toBe("https://example.com/photo.jpg");
+
+      // Step 2: Apply filter
+      state = wizardReducer(state, { type: "SET_PHOTO_FILTER", filter: "sepia(1)", filterId: "sepia" });
+      expect(state.photo.filter).toBe("sepia(1)");
+      expect(state.photo.filterId).toBe("sepia");
+
+      // Step 3: Process (background removal)
+      state = wizardReducer(state, {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://example.com/processed.jpg",
+        backgroundRemoved: true,
+        backgroundBlurred: false,
+      });
+      expect(state.photo.url).toBe("https://example.com/processed.jpg");
+      expect(state.photo.originalUrl).toBe("https://example.com/photo.jpg");
+      expect(state.photo.backgroundRemoved).toBe(true);
+      expect(state.photo.filter).toBe("sepia(1)");
+
+      // Step 4: Restore original
+      state = wizardReducer(state, { type: "RESTORE_ORIGINAL_PHOTO" });
+      expect(state.photo.url).toBe("https://example.com/photo.jpg");
+      expect(state.photo.originalUrl).toBe("https://example.com/photo.jpg");
+      expect(state.photo.backgroundRemoved).toBe(false);
+      expect(state.photo.backgroundBlurred).toBe(false);
+      expect(state.photo.sharpenedUrl).toBeNull();
+      // Filter persists after restore
+      expect(state.photo.filter).toBe("sepia(1)");
+      expect(state.photo.filterId).toBe("sepia");
+    });
+
+    it("REMOVE_PHOTO after full processing resets everything", () => {
+      // Build up a fully processed photo state
+      let state = wizardReducer(freshState(), { type: "SET_PHOTO", url: "https://example.com/photo.jpg" });
+      state = wizardReducer(state, { type: "SET_PHOTO_FILTER", filter: "grayscale(1)", filterId: "grayscale" });
+      state = wizardReducer(state, {
+        type: "SET_PHOTO_ADJUSTMENTS",
+        adjustments: { brightness: 130, contrast: 90, saturation: 110 } as ManualAdjustments,
+      });
+      state = wizardReducer(state, { type: "SET_PHOTO_CROP", crop: { x: 5, y: 10, width: 200, height: 150 } });
+      state = wizardReducer(state, {
+        type: "SET_PHOTO_PROCESSED",
+        url: "https://example.com/processed.jpg",
+        backgroundRemoved: true,
+        backgroundBlurred: true,
+      });
+      state = wizardReducer(state, { type: "SET_PHOTO_SHARPENED", sharpenedUrl: "https://example.com/sharp.jpg" });
+
+      // Verify everything is set
+      expect(state.photo.url).toBe("https://example.com/processed.jpg");
+      expect(state.photo.sharpenedUrl).toBe("https://example.com/sharp.jpg");
+      expect(state.photo.filter).toBe("grayscale(1)");
+      expect(state.photo.backgroundRemoved).toBe(true);
+
+      // Remove photo — everything resets
+      state = wizardReducer(state, { type: "REMOVE_PHOTO" });
+      expect(state.photo.url).toBeNull();
+      expect(state.photo.originalUrl).toBeNull();
+      expect(state.photo.sharpenedUrl).toBeNull();
+      expect(state.photo.crop).toBeNull();
+      expect(state.photo.filter).toBe("none");
+      expect(state.photo.filterId).toBe("original");
+      expect(state.photo.adjustments).toBeNull();
+      expect(state.photo.backgroundRemoved).toBe(false);
+      expect(state.photo.backgroundBlurred).toBe(false);
     });
   });
 

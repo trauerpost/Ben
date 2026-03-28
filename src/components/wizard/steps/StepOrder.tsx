@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { clearDraft, getCardDimensions, CARD_CONFIGS } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
+import CardMockup from "../CardMockup";
 
 interface StepOrderProps {
   state: WizardState;
@@ -172,30 +173,31 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
   // Order placed -- success
   if (orderResult) {
     return (
-      <div className="max-w-md mx-auto px-6 py-16 text-center space-y-6">
-        <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-          <span className="text-2xl text-green-600">&#10003;</span>
-        </div>
-        <h2 className="text-2xl font-medium text-brand-dark">{t("success")}</h2>
+      <div className="max-w-lg mx-auto px-6 py-16 text-center space-y-6">
+        <CardMockup state={state} style="table" />
+        <h2 className="mt-6 text-2xl font-serif text-brand-dark">{t("successTitle")}</h2>
+        <p className="text-brand-gray">{t("successMessage")}</p>
         <p className="text-brand-gray">
           {t("orderNumber")}: <span className="font-mono">{orderResult.orderId.slice(0, 8)}</span>
         </p>
-        {orderResult.pdfUrl && (
-          <a
-            href={orderResult.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-6 py-3 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary-hover transition-colors"
+        <div className="flex gap-4 justify-center mt-6">
+          {orderResult.pdfUrl && (
+            <a
+              href={orderResult.pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary-hover transition-colors"
+            >
+              {t("downloadPdf")}
+            </a>
+          )}
+          <button
+            onClick={() => dispatch({ type: "RESET" })}
+            className="px-6 py-3 text-brand-primary border border-brand-primary rounded-xl font-medium hover:bg-brand-primary/5 transition-colors"
           >
-            {t("downloadPdf")}
-          </a>
-        )}
-        <button
-          onClick={() => dispatch({ type: "RESET" })}
-          className="block mx-auto px-6 py-2 text-brand-primary hover:underline"
-        >
-          {t("newCard")}
-        </button>
+            {t("newCard")}
+          </button>
+        </div>
       </div>
     );
   }

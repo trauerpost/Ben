@@ -142,7 +142,14 @@ export interface WizardState {
   templateId: string | null;
   photo: {
     url: string | null;
+    originalUrl: string | null;
+    sharpenedUrl: string | null;
     crop: { x: number; y: number; width: number; height: number } | null;
+    filter: string;
+    filterId: string;
+    adjustments: import("./image-filters").ManualAdjustments | null;
+    backgroundRemoved: boolean;
+    backgroundBlurred: boolean;
   };
   background: {
     type: "color" | "image";
@@ -171,6 +178,12 @@ export type WizardAction =
   | { type: "SET_BACKGROUND"; background: WizardState["background"] }
   | { type: "SET_PHOTO"; url: string }
   | { type: "SET_PHOTO_CROP"; crop: WizardState["photo"]["crop"] }
+  | { type: "SET_PHOTO_FILTER"; filter: string; filterId: string }
+  | { type: "SET_PHOTO_ADJUSTMENTS"; adjustments: import("./image-filters").ManualAdjustments }
+  | { type: "SET_PHOTO_PROCESSED"; url: string; backgroundRemoved: boolean; backgroundBlurred: boolean }
+  | { type: "SET_PHOTO_SHARPENED"; sharpenedUrl: string | null }
+  | { type: "RESTORE_ORIGINAL_PHOTO" }
+  | { type: "REMOVE_PHOTO" }
   | { type: "SET_TEXT_STRING"; field: "heading" | "name" | "dates" | "dividerSymbol" | "quote" | "fontFamily" | "fontColor" | "relationshipLabels" | "birthDate" | "deathDate" | "locationBirth" | "locationDeath" | "quoteAuthor" | "closingVerse"; value: string }
   | { type: "SET_TEXT_NUMBER"; field: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize" | "locationFontSize" | "closingVerseFontSize" | "quoteAuthorFontSize"; value: number }
   | { type: "SET_TEXT_ALIGN"; align: "left" | "center" | "right" }
@@ -188,7 +201,17 @@ export const initialWizardState: WizardState = {
   cardType: null,
   cardFormat: null,
   templateId: null,
-  photo: { url: null, crop: null },
+  photo: {
+    url: null,
+    originalUrl: null,
+    sharpenedUrl: null,
+    crop: null,
+    filter: "none",
+    filterId: "original",
+    adjustments: null,
+    backgroundRemoved: false,
+    backgroundBlurred: false,
+  },
   background: { type: "color", color: "#FFFFFF", imageUrl: null },
   textContent: { ...DEFAULT_TEXT_CONTENT },
   decoration: { assetUrl: null, assetId: null },
@@ -210,9 +233,47 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
     case "SET_BACKGROUND":
       return { ...state, background: action.background };
     case "SET_PHOTO":
-      return { ...state, photo: { ...state.photo, url: action.url } };
+      return {
+        ...state,
+        photo: {
+          url: action.url,
+          originalUrl: action.url,
+          sharpenedUrl: null,
+          crop: null,
+          filter: "none",
+          filterId: "original",
+          adjustments: null,
+          backgroundRemoved: false,
+          backgroundBlurred: false,
+        },
+      };
     case "SET_PHOTO_CROP":
       return { ...state, photo: { ...state.photo, crop: action.crop } };
+    case "SET_PHOTO_FILTER":
+      return { ...state, photo: { ...state.photo, filter: action.filter, filterId: action.filterId } };
+    case "SET_PHOTO_ADJUSTMENTS":
+      return { ...state, photo: { ...state.photo, adjustments: action.adjustments } };
+    case "SET_PHOTO_PROCESSED":
+      return { ...state, photo: { ...state.photo, url: action.url, backgroundRemoved: action.backgroundRemoved, backgroundBlurred: action.backgroundBlurred } };
+    case "SET_PHOTO_SHARPENED":
+      return { ...state, photo: { ...state.photo, sharpenedUrl: action.sharpenedUrl } };
+    case "RESTORE_ORIGINAL_PHOTO":
+      return { ...state, photo: { ...state.photo, url: state.photo.originalUrl, sharpenedUrl: null, backgroundRemoved: false, backgroundBlurred: false } };
+    case "REMOVE_PHOTO":
+      return {
+        ...state,
+        photo: {
+          url: null,
+          originalUrl: null,
+          sharpenedUrl: null,
+          crop: null,
+          filter: "none",
+          filterId: "original",
+          adjustments: null,
+          backgroundRemoved: false,
+          backgroundBlurred: false,
+        },
+      };
     case "SET_TEXT_STRING":
       return { ...state, textContent: { ...state.textContent, [action.field]: action.value } };
     case "SET_TEXT_NUMBER":
@@ -261,7 +322,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 7;
+const DRAFT_VERSION = 8;
 
 interface DraftEnvelope {
   version: number;

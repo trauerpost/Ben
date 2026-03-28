@@ -11,7 +11,7 @@ const OUT_DIR = "C:/Users/fires/OneDrive/Git/BENJEMIN/public/test-pdfs";
 const TEMPLATES: Record<string, WizardState> = {
   TI04: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI04",
-    photo: { url: null, crop: null },
+    photo: { url: null, originalUrl: null, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -31,7 +31,7 @@ const TEMPLATES: Record<string, WizardState> = {
   },
   TI05: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI05",
-    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", crop: null },
+    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -49,7 +49,7 @@ const TEMPLATES: Record<string, WizardState> = {
   },
   TI06: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI06",
-    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", crop: null },
+    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -65,7 +65,7 @@ const TEMPLATES: Record<string, WizardState> = {
   },
   TI07: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI07",
-    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", crop: null },
+    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -83,7 +83,7 @@ const TEMPLATES: Record<string, WizardState> = {
   },
   TI08: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI08",
-    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", crop: null },
+    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -100,7 +100,7 @@ const TEMPLATES: Record<string, WizardState> = {
   },
   TI09: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI09",
-    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80", crop: null },
+    photo: { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80", originalUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80", sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,

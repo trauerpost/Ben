@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import CardRenderer, { getPanelsForTemplate } from "../CardRenderer";
 import SpreadPreview from "../SpreadPreview";
+import CardMockup from "../CardMockup";
 import type { WizardState } from "@/lib/editor/wizard-state";
 import { getCardDimensions } from "@/lib/editor/wizard-state";
 
@@ -11,7 +12,7 @@ interface StepPreviewProps {
   state: WizardState;
 }
 
-type PreviewMode = "flat" | "flip" | "3d";
+type PreviewMode = "flat" | "flip" | "3d" | "mockup";
 
 const PANEL_LABELS: Record<string, string> = {
   front: "Front",
@@ -23,6 +24,7 @@ const PANEL_LABELS: Record<string, string> = {
 export default function StepPreview({ state }: StepPreviewProps) {
   const t = useTranslations("wizard.preview");
   const [mode, setMode] = useState<PreviewMode>("flat");
+  const [showMockup, setShowMockup] = useState(false);
   const [flipped, setFlipped] = useState(false);
   const [foldAngle, setFoldAngle] = useState(0);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -109,6 +111,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
     { key: "flat", label: "Overview", icon: "\u25A6" },
     { key: "flip", label: "Flip", icon: "\u21BB" },
     ...(isFolded ? [{ key: "3d" as PreviewMode, label: "3D", icon: "\u25C6" }] : []),
+    { key: "mockup", label: t("mockup"), icon: "\u25A3" },
   ];
 
   return (
@@ -123,12 +126,42 @@ export default function StepPreview({ state }: StepPreviewProps) {
       {/* v2 Spread preview — single page templates */}
       {isV2 && (
         <div className="flex flex-col items-center gap-6 mb-10">
-          <div ref={previewRef}>
-            <SpreadPreview state={state} />
+          {/* Toggle between Preview and Mockup */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowMockup(false)}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                !showMockup
+                  ? "bg-brand-primary text-white"
+                  : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
+              }`}
+            >
+              {t("title")}
+            </button>
+            <button
+              onClick={() => setShowMockup(true)}
+              className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                showMockup
+                  ? "bg-brand-primary text-white"
+                  : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
+              }`}
+            >
+              {t("mockup")}
+            </button>
           </div>
-          <p className="text-xs text-brand-gray">
-            Live preview — the PDF will have higher quality fonts and images.
-          </p>
+
+          {showMockup ? (
+            <CardMockup state={state} style="table" />
+          ) : (
+            <>
+              <div ref={previewRef}>
+                <SpreadPreview state={state} />
+              </div>
+              <p className="text-xs text-brand-gray">
+                Live preview — the PDF will have higher quality fonts and images.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -326,6 +359,13 @@ export default function StepPreview({ state }: StepPreviewProps) {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Mockup mode (v1 only) */}
+      {!isV2 && mode === "mockup" && (
+        <div className="flex flex-col items-center">
+          <CardMockup state={state} style="table" />
         </div>
       )}
 

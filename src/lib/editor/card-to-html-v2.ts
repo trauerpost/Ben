@@ -105,7 +105,11 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
 
   const border = el.imageBorder && el.imageBorder !== "none" ? `border:${el.imageBorder};` : "";
 
-  return `<div style="${pos}${imgStyle}${clipStyle}${border}"></div>`;
+  const photoFilter = state.photo?.filter && state.photo.filter !== "none"
+    ? `filter:${state.photo.filter};`
+    : "";
+
+  return `<div style="${pos}${imgStyle}${clipStyle}${border}${photoFilter}"></div>`;
 }
 
 function renderLineElement(el: TemplateElement, pos: string): string {
@@ -159,11 +163,12 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
 
   // Pre-fetch images
   const images: Record<string, string> = {};
-  if (state.photo.url) {
-    images["photo"] = await imageToBase64(state.photo.url);
+  const photoSrc = state.photo.sharpenedUrl ?? state.photo.url;
+  if (photoSrc) {
+    images["photo"] = await imageToBase64(photoSrc);
   }
-  if (state.photo?.url && !images["photo"]) {
-    console.warn("[card-html] Photo URL provided but conversion failed:", state.photo.url);
+  if (photoSrc && !images["photo"]) {
+    console.warn("[card-html] Photo URL provided but conversion failed:", photoSrc);
   }
   // Fetch ornament assets
   for (const el of config.elements) {

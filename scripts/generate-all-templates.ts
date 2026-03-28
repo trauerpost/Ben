@@ -14,7 +14,7 @@ const OUT_DIR = "C:/Users/fires/OneDrive/Git/BENJEMIN/public/test-pdfs";
 const TEMPLATES: Record<string, WizardState> = {
   T1: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T1",
-    photo: { url: null, crop: null },
+    photo: { url: null, originalUrl: null, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -39,7 +39,7 @@ const TEMPLATES: Record<string, WizardState> = {
 
   T2: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T2",
-    photo: { url: PHOTO_MAN, crop: null },
+    photo: { url: PHOTO_MAN, originalUrl: PHOTO_MAN, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -56,7 +56,7 @@ const TEMPLATES: Record<string, WizardState> = {
 
   T3: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T3",
-    photo: { url: PHOTO_WOMAN, crop: null },
+    photo: { url: PHOTO_WOMAN, originalUrl: PHOTO_WOMAN, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -75,7 +75,7 @@ const TEMPLATES: Record<string, WizardState> = {
 
   T4: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T4",
-    photo: { url: PHOTO_MAN, crop: null },
+    photo: { url: PHOTO_MAN, originalUrl: PHOTO_MAN, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -96,7 +96,7 @@ const TEMPLATES: Record<string, WizardState> = {
 
   T5: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T5",
-    photo: { url: PHOTO_WOMAN, crop: null },
+    photo: { url: PHOTO_WOMAN, originalUrl: PHOTO_WOMAN, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,
@@ -115,7 +115,7 @@ const TEMPLATES: Record<string, WizardState> = {
 
   T6: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "T6",
-    photo: { url: PHOTO_WOMAN, crop: null },
+    photo: { url: PHOTO_WOMAN, originalUrl: PHOTO_WOMAN, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
     background: { type: "color", color: "#FFFFFF", imageUrl: null },
     textContent: {
       ...DEFAULT_TEXT_CONTENT,

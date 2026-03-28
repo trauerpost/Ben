@@ -242,13 +242,48 @@
       "empty": "No decorations available in this category.",
       "comingSoon": "More decorations coming soon."
     },
+    "photo": {
+      "enhance": "Enhance Photo",
+      "presets": "Filters",
+      "adjustments": "Adjustments",
+      "brightness": "Brightness",
+      "contrast": "Contrast",
+      "saturation": "Saturation",
+      "sharpness": "Sharpness",
+      "resetFilter": "Reset",
+      "removeBackground": "Remove Background",
+      "blurBackground": "Blur Background",
+      "restoreOriginal": "Restore Original",
+      "processing": "Processing...",
+      "downloadingModel": "Downloading AI model...",
+      "showPreview": "Show Preview",
+      "hidePreview": "Hide Preview",
+      "filters": {
+        "original": "Original",
+        "bright": "Bright",
+        "warm": "Warm",
+        "cool": "Cool",
+        "bw": "Black & White",
+        "sepia": "Sepia",
+        "vivid": "Vivid",
+        "soft": "Soft",
+        "classic": "Classic",
+        "portrait": "Portrait"
+      }
+    },
     "preview": {
       "title": "Preview Your Card",
       "subtitle": "Review your card before ordering.",
       "noTemplate": "Please select a template first.",
       "downloadPdf": "Download PDF",
       "downloading": "Generating PDF...",
-      "downloadError": "PDF generation failed. Please try again."
+      "downloadError": "PDF generation failed. Please try again.",
+      "mockup": "Mockup",
+      "downloadLocal": "Download PDF (Local)",
+      "downloadServer": "Generate PDF (High Quality)",
+      "generating": "Generating PDF...",
+      "error": "PDF generation failed",
+      "tryLocal": "Try local download instead"
     },
     "order": {
       "title": "Place Your Order",
@@ -267,7 +302,9 @@
       "contactTitle": "Contact Details",
       "processing": "Processing...",
       "placeOrder": "Place Order",
-      "emailNote": "You will receive a PDF preview and invoice by email."
+      "emailNote": "You will receive a PDF preview and invoice by email.",
+      "successTitle": "Order Placed!",
+      "successMessage": "Your memorial card has been successfully ordered."
     }
   },
   "admin": {

@@ -130,7 +130,7 @@ test.describe("Wizard Negative Tests", () => {
           cardType: "sterbebild",
           cardFormat: "single",
           templateId: "TI05",
-          photo: { url: null, crop: null },
+          photo: { url: null, originalUrl: null, sharpenedUrl: null, crop: null, filter: "none", filterId: "original", adjustments: null, backgroundRemoved: false, backgroundBlurred: false },
           background: { type: "color", color: "#fff", imageUrl: null },
           textContent: { name: "Old Draft" },
           decorations: { ornaments: [] },

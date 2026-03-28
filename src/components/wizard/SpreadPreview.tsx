@@ -103,7 +103,8 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
   }
 
   if (el.type === "image") {
-    if (!state.photo.url) {
+    const photoSrc = state.photo.sharpenedUrl ?? state.photo.url;
+    if (!photoSrc) {
       return (
         <div
           style={{
@@ -145,10 +146,11 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
           style={{
             ...style,
             ...clipStyle,
-            backgroundImage: `url('${state.photo.url}')`,
+            backgroundImage: `url('${photoSrc}')`,
             backgroundSize: `${sizeX}% ${sizeY}%`,
             backgroundPosition: `${posX}% ${posY}%`,
             backgroundRepeat: "no-repeat",
+            filter: state.photo.filter !== "none" ? state.photo.filter : undefined,
           }}
         />
       );
@@ -159,10 +161,11 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
         style={{
           ...style,
           ...clipStyle,
-          backgroundImage: `url('${state.photo.url}')`,
+          backgroundImage: `url('${photoSrc}')`,
           backgroundSize: "cover",
           backgroundPosition: "center top",
           backgroundRepeat: "no-repeat",
+          filter: state.photo.filter !== "none" ? state.photo.filter : undefined,
         }}
       />
     );

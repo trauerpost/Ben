@@ -5,6 +5,8 @@ import AvatarEditor from "react-avatar-editor";
 import type { AvatarEditorRef } from "react-avatar-editor";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
+import ImageEnhancer from "../ImageEnhancer";
+import BackgroundRemover from "../BackgroundRemover";
 
 interface StepPhotoProps {
   state: WizardState;
@@ -70,8 +72,7 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
   }
 
   function handleRemove() {
-    dispatch({ type: "SET_PHOTO", url: "" });
-    dispatch({ type: "SET_PHOTO_CROP", crop: null });
+    dispatch({ type: "REMOVE_PHOTO" });
     setZoom(1.2);
   }
 
@@ -188,6 +189,29 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
                 Remove
               </button>
             </div>
+
+            {/* Image Enhancement */}
+            <ImageEnhancer
+              photoUrl={state.photo.url}
+              currentFilter={state.photo.filter}
+              currentFilterId={state.photo.filterId}
+              adjustments={state.photo.adjustments}
+              onFilterChange={(filter, id) => dispatch({ type: "SET_PHOTO_FILTER", filter, filterId: id })}
+              onAdjustmentsChange={(adj) => dispatch({ type: "SET_PHOTO_ADJUSTMENTS", adjustments: adj })}
+            />
+
+            {/* Background Removal */}
+            <BackgroundRemover
+              photoUrl={state.photo.url}
+              onResult={(url, mode) => dispatch({
+                type: "SET_PHOTO_PROCESSED",
+                url,
+                backgroundRemoved: mode === "removed",
+                backgroundBlurred: mode === "blurred",
+              })}
+              onRestore={() => dispatch({ type: "RESTORE_ORIGINAL_PHOTO" })}
+              isProcessed={state.photo.backgroundRemoved || state.photo.backgroundBlurred}
+            />
           </>
         ) : (
           /* Upload area */

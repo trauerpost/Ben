@@ -6,7 +6,6 @@ import {
   WIZARD_FONTS,
   FONT_COLORS,
   DIVIDER_SYMBOLS,
-  getCardDimensions,
   DEFAULT_TEXT_CONTENT,
 } from "@/lib/editor/wizard-state";
 import { TEXT_TEMPLATES } from "@/lib/editor/text-templates";
@@ -178,8 +177,7 @@ export default function StepText({ state, dispatch }: StepTextProps) {
         {t("subtitle")}
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* Controls */}
+      <div>
         <div className="space-y-6">
           {/* Text template selector (v1 only) */}
           {!isV2 && templates.length > 0 && (
@@ -288,78 +286,6 @@ export default function StepText({ state, dispatch }: StepTextProps) {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Live preview */}
-        <div className="flex items-start justify-center">
-          <div
-            className="w-full max-w-sm rounded-xl border border-brand-border bg-white shadow-lg p-8 flex flex-col items-center justify-center gap-2"
-            style={{
-              aspectRatio: (() => {
-                const dims = getCardDimensions(state);
-                return dims ? `${dims.widthMm}/${dims.heightMm}` : "3/4";
-              })(),
-              fontFamily: tc.fontFamily,
-              color: tc.fontColor,
-              textAlign: tc.textAlign,
-            }}
-          >
-            {tc.heading && (
-              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.headingFontSize}pt` }}>
-                {tc.heading}
-              </p>
-            )}
-            {tc.relationshipLabels && (
-              <p className="w-full leading-relaxed text-sm">{tc.relationshipLabels}</p>
-            )}
-            {tc.name ? (
-              <p className="w-full font-semibold leading-tight" style={{ fontSize: `${tc.nameFontSize}pt` }}>
-                {tc.name}
-              </p>
-            ) : (
-              <p className="w-full text-brand-gray italic" style={{ fontSize: `${tc.nameFontSize}pt` }}>
-                {t("namePlaceholder")}
-              </p>
-            )}
-            {tc.birthDate && (
-              <p className="w-full leading-relaxed text-sm">{tc.birthDate}</p>
-            )}
-            {tc.locationBirth && (
-              <p className="w-full leading-relaxed text-xs text-brand-gray">{tc.locationBirth}</p>
-            )}
-            {tc.deathDate && (
-              <p className="w-full leading-relaxed text-sm">{tc.deathDate}</p>
-            )}
-            {tc.locationDeath && (
-              <p className="w-full leading-relaxed text-xs text-brand-gray">{tc.locationDeath}</p>
-            )}
-            {tc.dates && (
-              <p className="w-full leading-relaxed" style={{ fontSize: `${tc.datesFontSize}pt` }}>
-                {tc.dates}
-              </p>
-            )}
-            {tc.dividerSymbol && (
-              <p className="w-full leading-relaxed text-brand-gray" style={{ fontSize: `${tc.datesFontSize}pt` }}>
-                {tc.dividerSymbol}
-              </p>
-            )}
-            {tc.quote && (
-              <p className="w-full whitespace-pre-wrap leading-relaxed italic" style={{ fontSize: `${tc.quoteFontSize}pt` }}>
-                {tc.quote}
-              </p>
-            )}
-            {tc.quoteAuthor && (
-              <p className="w-full text-xs text-brand-gray">{tc.quoteAuthor}</p>
-            )}
-            {tc.closingVerse && (
-              <p className="w-full text-sm italic">{tc.closingVerse}</p>
-            )}
-            {!tc.heading && !tc.name && !tc.dates && !tc.quote && !tc.birthDate && !tc.deathDate && (
-              <p className="text-brand-gray italic text-sm">
-                {t("previewEmpty")}
-              </p>
-            )}
           </div>
         </div>
       </div>

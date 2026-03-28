@@ -242,13 +242,48 @@
       "empty": "Keine Dekorationen in dieser Kategorie verfügbar.",
       "comingSoon": "Weitere Dekorationen folgen in Kürze."
     },
+    "photo": {
+      "enhance": "Foto verbessern",
+      "presets": "Filter",
+      "adjustments": "Anpassungen",
+      "brightness": "Helligkeit",
+      "contrast": "Kontrast",
+      "saturation": "Sättigung",
+      "sharpness": "Schärfe",
+      "resetFilter": "Zurücksetzen",
+      "removeBackground": "Hintergrund entfernen",
+      "blurBackground": "Hintergrund weichzeichnen",
+      "restoreOriginal": "Original wiederherstellen",
+      "processing": "Verarbeitung...",
+      "downloadingModel": "KI-Modell wird heruntergeladen...",
+      "showPreview": "Vorschau anzeigen",
+      "hidePreview": "Vorschau schließen",
+      "filters": {
+        "original": "Original",
+        "bright": "Aufgehellt",
+        "warm": "Warm",
+        "cool": "Kühl",
+        "bw": "Schwarz-Weiß",
+        "sepia": "Sepia",
+        "vivid": "Lebendig",
+        "soft": "Sanft",
+        "classic": "Klassisch",
+        "portrait": "Porträt"
+      }
+    },
     "preview": {
       "title": "Vorschau",
       "subtitle": "Prüfen Sie Ihre Karte vor der Bestellung.",
       "noTemplate": "Bitte wählen Sie zuerst eine Vorlage.",
       "downloadPdf": "PDF herunterladen",
       "downloading": "PDF wird erstellt...",
-      "downloadError": "PDF-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut."
+      "downloadError": "PDF-Erstellung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "mockup": "Mockup",
+      "downloadLocal": "PDF herunterladen (Lokal)",
+      "downloadServer": "PDF generieren (Hochqualität)",
+      "generating": "PDF wird generiert...",
+      "error": "PDF-Erstellung fehlgeschlagen",
+      "tryLocal": "Lokalen Download versuchen"
     },
     "order": {
       "title": "Bestellung aufgeben",
@@ -267,7 +302,9 @@
       "contactTitle": "Kontaktdaten",
       "processing": "Wird verarbeitet...",
       "placeOrder": "Bestellung aufgeben",
-      "emailNote": "Sie erhalten eine PDF-Vorschau und Rechnung per E-Mail."
+      "emailNote": "Sie erhalten eine PDF-Vorschau und Rechnung per E-Mail.",
+      "successTitle": "Bestellung aufgegeben!",
+      "successMessage": "Ihre Trauerkarte wurde erfolgreich bestellt."
     }
   },
   "admin": {
