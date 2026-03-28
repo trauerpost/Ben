@@ -1,6 +1,7 @@
 "use client";
 
-import { useReducer, useEffect, useCallback } from "react";
+import { useReducer, useEffect, useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 import StepIndicator from "./StepIndicator";
 import {
   wizardReducer,
@@ -9,11 +10,15 @@ import {
   saveDraft,
   loadDraft,
   TOTAL_STEPS,
+  WIZARD_FONTS,
 } from "@/lib/editor/wizard-state";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 
 import SplitLayout from "./SplitLayout";
+import { ActiveFieldProvider, useActiveField } from "./ActiveFieldContext";
+import TextFormatToolbar from "./TextFormatToolbar";
+import FontCarousel from "./FontCarousel";
 import StepCardType from "./steps/StepCardType";
 import StepTemplate from "./steps/StepTemplate";
 
@@ -24,7 +29,18 @@ import StepPreview from "./steps/StepPreview";
 import StepOrder from "./steps/StepOrder";
 
 export default function WizardShell() {
+  return (
+    <ActiveFieldProvider>
+      <WizardShellInner />
+    </ActiveFieldProvider>
+  );
+}
+
+function WizardShellInner() {
   const [state, dispatch] = useReducer(wizardReducer, initialWizardState);
+  const { activeField, setActiveField } = useActiveField();
+  const [validationAttempted, setValidationAttempted] = useState(false);
+  const t = useTranslations("wizard.text");
 
   // Load draft on mount
   useEffect(() => {
@@ -49,6 +65,9 @@ export default function WizardShell() {
   })();
 
   function handleNext() {
+    setValidationAttempted(true);
+    if (!canGoNext) return;
+    setValidationAttempted(false);
     if (shouldSkipPhoto && state.currentStep === 2) {
       dispatch({ type: "SET_STEP", step: 4 }); // skip photo → text
     } else {
@@ -57,6 +76,7 @@ export default function WizardShell() {
   }
 
   function handlePrev() {
+    setValidationAttempted(false);
     if (shouldSkipPhoto && state.currentStep === 4) {
       dispatch({ type: "SET_STEP", step: 2 }); // skip photo ← text
     } else {
@@ -71,7 +91,14 @@ export default function WizardShell() {
           case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
           case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
           case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
-          case 4: return <StepText state={stepState} dispatch={stepDispatch} />;
+          case 4: return (
+            <StepText
+              state={stepState}
+              dispatch={stepDispatch}
+              onFieldFocus={setActiveField}
+              validationAttempted={validationAttempted}
+            />
+          );
           case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
           case 6: return <StepPreview state={stepState} />;
           case 7: return <StepOrder state={stepState} dispatch={stepDispatch} />;
@@ -81,12 +108,22 @@ export default function WizardShell() {
 
       // Steps 3-5 get split layout with live preview
       if (stepState.currentStep >= 3 && stepState.currentStep <= 5) {
-        return <SplitLayout state={stepState}>{stepContent}</SplitLayout>;
+        const toolbar = stepState.currentStep === 4 ? (
+          <>
+            <TextFormatToolbar state={stepState} dispatch={stepDispatch} activeField={activeField} />
+            <FontCarousel
+              fonts={WIZARD_FONTS}
+              selected={stepState.textContent.fontFamily}
+              onSelect={(f) => stepDispatch({ type: "SET_TEXT_STRING", field: "fontFamily", value: f })}
+            />
+          </>
+        ) : undefined;
+        return <SplitLayout state={stepState} toolbar={toolbar}>{stepContent}</SplitLayout>;
       }
 
       return stepContent;
     },
-    []
+    [activeField, setActiveField, validationAttempted]
   );
 
   return (
@@ -97,7 +134,7 @@ export default function WizardShell() {
       </div>
 
       {/* Step content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto pb-20">
         {renderStep(state, dispatch)}
       </div>
 
@@ -113,17 +150,31 @@ export default function WizardShell() {
           </button>
 
           <span className="text-sm text-brand-gray">
-            Step {state.currentStep} of {TOTAL_STEPS}
+            <span className="hidden md:inline">Step </span>
+            {state.currentStep}
+            <span className="hidden md:inline"> of </span>
+            <span className="md:hidden">/</span>
+            {TOTAL_STEPS}
           </span>
 
           {state.currentStep < TOTAL_STEPS ? (
-            <button
-              onClick={handleNext}
-              disabled={!canGoNext}
-              className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed bg-brand-primary text-white hover:bg-brand-primary-hover"
-            >
-              Next &rarr;
-            </button>
+            <div className="flex items-center gap-2">
+              {!canGoNext && validationAttempted && (
+                <span className="text-xs text-red-400 hidden md:inline">
+                  {state.currentStep === 1 && t("validation.selectType")}
+                  {state.currentStep === 2 && t("validation.selectTemplate")}
+                  {state.currentStep === 4 && t("validation.enterName")}
+                </span>
+              )}
+              <button
+                onClick={handleNext}
+                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors bg-brand-primary text-white hover:bg-brand-primary-hover ${
+                  !canGoNext ? "opacity-30 cursor-not-allowed" : ""
+                }`}
+              >
+                Next &rarr;
+              </button>
+            </div>
           ) : (
             <button
               className="px-6 py-2.5 rounded-lg text-sm font-medium bg-brand-primary text-white hover:bg-brand-primary-hover transition-colors"

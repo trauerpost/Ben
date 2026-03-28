@@ -127,14 +127,14 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
 
   if (!state.cardType || !state.cardFormat) {
     return (
-      <div className="max-w-3xl mx-auto px-6 py-12 text-center">
+      <div className="max-w-3xl mx-auto px-6 py-8 text-center">
         <p className="text-brand-gray">{t("noCardType")}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
+    <div className="max-w-4xl mx-auto px-6 py-8">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
         {t("title")}
       </h2>
@@ -145,7 +145,7 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
       {items.length === 0 ? (
         <p className="text-center text-brand-gray">{t("empty")}</p>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {items.map((item) => {
             const isSelected = state.templateId === item.id;
             return (

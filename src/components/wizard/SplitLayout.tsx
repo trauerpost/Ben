@@ -8,6 +8,7 @@ import CardRenderer from "./CardRenderer";
 interface SplitLayoutProps {
   children: React.ReactNode;
   state: WizardState;
+  toolbar?: React.ReactNode;
 }
 
 function PreviewPanel({ state }: { state: WizardState }) {
@@ -29,13 +30,14 @@ function PreviewPanel({ state }: { state: WizardState }) {
   return <CardRenderer templateId={templateId} panelId="front" state={state} />;
 }
 
-export default function SplitLayout({ children, state }: SplitLayoutProps) {
+export default function SplitLayout({ children, state, toolbar }: SplitLayoutProps) {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 w-full">
       {/* Form column */}
       <div className="w-full lg:w-[55%] md:w-[60%]">
+        {toolbar}
         {children}
       </div>
 
@@ -50,7 +52,7 @@ export default function SplitLayout({ children, state }: SplitLayoutProps) {
       <button
         type="button"
         onClick={() => setShowMobilePreview(true)}
-        className="md:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-20 bg-brand-primary text-white px-6 py-3 rounded-full shadow-lg hover:bg-brand-primary/90 transition-colors text-sm font-medium"
+        className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-15 bg-brand-primary text-white px-6 py-3 rounded-full shadow-lg hover:bg-brand-primary/90 transition-colors text-sm font-medium"
       >
         Preview
       </button>

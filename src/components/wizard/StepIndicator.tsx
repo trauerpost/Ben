@@ -42,8 +42,10 @@ export default function StepIndicator({ currentStep }: StepIndicatorProps) {
                 {isCompleted ? "✓" : step}
               </div>
               <span
-                className={`hidden md:block text-xs ${
-                  isActive ? "text-brand-primary font-medium" : "text-brand-gray"
+                className={`text-xs ${
+                  isActive
+                    ? "block text-brand-primary font-medium"
+                    : "hidden md:block text-brand-gray"
                 }`}
               >
                 {t(stepKeys[i])}

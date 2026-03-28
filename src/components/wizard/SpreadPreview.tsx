@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useActiveField } from "./ActiveFieldContext";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { TemplateElement } from "@/lib/editor/template-configs";
 import type { WizardState, TextContent } from "@/lib/editor/wizard-state";
@@ -45,7 +46,15 @@ function buildFontUrl(fonts: string[]): string {
   return `https://fonts.googleapis.com/css2?${families}&display=swap`;
 }
 
-function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState }) {
+function ElementPreview({ el, state, activeField, changedField }: {
+  el: TemplateElement;
+  state: WizardState;
+  activeField: string | null;
+  changedField: string | null;
+}) {
+  const isActive = el.field !== undefined && activeField === el.field;
+  const isChanged = el.field !== undefined && changedField === el.field;
+
   const style: React.CSSProperties = {
     position: "absolute",
     left: `${(el.x / 1000) * 100}%`,
@@ -54,6 +63,16 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
     height: `${(el.h / 1000) * 100}%`,
     boxSizing: "border-box",
     overflow: "hidden",
+    ...(isActive ? {
+      outline: "2px solid var(--color-brand-primary, #6B8E23)",
+      outlineOffset: "1px",
+      borderRadius: "4px",
+      opacity: 1,
+    } : {}),
+    ...(isChanged ? {
+      backgroundColor: "rgba(107, 142, 35, 0.05)",
+      transition: "background-color 0.3s",
+    } : {}),
   };
 
   if (el.type === "text") {
@@ -210,6 +229,23 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
 }
 
 export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) {
+  const { activeField } = useActiveField();
+  const [changedField, setChangedField] = useState<string | null>(null);
+  const prevText = useRef(state.textContent);
+
+  // Pulse animation on text change
+  useEffect(() => {
+    if (!activeField) return;
+    const curr = state.textContent[activeField as keyof typeof state.textContent];
+    const prev = prevText.current[activeField as keyof typeof prevText.current];
+    if (curr !== prev) {
+      setChangedField(activeField);
+      const timer = setTimeout(() => setChangedField(null), 300);
+      prevText.current = { ...state.textContent };
+      return () => clearTimeout(timer);
+    }
+  }, [state.textContent, activeField]);
+
   const config = useMemo(
     () => (state.templateId ? getTemplateConfig(state.templateId) : null),
     [state.templateId]
@@ -256,7 +292,7 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
         }}
       >
         {config.elements.map((el) => (
-          <ElementPreview key={el.id} el={el} state={state} />
+          <ElementPreview key={el.id} el={el} state={state} activeField={activeField} changedField={changedField} />
         ))}
 
         {/* Render user decoration (from Step 6) if present */}

@@ -204,7 +204,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
 
   // Order form
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
+    <div className="max-w-2xl mx-auto px-6 py-8">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
         {t("title")}
       </h2>

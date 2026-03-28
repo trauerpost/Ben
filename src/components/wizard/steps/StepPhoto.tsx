@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useMemo, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import AvatarEditor from "react-avatar-editor";
 import type { AvatarEditorRef } from "react-avatar-editor";
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
@@ -29,26 +30,48 @@ function getPhotoSlotAspect(state: WizardState): number {
   return physicalW / physicalH;
 }
 
-/** Max canvas display size that fits in the container */
+/** Max canvas display size */
 const MAX_CANVAS_W = 360;
 const MAX_CANVAS_H = 400;
 
 export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
+  const t = useTranslations("wizard.photo");
   const editorRef = useRef<AvatarEditorRef | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1.2);
   const [isDragging, setIsDragging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(MAX_CANVAS_W);
+
+  // Auto-dismiss error after 5s
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Measure container for responsive canvas
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setContainerWidth(Math.min(MAX_CANVAS_W, entry.contentRect.width - 60));
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Calculate canvas dimensions from template photo slot aspect ratio
   const { canvasW, canvasH } = useMemo(() => {
     const aspect = getPhotoSlotAspect(state);
-    let w = MAX_CANVAS_W;
+    let w = Math.min(containerWidth, MAX_CANVAS_W);
     let h = w / aspect;
     if (h > MAX_CANVAS_H) {
       h = MAX_CANVAS_H;
       w = h * aspect;
     }
     return { canvasW: Math.round(w), canvasH: Math.round(h) };
-  }, [state]);
+  }, [state, containerWidth]);
 
   const syncCrop = useCallback(() => {
     if (!editorRef.current) return;
@@ -62,7 +85,7 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert("File too large. Maximum 10MB.");
+      setError(t("fileTooLarge"));
       return;
     }
     const url = URL.createObjectURL(file);
@@ -87,7 +110,7 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
   const borderRadius = photoClip === "ellipse" ? canvasW / 2 : 0;
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
+    <div className="max-w-3xl mx-auto px-6 py-8">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
         Photo
       </h2>
@@ -96,11 +119,19 @@ export default function StepPhoto({ state, dispatch }: StepPhotoProps) {
         slider to zoom.
       </p>
 
+      {error && (
+        <div className="max-w-md mx-auto mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 flex items-center gap-2">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">&times;</button>
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-6">
         {state.photo.url ? (
           <>
             {/* Crop Editor */}
             <div
+              ref={containerRef}
               className="relative rounded-xl overflow-hidden shadow-lg border border-brand-border bg-gray-100"
               style={{ cursor: isDragging ? "grabbing" : "grab" }}
             >

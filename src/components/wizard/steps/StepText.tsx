@@ -3,8 +3,6 @@
 import { useState, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
-  WIZARD_FONTS,
-  FONT_COLORS,
   DIVIDER_SYMBOLS,
   DEFAULT_TEXT_CONTENT,
 } from "@/lib/editor/wizard-state";
@@ -15,6 +13,8 @@ import type { WizardState, WizardAction, TextContent } from "@/lib/editor/wizard
 interface StepTextProps {
   state: WizardState;
   dispatch: React.Dispatch<WizardAction>;
+  onFieldFocus?: (field: string | null) => void;
+  validationAttempted?: boolean;
 }
 
 // String fields in TextContent that can be edited
@@ -49,9 +49,34 @@ const FIELD_META: Record<string, {
   closingVerse:       { label: "Closing Verse",     placeholder: "Wir vermissen dich.", type: "text" },
 };
 
-export default function StepText({ state, dispatch }: StepTextProps) {
+// Section groupings for collapsible accordion
+const SECTIONS = [
+  {
+    id: "personal",
+    labelKey: "sections.personal",
+    fields: ["heading", "relationshipLabels", "name"],
+  },
+  {
+    id: "dates",
+    labelKey: "sections.dates",
+    fields: ["birthDate", "locationBirth", "deathDate", "locationDeath", "dates"],
+  },
+  {
+    id: "text",
+    labelKey: "sections.text",
+    fields: ["quote", "quoteAuthor", "closingVerse"],
+  },
+  {
+    id: "divider",
+    labelKey: "sections.divider",
+    fields: ["dividerSymbol"],
+  },
+];
+
+export default function StepText({ state, dispatch, onFieldFocus, validationAttempted }: StepTextProps) {
   const t = useTranslations("wizard.text");
   const [showConfirm, setShowConfirm] = useState<Partial<TextContent> | null>(null);
+  const [openSections, setOpenSections] = useState<Set<string>>(() => new Set(["personal"]));
 
   const tc = state.textContent;
   const templates = state.cardType ? TEXT_TEMPLATES[state.cardType] : [];
@@ -62,11 +87,41 @@ export default function StepText({ state, dispatch }: StepTextProps) {
 
   const visibleFields = useMemo(() => {
     if (!isV2 || !templateConfig) {
-      // v1 templates: show legacy fields
       return ["heading", "name", "dates", "dividerSymbol", "quote"];
     }
     return templateConfig.requiredFields;
   }, [isV2, templateConfig]);
+
+  // Filter sections to only those with visible fields
+  const activeSections = useMemo(() => {
+    return SECTIONS
+      .map(s => ({
+        ...s,
+        fields: s.fields.filter(f => visibleFields.includes(f)),
+      }))
+      .filter(s => s.fields.length > 0);
+  }, [visibleFields]);
+
+  function toggleSection(id: string) {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function handleFieldFocus(fieldName: string) {
+    onFieldFocus?.(fieldName);
+    // Auto-open the section containing this field
+    const section = activeSections.find(s => s.fields.includes(fieldName));
+    if (section && !openSections.has(section.id)) {
+      setOpenSections(prev => new Set(prev).add(section.id));
+    }
+  }
 
   function applyTextTemplate(partial: Partial<TextContent>) {
     if (tc.name.trim().length > 0 || tc.heading.trim().length > 0) {
@@ -94,13 +149,21 @@ export default function StepText({ state, dispatch }: StepTextProps) {
     dispatch({ type: "SET_TEXT_NUMBER", field, value });
   }
 
+  /** Check if a section has any non-empty values */
+  function sectionHasContent(section: typeof activeSections[number]): boolean {
+    return section.fields.some(f => {
+      const val = tc[f as keyof TextContent];
+      return typeof val === "string" && val.trim().length > 0;
+    });
+  }
+
   function renderField(fieldName: string) {
     // Special case: divider symbol picker
     if (fieldName === "dividerSymbol") {
       return (
         <div key="dividerSymbol">
           <label className="block text-sm font-medium text-brand-dark mb-2">
-            {FIELD_META.dividerSymbol.label}
+            {t("divider")}
           </label>
           <div className="flex flex-wrap gap-2">
             {DIVIDER_SYMBOLS.map((sym) => (
@@ -125,29 +188,41 @@ export default function StepText({ state, dispatch }: StepTextProps) {
     if (!meta) return null;
 
     const value = tc[fieldName as keyof TextContent] as string;
+    const isInvalid = meta.required && validationAttempted && !value?.trim();
 
     return (
       <div key={fieldName}>
         <label className="block text-sm font-medium text-brand-dark mb-1">
-          {meta.label}
+          {t(`fields.${fieldName}` as Parameters<typeof t>[0])}
           {meta.required && <span className="text-red-500 ml-1">*</span>}
         </label>
         {meta.type === "textarea" ? (
           <textarea
             value={value ?? ""}
             onChange={(e) => setString(fieldName as StringField, e.target.value)}
+            onFocus={() => handleFieldFocus(fieldName)}
+            onBlur={() => onFieldFocus?.(null)}
             rows={4}
             placeholder={meta.placeholder}
-            className="w-full px-4 py-3 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none"
+            className={`w-full px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary resize-none ${
+              isInvalid ? "border-red-400 focus:ring-red-200" : "border-brand-border"
+            }`}
           />
         ) : (
           <input
             type="text"
             value={value ?? ""}
             onChange={(e) => setString(fieldName as StringField, e.target.value)}
+            onFocus={() => handleFieldFocus(fieldName)}
+            onBlur={() => onFieldFocus?.(null)}
             placeholder={meta.placeholder}
-            className="w-full px-4 py-2.5 rounded-lg border border-brand-border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary"
+            className={`w-full px-4 py-2.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary ${
+              isInvalid ? "border-red-400 focus:ring-red-200" : "border-brand-border"
+            }`}
           />
+        )}
+        {isInvalid && (
+          <p className="text-xs text-red-500 mt-1">{t("fields.nameRequired")}</p>
         )}
         {meta.sizeField && (
           <div className="flex items-center gap-2 mt-1">
@@ -169,7 +244,7 @@ export default function StepText({ state, dispatch }: StepTextProps) {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
+    <div className="max-w-5xl mx-auto px-6 py-8">
       <h2 className="text-3xl font-light text-brand-dark text-center mb-3">
         {t("title")}
       </h2>
@@ -177,117 +252,78 @@ export default function StepText({ state, dispatch }: StepTextProps) {
         {t("subtitle")}
       </p>
 
-      <div>
-        <div className="space-y-6">
-          {/* Text template selector (v1 only) */}
-          {!isV2 && templates.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-brand-dark mb-2">
-                {t("templateTitle")}
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {templates.map((tpl) => (
+      <div className="space-y-2">
+        {/* Text template selector (v1 only) */}
+        {!isV2 && templates.length > 0 && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-brand-dark mb-2">
+              {t("templateTitle")}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {templates.map((tpl) => (
+                <button
+                  key={tpl.label}
+                  onClick={() => applyTextTemplate(tpl.textContent)}
+                  className="px-3 py-1.5 rounded-lg text-sm border border-brand-border bg-white hover:bg-brand-light-gray transition-colors text-brand-dark"
+                >
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
+            {showConfirm && (
+              <div className="mt-2 p-3 rounded-lg border border-amber-300 bg-amber-50">
+                <p className="text-sm text-amber-800 mb-2">{t("templateConfirm")}</p>
+                <div className="flex gap-2">
                   <button
-                    key={tpl.label}
-                    onClick={() => applyTextTemplate(tpl.textContent)}
-                    className="px-3 py-1.5 rounded-lg text-sm border border-brand-border bg-white hover:bg-brand-light-gray transition-colors text-brand-dark"
+                    onClick={() => doApply(showConfirm)}
+                    className="px-3 py-1 rounded text-sm bg-brand-primary text-white"
                   >
-                    {tpl.label}
+                    OK
                   </button>
-                ))}
-              </div>
-              {showConfirm && (
-                <div className="mt-2 p-3 rounded-lg border border-amber-300 bg-amber-50">
-                  <p className="text-sm text-amber-800 mb-2">{t("templateConfirm")}</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => doApply(showConfirm)}
-                      className="px-3 py-1 rounded text-sm bg-brand-primary text-white"
-                    >
-                      OK
-                    </button>
-                    <button
-                      onClick={() => setShowConfirm(null)}
-                      className="px-3 py-1 rounded text-sm bg-brand-light-gray text-brand-gray"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setShowConfirm(null)}
+                    className="px-3 py-1 rounded text-sm bg-brand-light-gray text-brand-gray"
+                  >
+                    Cancel
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Dynamic fields */}
-          {visibleFields.map(renderField)}
-
-          {/* Shared: Font family */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {t("font")}
-            </label>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-              {WIZARD_FONTS.map((font) => (
-                <button
-                  key={font}
-                  onClick={() => setString("fontFamily", font)}
-                  className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                    tc.fontFamily === font
-                      ? "bg-brand-primary text-white"
-                      : "bg-brand-light-gray text-brand-dark hover:bg-brand-border"
-                  }`}
-                  style={{ fontFamily: font }}
-                >
-                  {font}
-                </button>
-              ))}
-            </div>
+              </div>
+            )}
           </div>
+        )}
 
-          {/* Shared: Font color */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {t("color")}
-            </label>
-            <div className="flex gap-2">
-              {FONT_COLORS.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => setString("fontColor", c.value)}
-                  title={c.name}
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${
-                    tc.fontColor === c.value
-                      ? "border-brand-primary scale-110 shadow"
-                      : "border-brand-border hover:border-brand-gray"
-                  }`}
-                  style={{ backgroundColor: c.value }}
-                />
-              ))}
+        {/* Collapsible accordion sections */}
+        {activeSections.map(section => {
+          const isOpen = openSections.has(section.id);
+          const hasContent = sectionHasContent(section);
+          return (
+            <div key={section.id} className="border border-brand-border rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleSection(section.id)}
+                className="w-full flex justify-between items-center px-4 py-3 text-sm font-medium text-brand-dark hover:bg-brand-light-gray transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  {t(section.labelKey as Parameters<typeof t>[0])}
+                  {!isOpen && hasContent && (
+                    <span className="w-2 h-2 rounded-full bg-brand-primary" />
+                  )}
+                </span>
+                <span className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
+                  &#9660;
+                </span>
+              </button>
+              <div
+                className={`transition-all duration-200 overflow-hidden ${
+                  isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
+                }`}
+              >
+                <div className="px-4 pb-4 space-y-4">
+                  {section.fields.map(renderField)}
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Shared: Alignment */}
-          <div>
-            <label className="block text-sm font-medium text-brand-dark mb-2">
-              {t("alignment")}
-            </label>
-            <div className="flex gap-1">
-              {(["left", "center", "right"] as const).map((align) => (
-                <button
-                  key={align}
-                  onClick={() => dispatch({ type: "SET_TEXT_ALIGN", align })}
-                  className={`px-4 py-2 rounded-lg text-sm transition-colors ${
-                    tc.textAlign === align
-                      ? "bg-brand-primary text-white"
-                      : "bg-brand-light-gray text-brand-gray hover:text-brand-dark"
-                  }`}
-                >
-                  {align === "left" ? "\u2190" : align === "center" ? "\u2194" : "\u2192"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );

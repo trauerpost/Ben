@@ -230,7 +230,33 @@
       "font": "Font",
       "color": "Color",
       "alignment": "Alignment",
-      "previewEmpty": "Your text will appear here..."
+      "previewEmpty": "Your text will appear here...",
+      "fields": {
+        "heading": "Heading",
+        "name": "Name",
+        "birthDate": "Birth Date",
+        "deathDate": "Death Date",
+        "locationBirth": "Birth Place",
+        "locationDeath": "Death Place",
+        "dates": "Dates",
+        "dividerSymbol": "Divider",
+        "quote": "Quote / Prayer",
+        "quoteAuthor": "Quote Author",
+        "closingVerse": "Closing Verse",
+        "relationshipLabels": "Relationship",
+        "nameRequired": "Please enter a name."
+      },
+      "sections": {
+        "personal": "Personal Details",
+        "dates": "Life Dates",
+        "text": "Quote & Text",
+        "divider": "Divider"
+      },
+      "validation": {
+        "selectType": "Please select a card type.",
+        "selectTemplate": "Please select a template.",
+        "enterName": "Please enter a name."
+      }
     },
     "decorations": {
       "title": "Decorations",
@@ -256,6 +282,7 @@
       "restoreOriginal": "Restore Original",
       "processing": "Processing...",
       "downloadingModel": "Downloading AI model...",
+      "fileTooLarge": "File too large. Maximum 10 MB.",
       "showPreview": "Show Preview",
       "hidePreview": "Hide Preview",
       "filters": {

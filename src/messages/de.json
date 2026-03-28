@@ -230,7 +230,33 @@
       "font": "Schriftart",
       "color": "Farbe",
       "alignment": "Ausrichtung",
-      "previewEmpty": "Ihr Text wird hier angezeigt..."
+      "previewEmpty": "Ihr Text wird hier angezeigt...",
+      "fields": {
+        "heading": "Überschrift",
+        "name": "Name",
+        "birthDate": "Geburtsdatum",
+        "deathDate": "Sterbedatum",
+        "locationBirth": "Geburtsort",
+        "locationDeath": "Sterbeort",
+        "dates": "Lebensdaten",
+        "dividerSymbol": "Trennzeichen",
+        "quote": "Spruch / Gebet",
+        "quoteAuthor": "Autor",
+        "closingVerse": "Schlussvers",
+        "relationshipLabels": "Angehörige",
+        "nameRequired": "Bitte geben Sie einen Namen ein."
+      },
+      "sections": {
+        "personal": "Persönliche Angaben",
+        "dates": "Lebensdaten",
+        "text": "Spruch & Text",
+        "divider": "Trennzeichen"
+      },
+      "validation": {
+        "selectType": "Bitte wählen Sie einen Kartentyp.",
+        "selectTemplate": "Bitte wählen Sie eine Vorlage.",
+        "enterName": "Bitte geben Sie einen Namen ein."
+      }
     },
     "decorations": {
       "title": "Dekoration",
@@ -256,6 +282,7 @@
       "restoreOriginal": "Original wiederherstellen",
       "processing": "Verarbeitung...",
       "downloadingModel": "KI-Modell wird heruntergeladen...",
+      "fileTooLarge": "Datei zu groß. Maximal 10 MB.",
       "showPreview": "Vorschau anzeigen",
       "hidePreview": "Vorschau schließen",
       "filters": {
