@@ -52,7 +52,7 @@ export default function SplitLayout({ children, state, toolbar }: SplitLayoutPro
       <button
         type="button"
         onClick={() => setShowMobilePreview(true)}
-        className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-15 bg-brand-primary text-white px-6 py-3 rounded-full shadow-lg hover:bg-brand-primary/90 transition-colors text-sm font-medium"
+        className="md:hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-[15] bg-brand-primary text-white px-6 py-3 rounded-full shadow-lg hover:bg-brand-primary/90 transition-colors text-sm font-medium"
       >
         Preview
       </button>

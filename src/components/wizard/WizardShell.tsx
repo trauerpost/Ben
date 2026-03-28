@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducer, useEffect, useCallback, useState } from "react";
+import { useReducer, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import StepIndicator from "./StepIndicator";
 import {
@@ -84,47 +84,44 @@ function WizardShellInner() {
     }
   }
 
-  const renderStep = useCallback(
-    (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
-      const stepContent = (() => {
-        switch (stepState.currentStep) {
-          case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
-          case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
-          case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
-          case 4: return (
-            <StepText
-              state={stepState}
-              dispatch={stepDispatch}
-              onFieldFocus={setActiveField}
-              validationAttempted={validationAttempted}
-            />
-          );
-          case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
-          case 6: return <StepPreview state={stepState} />;
-          case 7: return <StepOrder state={stepState} dispatch={stepDispatch} />;
-          default: return null;
-        }
-      })();
-
-      // Steps 3-5 get split layout with live preview
-      if (stepState.currentStep >= 3 && stepState.currentStep <= 5) {
-        const toolbar = stepState.currentStep === 4 ? (
-          <>
-            <TextFormatToolbar state={stepState} dispatch={stepDispatch} activeField={activeField} />
-            <FontCarousel
-              fonts={WIZARD_FONTS}
-              selected={stepState.textContent.fontFamily}
-              onSelect={(f) => stepDispatch({ type: "SET_TEXT_STRING", field: "fontFamily", value: f })}
-            />
-          </>
-        ) : undefined;
-        return <SplitLayout state={stepState} toolbar={toolbar}>{stepContent}</SplitLayout>;
+  function renderStep(stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) {
+    const stepContent = (() => {
+      switch (stepState.currentStep) {
+        case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
+        case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
+        case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
+        case 4: return (
+          <StepText
+            state={stepState}
+            dispatch={stepDispatch}
+            onFieldFocus={setActiveField}
+            validationAttempted={validationAttempted}
+          />
+        );
+        case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
+        case 6: return <StepPreview state={stepState} />;
+        case 7: return <StepOrder state={stepState} dispatch={stepDispatch} />;
+        default: return null;
       }
+    })();
 
-      return stepContent;
-    },
-    [activeField, setActiveField, validationAttempted]
-  );
+    // Steps 3-5 get split layout with live preview
+    if (stepState.currentStep >= 3 && stepState.currentStep <= 5) {
+      const toolbar = stepState.currentStep === 4 ? (
+        <>
+          <TextFormatToolbar state={stepState} dispatch={stepDispatch} activeField={activeField} />
+          <FontCarousel
+            fonts={WIZARD_FONTS}
+            selected={stepState.textContent.fontFamily}
+            onSelect={(f) => stepDispatch({ type: "SET_TEXT_STRING", field: "fontFamily", value: f })}
+          />
+        </>
+      ) : undefined;
+      return <SplitLayout state={stepState} toolbar={toolbar}>{stepContent}</SplitLayout>;
+    }
+
+    return stepContent;
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]">
@@ -168,6 +165,7 @@ function WizardShellInner() {
               )}
               <button
                 onClick={handleNext}
+                aria-disabled={!canGoNext}
                 className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors bg-brand-primary text-white hover:bg-brand-primary-hover ${
                   !canGoNext ? "opacity-30 cursor-not-allowed" : ""
                 }`}

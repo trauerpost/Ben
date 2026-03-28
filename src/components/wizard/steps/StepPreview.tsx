@@ -151,10 +151,12 @@ export default function StepPreview({ state }: StepPreviewProps) {
           </div>
 
           {showMockup ? (
-            <CardMockup state={state} style="table" />
+            <div className="w-full max-w-2xl">
+              <CardMockup state={state} style="table" />
+            </div>
           ) : (
             <>
-              <div ref={previewRef}>
+              <div ref={previewRef} className="w-full max-w-xl">
                 <SpreadPreview state={state} />
               </div>
               <p className="text-xs text-brand-gray">

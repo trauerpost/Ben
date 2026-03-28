@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useActiveField } from "./ActiveFieldContext";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { TemplateElement } from "@/lib/editor/template-configs";
 import type { WizardState, TextContent } from "@/lib/editor/wizard-state";
-import { WIZARD_FONTS } from "@/lib/editor/wizard-state";
 
 interface SpreadPreviewProps {
   state: WizardState;
@@ -46,7 +45,7 @@ function buildFontUrl(fonts: string[]): string {
   return `https://fonts.googleapis.com/css2?${families}&display=swap`;
 }
 
-function ElementPreview({ el, state, activeField, changedField }: {
+const ElementPreview = React.memo(function ElementPreview({ el, state, activeField, changedField }: {
   el: TemplateElement;
   state: WizardState;
   activeField: string | null;
@@ -226,12 +225,12 @@ function ElementPreview({ el, state, activeField, changedField }: {
   }
 
   return null;
-}
+});
 
 export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) {
   const { activeField } = useActiveField();
   const [changedField, setChangedField] = useState<string | null>(null);
-  const prevText = useRef(state.textContent);
+  const prevText = useRef({ ...state.textContent });
 
   // Pulse animation on text change
   useEffect(() => {

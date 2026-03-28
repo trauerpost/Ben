@@ -28,25 +28,24 @@ type StringField = Extract<
 
 // Mapping from requiredFields names to their labels, placeholders, and input type
 const FIELD_META: Record<string, {
-  label: string;
   placeholder: string;
   type: "text" | "textarea";
   required?: boolean;
   sizeField?: "headingFontSize" | "nameFontSize" | "datesFontSize" | "quoteFontSize" | "locationFontSize" | "closingVerseFontSize" | "quoteAuthorFontSize";
   sizeRange?: [number, number];
 }> = {
-  heading:            { label: "Heading",           placeholder: "In liebevoller Erinnerung", type: "text", sizeField: "headingFontSize", sizeRange: [6, 24] },
-  relationshipLabels: { label: "Relationship",      placeholder: "Unsere liebe Mutter, Oma und Uroma", type: "text" },
-  name:               { label: "Name",              placeholder: "Maria Musterfrau", type: "text", required: true, sizeField: "nameFontSize", sizeRange: [10, 40] },
-  birthDate:          { label: "Birth Date",        placeholder: "* 24. Juli 1952", type: "text" },
-  deathDate:          { label: "Death Date",        placeholder: "† 28. September 2020", type: "text" },
-  locationBirth:      { label: "Birth Place",       placeholder: "in Starnberg", type: "text" },
-  locationDeath:      { label: "Death Place",       placeholder: "in Augsburg", type: "text" },
-  dates:              { label: "Dates",             placeholder: "* 24. Juli 1952 — † 28. September 2020", type: "text", sizeField: "datesFontSize", sizeRange: [8, 24] },
-  dividerSymbol:      { label: "Divider",           placeholder: "", type: "text" },
-  quote:              { label: "Quote",             placeholder: "Das schönste Denkmal, das ein Mensch\nbekommen kann, steht in den Herzen\nder Mitmenschen.", type: "textarea", sizeField: "quoteFontSize", sizeRange: [6, 24] },
-  quoteAuthor:        { label: "Quote Author",      placeholder: "(Albert Schweitzer)", type: "text" },
-  closingVerse:       { label: "Closing Verse",     placeholder: "Wir vermissen dich.", type: "text" },
+  heading:            { placeholder: "In liebevoller Erinnerung", type: "text", sizeField: "headingFontSize", sizeRange: [6, 24] },
+  relationshipLabels: { placeholder: "Unsere liebe Mutter, Oma und Uroma", type: "text" },
+  name:               { placeholder: "Maria Musterfrau", type: "text", required: true, sizeField: "nameFontSize", sizeRange: [10, 40] },
+  birthDate:          { placeholder: "* 24. Juli 1952", type: "text" },
+  deathDate:          { placeholder: "† 28. September 2020", type: "text" },
+  locationBirth:      { placeholder: "in Starnberg", type: "text" },
+  locationDeath:      { placeholder: "in Augsburg", type: "text" },
+  dates:              { placeholder: "* 24. Juli 1952 — † 28. September 2020", type: "text", sizeField: "datesFontSize", sizeRange: [8, 24] },
+  dividerSymbol:      { placeholder: "", type: "text" },
+  quote:              { placeholder: "Das schönste Denkmal, das ein Mensch\nbekommen kann, steht in den Herzen\nder Mitmenschen.", type: "textarea", sizeField: "quoteFontSize", sizeRange: [6, 24] },
+  quoteAuthor:        { placeholder: "(Albert Schweitzer)", type: "text" },
+  closingVerse:       { placeholder: "Wir vermissen dich.", type: "text" },
 };
 
 // Section groupings for collapsible accordion

@@ -82,15 +82,15 @@ export default function FontCarousel({ fonts, selected, onSelect }: FontCarousel
           <button
             key={font}
             onClick={() => handleSelect(font)}
-            className={`shrink-0 px-4 py-2 md:px-4 md:py-2 px-3 py-1.5 rounded-lg transition-all text-left ${
+            className={`shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-lg transition-all text-left ${
               selected === font
                 ? "ring-2 ring-brand-primary ring-offset-1 bg-brand-primary/5"
                 : "bg-brand-light-gray hover:bg-brand-border"
             }`}
             style={{ fontFamily: `'${font}', serif` }}
           >
-            <span className="block text-base md:text-base text-xs leading-tight">Aa</span>
-            <span className="block text-xs md:text-xs text-[10px] text-brand-gray whitespace-nowrap mt-0.5">
+            <span className="block text-xs md:text-base leading-tight">Aa</span>
+            <span className="block text-[10px] md:text-xs text-brand-gray whitespace-nowrap mt-0.5">
               {font}
             </span>
           </button>
@@ -101,7 +101,9 @@ export default function FontCarousel({ fonts, selected, onSelect }: FontCarousel
 
   return (
     <>
-      {/* Desktop: always visible */}
+      {/* Desktop + Mobile render the same carousel JSX in separate containers.
+          Duplicates DOM nodes but keeps responsive logic simple —
+          desktop is CSS-hidden on mobile and vice versa. */}
       <div className="hidden md:block border-b border-brand-border bg-white px-4 py-2">
         {carousel}
       </div>

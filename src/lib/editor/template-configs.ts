@@ -101,10 +101,10 @@ const TI05: TemplateConfig = {
     { id: "line-top", type: "line", x: 625, y: 225, w: 230, h: 1, lineStyle: "0.5px solid #999" },
     { id: "name", type: "text", x: 520, y: 260, w: 440, h: 95, field: "name", fontSize: 19, fontWeight: "bold", textAlign: "center" },
     { id: "birthDate", type: "text", x: 530, y: 385, w: 420, h: 26, field: "birthDate", fontSize: 8, textAlign: "center" },
-    { id: "deathDate", type: "text", x: 530, y: 415, w: 420, h: 26, field: "deathDate", fontSize: 8, textAlign: "center" },
-    { id: "line-mid", type: "line", x: 625, y: 488, w: 230, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "quote", type: "text", x: 530, y: 518, w: 420, h: 200, field: "quote", fontSize: 8, fontStyle: "italic", textAlign: "center" },
-    { id: "author", type: "text", x: 530, y: 748, w: 420, h: 30, field: "quoteAuthor", fontSize: 7, textAlign: "center" },
+    { id: "deathDate", type: "text", x: 530, y: 440, w: 420, h: 26, field: "deathDate", fontSize: 8, textAlign: "center" },
+    { id: "line-mid", type: "line", x: 625, y: 510, w: 230, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "quote", type: "text", x: 530, y: 540, w: 420, h: 200, field: "quote", fontSize: 8, fontStyle: "italic", textAlign: "center" },
+    { id: "author", type: "text", x: 530, y: 770, w: 420, h: 30, field: "quoteAuthor", fontSize: 7, textAlign: "center" },
   ],
 };
 
