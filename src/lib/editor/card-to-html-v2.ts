@@ -36,13 +36,35 @@ function posStyle(el: TemplateElement, gridW: number, gridH: number): string {
 
 // ── Element renderers ──
 
+/** Map element field name to the user's font size override from textContent */
+function getUserFontSize(tc: TextContent, field: string | undefined): number | null {
+  if (!field) return null;
+  const map: Record<string, keyof TextContent> = {
+    heading: "headingFontSize",
+    name: "nameFontSize",
+    dates: "datesFontSize",
+    birthDate: "datesFontSize",
+    deathDate: "datesFontSize",
+    quote: "quoteFontSize",
+    quoteAuthor: "quoteAuthorFontSize",
+    closingVerse: "closingVerseFontSize",
+    locationBirth: "locationFontSize",
+    locationDeath: "locationFontSize",
+  };
+  const sizeField = map[field];
+  if (!sizeField) return null;
+  const val = tc[sizeField];
+  return typeof val === "number" ? val : null;
+}
+
 function renderTextElement(el: TemplateElement, state: WizardState, pos: string): string {
   const value = el.field ? getFieldValue(state.textContent, el.field) : (el.fixedContent ?? "");
   if (!value) return "";
 
   const globalFont = state.textContent.fontFamily;
   const font = el.fontFamily ?? globalFont;
-  const size = el.fontSize ?? 9;
+  const userSize = getUserFontSize(state.textContent, el.field);
+  const size = userSize ?? el.fontSize ?? 9;
   const weight = el.fontWeight ?? "normal";
   const style = el.fontStyle ?? "normal";
   const variant = el.fontVariant ?? "normal";

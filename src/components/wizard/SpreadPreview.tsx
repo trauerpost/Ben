@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { TemplateElement } from "@/lib/editor/template-configs";
-import type { WizardState } from "@/lib/editor/wizard-state";
+import type { WizardState, TextContent } from "@/lib/editor/wizard-state";
+import { WIZARD_FONTS } from "@/lib/editor/wizard-state";
 
 interface SpreadPreviewProps {
   state: WizardState;
@@ -15,6 +15,34 @@ interface SpreadPreviewProps {
 function getFieldValue(state: WizardState, field: string): string {
   const val = state.textContent[field as keyof typeof state.textContent];
   return typeof val === "string" ? val : "";
+}
+
+/** Map element field name to the user's font size override from textContent */
+function getUserFontSize(tc: TextContent, field: string | undefined): number | null {
+  if (!field) return null;
+  const map: Record<string, keyof TextContent> = {
+    heading: "headingFontSize",
+    name: "nameFontSize",
+    dates: "datesFontSize",
+    birthDate: "datesFontSize",
+    deathDate: "datesFontSize",
+    quote: "quoteFontSize",
+    quoteAuthor: "quoteAuthorFontSize",
+    closingVerse: "closingVerseFontSize",
+    locationBirth: "locationFontSize",
+    locationDeath: "locationFontSize",
+  };
+  const sizeField = map[field];
+  if (!sizeField) return null;
+  const val = tc[sizeField];
+  return typeof val === "number" ? val : null;
+}
+
+/** Build Google Fonts URL for all fonts used */
+function buildFontUrl(fonts: string[]): string {
+  const unique = [...new Set(fonts)];
+  const families = unique.map(f => `family=${encodeURIComponent(f)}:wght@300;400;700`).join("&");
+  return `https://fonts.googleapis.com/css2?${families}&display=swap`;
 }
 
 function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState }) {
@@ -35,6 +63,11 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
     const globalFont = state.textContent.fontFamily;
     const font = el.fontFamily ?? globalFont;
 
+    // Use user's font size if available, otherwise template default
+    const userSize = getUserFontSize(state.textContent, el.field);
+    const templateSize = el.fontSize ?? 9;
+    const fontSize = userSize ?? templateSize;
+
     return (
       <div
         style={{
@@ -48,7 +81,7 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
         <div
           style={{
             fontFamily: `'${font}', serif`,
-            fontSize: `${(el.fontSize ?? 9) * 0.8}pt`,
+            fontSize: `${fontSize * 0.8}pt`,
             fontWeight: el.fontWeight ?? "normal",
             fontStyle: el.fontStyle ?? "normal",
             fontVariant: el.fontVariant ?? "normal",
@@ -99,7 +132,7 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
       clipStyle.border = el.imageBorder;
     }
 
-    // Apply crop if available (guard against division by zero when width/height are 0 or 1)
+    // Apply crop if available (guard against division by zero)
     const crop = state.photo.crop;
     if (el.useCrop !== false && crop && crop.width > 0 && crop.width < 1 && crop.height > 0 && crop.height < 1) {
       const sizeX = (1 / crop.width * 100);
@@ -182,20 +215,59 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
     return <div className="text-center text-brand-gray text-sm">No template selected</div>;
   }
 
+  // Collect all fonts used (global + per-element overrides)
+  const fontsUsed = useMemo(() => {
+    const fonts: string[] = [state.textContent.fontFamily];
+    for (const el of config.elements) {
+      if (el.fontFamily) fonts.push(el.fontFamily);
+    }
+    return [...new Set(fonts)];
+  }, [state.textContent.fontFamily, config.elements]);
+
   const aspect = config.spreadWidthMm / config.spreadHeightMm;
 
   return (
-    <div
-      className="relative bg-white border border-brand-border rounded-xl shadow-lg overflow-hidden mx-auto"
-      style={{
-        aspectRatio: `${aspect}`,
-        width: `${100 * scale}%`,
-        maxWidth: `${560 * scale}px`,
-      }}
-    >
-      {config.elements.map((el) => (
-        <ElementPreview key={el.id} el={el} state={state} />
-      ))}
-    </div>
+    <>
+      {/* Load Google Fonts for the preview */}
+      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+      <link rel="stylesheet" href={buildFontUrl(fontsUsed)} />
+
+      <div
+        className="relative bg-white border border-brand-border rounded-xl shadow-lg overflow-hidden mx-auto"
+        style={{
+          aspectRatio: `${aspect}`,
+          width: `${100 * scale}%`,
+          maxWidth: `${560 * scale}px`,
+        }}
+      >
+        {config.elements.map((el) => (
+          <ElementPreview key={el.id} el={el} state={state} />
+        ))}
+
+        {/* Render user decoration (from Step 6) if present */}
+        {state.decoration.assetUrl && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "3%",
+              right: "3%",
+              width: "15%",
+              height: "15%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: 0.6,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={state.decoration.assetUrl}
+              alt=""
+              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+            />
+          </div>
+        )}
+      </div>
+    </>
   );
 }
