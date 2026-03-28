@@ -305,61 +305,53 @@ describe("isStepValid", () => {
     expect(isStepValid(freshState(), 2)).toBe(false);
   });
 
-  // Step 3: background
-  it("step 3 valid when background type is color (always valid)", () => {
+  // Step 3: always valid (photo optional)
+  it("step 3 always valid (photo optional)", () => {
     expect(isStepValid(freshState(), 3)).toBe(true);
   });
 
-  it("step 3 valid when background type is image with imageUrl", () => {
-    const state = freshState();
-    state.background = { type: "image", color: "#FFF", imageUrl: "https://bg.jpg" };
-    expect(isStepValid(state, 3)).toBe(true);
-  });
-
-  it("step 3 invalid when background type is image without imageUrl", () => {
-    const state = freshState();
-    state.background = { type: "image", color: "#FFF", imageUrl: null };
-    expect(isStepValid(state, 3)).toBe(false);
-  });
-
-  // Step 4: always valid (photo optional)
-  it("step 4 always valid", () => {
-    expect(isStepValid(freshState(), 4)).toBe(true);
-  });
-
-  // Step 5: name must have text
-  it("step 5 valid when name has text", () => {
+  // Step 4: name must have text
+  it("step 4 valid when name has text", () => {
     const state = freshState();
     state.textContent.name = "Johann Beispiel";
-    expect(isStepValid(state, 5)).toBe(true);
+    expect(isStepValid(state, 4)).toBe(true);
   });
 
-  it("step 5 invalid when name is empty string", () => {
-    expect(isStepValid(freshState(), 5)).toBe(false);
+  it("step 4 invalid when name is empty string", () => {
+    expect(isStepValid(freshState(), 4)).toBe(false);
   });
 
-  it("step 5 invalid when name is whitespace only", () => {
+  it("step 4 invalid when name is whitespace only", () => {
     const state = freshState();
     state.textContent.name = "   \t  ";
-    expect(isStepValid(state, 5)).toBe(false);
+    expect(isStepValid(state, 4)).toBe(false);
   });
 
-  // Steps 6-8: always valid
-  it("step 6 always valid (decorations optional)", () => {
+  // Steps 5-7: always valid
+  it("step 5 always valid (decorations optional)", () => {
+    expect(isStepValid(freshState(), 5)).toBe(true);
+  });
+
+  it("step 6 always valid (preview)", () => {
     expect(isStepValid(freshState(), 6)).toBe(true);
   });
 
-  it("step 7 always valid (preview)", () => {
+  it("step 7 always valid (order)", () => {
     expect(isStepValid(freshState(), 7)).toBe(true);
   });
 
-  it("step 8 always valid (order)", () => {
-    expect(isStepValid(freshState(), 8)).toBe(true);
+  // TOTAL_STEPS constant
+  it("TOTAL_STEPS equals 7", () => {
+    expect(TOTAL_STEPS).toBe(7);
   });
 
   // Out-of-range steps
   it("step 0 returns false (invalid step)", () => {
     expect(isStepValid(freshState(), 0)).toBe(false);
+  });
+
+  it("step 8 returns false (beyond TOTAL_STEPS)", () => {
+    expect(isStepValid(freshState(), 8)).toBe(false);
   });
 
   it("step 9 returns false (beyond TOTAL_STEPS)", () => {

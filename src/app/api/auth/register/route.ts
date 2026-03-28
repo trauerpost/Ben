@@ -37,7 +37,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // 1. Create auth user with service role key
   const adminSupabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.supabase_Secert!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.supabase_Secret!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 

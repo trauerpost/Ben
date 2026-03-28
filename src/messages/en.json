@@ -175,7 +175,6 @@
     "steps": {
       "cardType": "Card Type",
       "template": "Template",
-      "background": "Background",
       "photo": "Photo",
       "text": "Text",
       "decorations": "Decorations",
@@ -212,14 +211,6 @@
       "empty": "No templates available for this combination.",
       "panel": "panel",
       "panels": "panels"
-    },
-    "background": {
-      "title": "Choose Background",
-      "subtitle": "Select a color or image for your card background.",
-      "modeImage": "Image",
-      "modeColor": "Color",
-      "upload": "Upload your own",
-      "showAll": "Show all {count} backgrounds"
     },
     "text": {
       "title": "Add Text",

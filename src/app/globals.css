@@ -9,4 +9,14 @@
   --color-brand-light-gray: #F5F5F5;
   --color-brand-border: #E5E7EB;
   --font-sans: "Inter", system-ui, sans-serif;
+  --animate-slide-up: slide-up 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }

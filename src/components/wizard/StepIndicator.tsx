@@ -13,7 +13,6 @@ export default function StepIndicator({ currentStep }: StepIndicatorProps) {
   const stepKeys = [
     "cardType",
     "template",
-    "background",
     "photo",
     "text",
     "decorations",

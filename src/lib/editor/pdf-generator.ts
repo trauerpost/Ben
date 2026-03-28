@@ -27,10 +27,11 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
     const template = getTemplateById(templateId);
     if (!template) throw new Error("No template selected");
     html = await renderCardHTML(state);
-    const isFolded = template.cardFormat === "folded";
-    pageWidthMm = isFolded ? dims.widthMm : dims.widthMm;
+    pageWidthMm = dims.widthMm; // folded dims already include full spread width (e.g., 370mm)
     pageHeightMm = dims.heightMm;
   }
+
+  console.log(`[pdf] Template: ${state.templateId}, Page: ${pageWidthMm}x${pageHeightMm}mm, Folded: ${isV2 ? 'n/a' : getTemplateById(templateId)?.cardFormat === 'folded'}`);
 
   // Launch Puppeteer
   let browser;

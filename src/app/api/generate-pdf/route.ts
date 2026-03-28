@@ -15,12 +15,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    if (!state.templateId) {
+      return NextResponse.json({ error: "Missing templateId" }, { status: 400 });
+    }
+    if (!state.textContent?.name?.trim()) {
+      return NextResponse.json({ error: "Missing name" }, { status: 400 });
+    }
+
     // Generate PDF
     const pdfBuffer = await generateCardPDF(state);
 
     // Upload to Supabase Storage
     const supabaseUrl = process.env.supabase_url || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.supabase_Secret || process.env.supabase_Secert || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.supabase_Secret;
 
     if (!supabaseUrl || !supabaseKey) {
       // Fallback: return PDF as direct download
@@ -65,9 +72,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     console.error("[generate-pdf] Error:", error);
-    return NextResponse.json(
-      { error: "PDF-Erstellung fehlgeschlagen" },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      error: "PDF generation failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 });
   }
 }

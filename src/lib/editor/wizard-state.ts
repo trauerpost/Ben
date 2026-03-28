@@ -133,7 +133,7 @@ export const DIVIDER_SYMBOLS = ["", "✦ ✦ ✦", "— — —", "❀ ❀ ❀",
 
 // ── State ──
 
-export const TOTAL_STEPS = 8;
+export const TOTAL_STEPS = 7;
 
 export interface WizardState {
   currentStep: number;
@@ -244,12 +244,11 @@ export function isStepValid(state: WizardState, step: number): boolean {
   switch (step) {
     case 1: return state.cardType !== null && state.cardFormat !== null;
     case 2: return state.templateId !== null;
-    case 3: return state.background.type === "color" || state.background.imageUrl !== null;
-    case 4: return true; // photo optional
-    case 5: return state.textContent.name.trim().length > 0;
-    case 6: return true; // decorations optional
-    case 7: return true; // preview
-    case 8: return true; // order
+    case 3: return true; // photo optional
+    case 4: return state.textContent.name.trim().length > 0;
+    case 5: return true; // decorations optional
+    case 6: return true; // preview
+    case 7: return true; // order
     default: return false;
   }
 }
@@ -262,7 +261,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 6;
+const DRAFT_VERSION = 7;
 
 interface DraftEnvelope {
   version: number;

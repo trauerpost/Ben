@@ -19,7 +19,7 @@ async function imageToBase64(url: string): Promise<string> {
     const contentType = res.headers.get("content-type") || "image/jpeg";
     return `data:${contentType};base64,${buf.toString("base64")}`;
   } catch (err) {
-    console.warn(`[card-to-html-v2] Failed to fetch image: ${url}`, err);
+    console.warn(`[card-html] Failed to load image: ${url}`, err);
     return "";
   }
 }
@@ -161,6 +161,9 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
   const images: Record<string, string> = {};
   if (state.photo.url) {
     images["photo"] = await imageToBase64(state.photo.url);
+  }
+  if (state.photo?.url && !images["photo"]) {
+    console.warn("[card-html] Photo URL provided but conversion failed:", state.photo.url);
   }
   // Fetch ornament assets
   for (const el of config.elements) {

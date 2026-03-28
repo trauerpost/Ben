@@ -175,7 +175,6 @@
     "steps": {
       "cardType": "Kartentyp",
       "template": "Vorlage",
-      "background": "Hintergrund",
       "photo": "Foto",
       "text": "Text",
       "decorations": "Dekoration",
@@ -212,14 +211,6 @@
       "empty": "Keine Vorlagen für diese Kombination verfügbar.",
       "panel": "Seite",
       "panels": "Seiten"
-    },
-    "background": {
-      "title": "Hintergrund wählen",
-      "subtitle": "Wählen Sie eine Farbe oder ein Bild als Hintergrund.",
-      "modeImage": "Bild",
-      "modeColor": "Farbe",
-      "upload": "Eigenes hochladen",
-      "showAll": "Alle {count} Hintergründe anzeigen"
     },
     "text": {
       "title": "Text eingeben",

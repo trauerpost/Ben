@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import CardRenderer, { getPanelsForTemplate } from "../CardRenderer";
 import SpreadPreview from "../SpreadPreview";
 import type { WizardState } from "@/lib/editor/wizard-state";
+import { getCardDimensions } from "@/lib/editor/wizard-state";
 
 interface StepPreviewProps {
   state: WizardState;
@@ -26,11 +27,36 @@ export default function StepPreview({ state }: StepPreviewProps) {
   const [foldAngle, setFoldAngle] = useState(0);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
 
   const templateId = state.templateId ?? "";
   const isV2 = templateId.startsWith("TI");
   const panels = isV2 ? [] : getPanelsForTemplate(templateId);
   const isFolded = state.cardFormat === "folded";
+
+  async function handleClientPdf(): Promise<void> {
+    if (!previewRef.current) return;
+    const dims = getCardDimensions(state);
+    if (!dims) return;
+    setPdfLoading(true);
+    setPdfError(null);
+    try {
+      const { generateClientPDF } = await import("@/lib/editor/client-pdf-generator");
+      const blob = await generateClientPDF(previewRef.current, dims.widthMm, dims.heightMm);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `trauerpost-${state.cardType}-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setPdfError("Local PDF generation failed");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   async function handleDownloadPdf(): Promise<void> {
     setPdfLoading(true);
@@ -97,7 +123,9 @@ export default function StepPreview({ state }: StepPreviewProps) {
       {/* v2 Spread preview — single page templates */}
       {isV2 && (
         <div className="flex flex-col items-center gap-6 mb-10">
-          <SpreadPreview state={state} />
+          <div ref={previewRef}>
+            <SpreadPreview state={state} />
+          </div>
           <p className="text-xs text-brand-gray">
             Live preview — the PDF will have higher quality fonts and images.
           </p>
@@ -130,7 +158,7 @@ export default function StepPreview({ state }: StepPreviewProps) {
 
       {/* Flat preview — all panels side by side */}
       {!isV2 && mode === "flat" && (
-        <div className={`grid gap-6 ${
+        <div ref={previewRef} className={`grid gap-6 ${
           panels.length === 4 ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" :
           panels.length === 2 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto" :
           "grid-cols-1"
@@ -301,17 +329,38 @@ export default function StepPreview({ state }: StepPreviewProps) {
         </div>
       )}
 
-      {/* PDF Download button */}
+      {/* PDF Download buttons */}
       <div className="flex flex-col items-center gap-3 mt-10">
-        <button
-          onClick={handleDownloadPdf}
-          disabled={pdfLoading}
-          className="px-8 py-3 rounded-xl bg-brand-primary text-white font-medium hover:bg-brand-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {pdfLoading ? t("downloading") : t("downloadPdf")}
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleClientPdf}
+            disabled={pdfLoading}
+            className="px-6 py-3 rounded-xl bg-brand-primary text-white font-medium hover:bg-brand-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pdfLoading ? t("downloading") : "PDF (Local)"}
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            className="px-6 py-3 rounded-xl bg-brand-dark text-white font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pdfLoading ? t("downloading") : t("downloadPdf")}
+          </button>
+        </div>
+        {pdfLoading && (
+          <div className="flex items-center gap-2">
+            <div className="animate-spin h-5 w-5 border-2 border-brand-primary border-t-transparent rounded-full" />
+            <span className="text-sm text-gray-600">Generating PDF...</span>
+          </div>
+        )}
         {pdfError && (
-          <p className="text-sm text-red-600">{pdfError}</p>
+          <div className="bg-red-50 border border-red-200 rounded p-4 max-w-md">
+            <p className="text-red-700 font-medium">PDF generation failed</p>
+            <p className="text-red-600 text-sm mt-1">{pdfError}</p>
+            <button onClick={handleClientPdf} className="mt-2 text-sm underline text-brand-primary">
+              Try local download instead
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -13,9 +13,10 @@ import {
 import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 
+import SplitLayout from "./SplitLayout";
 import StepCardType from "./steps/StepCardType";
 import StepTemplate from "./steps/StepTemplate";
-import StepBackImage from "./steps/StepBackImage";
+
 import StepPhoto from "./steps/StepPhoto";
 import StepText from "./steps/StepText";
 import StepDecorations from "./steps/StepDecorations";
@@ -48,16 +49,16 @@ export default function WizardShell() {
   })();
 
   function handleNext() {
-    if (shouldSkipPhoto && state.currentStep === 3) {
-      dispatch({ type: "SET_STEP", step: 5 }); // skip photo → text
+    if (shouldSkipPhoto && state.currentStep === 2) {
+      dispatch({ type: "SET_STEP", step: 4 }); // skip photo → text
     } else {
       dispatch({ type: "NEXT_STEP" });
     }
   }
 
   function handlePrev() {
-    if (shouldSkipPhoto && state.currentStep === 5) {
-      dispatch({ type: "SET_STEP", step: 3 }); // skip photo ← text
+    if (shouldSkipPhoto && state.currentStep === 4) {
+      dispatch({ type: "SET_STEP", step: 2 }); // skip photo ← text
     } else {
       dispatch({ type: "PREV_STEP" });
     }
@@ -65,17 +66,25 @@ export default function WizardShell() {
 
   const renderStep = useCallback(
     (stepState: WizardState, stepDispatch: React.Dispatch<WizardAction>) => {
-      switch (stepState.currentStep) {
-        case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
-        case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
-        case 3: return <StepBackImage state={stepState} dispatch={stepDispatch} />;
-        case 4: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
-        case 5: return <StepText state={stepState} dispatch={stepDispatch} />;
-        case 6: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
-        case 7: return <StepPreview state={stepState} />;
-        case 8: return <StepOrder state={stepState} dispatch={stepDispatch} />;
-        default: return null;
+      const stepContent = (() => {
+        switch (stepState.currentStep) {
+          case 1: return <StepCardType state={stepState} dispatch={stepDispatch} />;
+          case 2: return <StepTemplate state={stepState} dispatch={stepDispatch} />;
+          case 3: return <StepPhoto state={stepState} dispatch={stepDispatch} />;
+          case 4: return <StepText state={stepState} dispatch={stepDispatch} />;
+          case 5: return <StepDecorations state={stepState} dispatch={stepDispatch} />;
+          case 6: return <StepPreview state={stepState} />;
+          case 7: return <StepOrder state={stepState} dispatch={stepDispatch} />;
+          default: return null;
+        }
+      })();
+
+      // Steps 3-5 get split layout with live preview
+      if (stepState.currentStep >= 3 && stepState.currentStep <= 5) {
+        return <SplitLayout state={stepState}>{stepContent}</SplitLayout>;
       }
+
+      return stepContent;
     },
     []
   );

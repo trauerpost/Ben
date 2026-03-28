@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { TemplateElement } from "@/lib/editor/template-configs";
 import type { WizardState, TextContent } from "@/lib/editor/wizard-state";
@@ -76,12 +76,13 @@ function ElementPreview({ el, state }: { el: TemplateElement; state: WizardState
           flexDirection: "column",
           alignItems: el.textAlign === "left" ? "flex-start" : el.textAlign === "right" ? "flex-end" : "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
         <div
           style={{
             fontFamily: `'${font}', serif`,
-            fontSize: `${fontSize * 0.8}pt`,
+            fontSize: `${fontSize}pt`,
             fontWeight: el.fontWeight ?? "normal",
             fontStyle: el.fontStyle ?? "normal",
             fontVariant: el.fontVariant ?? "normal",
@@ -226,18 +227,29 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
 
   const aspect = config.spreadWidthMm / config.spreadHeightMm;
 
+  const [fontsReady, setFontsReady] = useState(false);
+  const fontUrl = buildFontUrl(fontsUsed);
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = fontUrl;
+    document.head.appendChild(link);
+    setFontsReady(false);
+    document.fonts.ready.then(() => setFontsReady(true));
+    return () => { document.head.removeChild(link); };
+  }, [fontUrl]);
+
   return (
     <>
-      {/* Load Google Fonts for the preview */}
-      {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-      <link rel="stylesheet" href={buildFontUrl(fontsUsed)} />
-
       <div
         className="relative bg-white border border-brand-border rounded-xl shadow-lg overflow-hidden mx-auto"
         style={{
           aspectRatio: `${aspect}`,
           width: `${100 * scale}%`,
           maxWidth: `${560 * scale}px`,
+          opacity: fontsReady ? 1 : 0.5,
+          transition: "opacity 0.3s",
         }}
       >
         {config.elements.map((el) => (
