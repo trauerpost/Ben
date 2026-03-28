@@ -30,7 +30,7 @@ export default function HeroSection() {
             {t("subheadline")}
           </p>
           <Link
-            href="/templates"
+            href="/builder"
             className="inline-block bg-brand-primary text-white px-10 py-4 rounded-lg text-lg font-medium hover:bg-brand-primary-hover transition-colors shadow-lg"
           >
             {t("cta")}
@@ -77,7 +77,7 @@ export default function HeroSection() {
             {(["sterbebild", "trauerkarte", "dankkarte"] as const).map((card) => (
               <Link
                 key={card}
-                href="/templates"
+                href="/builder"
                 className="group relative rounded-2xl overflow-hidden aspect-[3/4] shadow-md hover:shadow-xl transition-shadow"
               >
                 <Image
@@ -143,7 +143,7 @@ export default function HeroSection() {
           </div>
 
           <Link
-            href="/templates"
+            href="/builder"
             className="inline-block mt-10 px-8 py-3 border-2 border-brand-primary text-brand-primary rounded-lg hover:bg-brand-primary hover:text-white transition-colors font-medium"
           >
             {t("viewAll")}
@@ -161,7 +161,7 @@ export default function HeroSection() {
             {t("ctaBannerSubtitle")}
           </p>
           <Link
-            href="/templates"
+            href="/builder"
             className="inline-block bg-white text-brand-primary px-10 py-4 rounded-lg text-lg font-medium hover:bg-brand-light-gray transition-colors"
           >
             {t("cta")}
