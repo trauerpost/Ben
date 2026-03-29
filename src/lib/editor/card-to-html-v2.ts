@@ -233,6 +233,23 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
     }
   }
 
+  // Decoration overlay (symbol in bottom-right corner)
+  if (state.decoration.assetUrl && images["decoration"]) {
+    elementsHtml += `<div style="position:absolute;bottom:3%;right:3%;width:15%;height:15%;display:flex;align-items:center;justify-content:center;opacity:0.6;">
+      <img src="${images["decoration"]}" style="max-width:100%;max-height:100%;object-fit:contain;" />
+    </div>`;
+  }
+
+  // Border/frame overlay (full card)
+  if (state.border?.url) {
+    const borderBase64 = await imageToBase64(state.border.url);
+    if (borderBase64) {
+      elementsHtml += `<div style="position:absolute;inset:0;pointer-events:none;z-index:10;">
+        <img src="${borderBase64}" style="width:100%;height:100%;object-fit:contain;" />
+      </div>`;
+    }
+  }
+
   return `<!DOCTYPE html>
 <html>
 <head>

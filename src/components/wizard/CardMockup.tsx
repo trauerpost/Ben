@@ -42,6 +42,17 @@ export default function CardMockup({
   state,
   style = "table",
 }: CardMockupProps): React.ReactElement {
+  if (!state.templateId) {
+    return (
+      <div
+        className="flex items-center justify-center h-48 text-brand-gray text-sm rounded-xl"
+        style={{ background: "linear-gradient(135deg, #f5f0eb 0%, #e8e2dc 100%)" }}
+      >
+        Keine Vorlage ausgewählt
+      </div>
+    );
+  }
+
   const isV2 = state.templateId?.startsWith("TI") ?? false;
 
   return (

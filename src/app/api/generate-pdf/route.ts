@@ -23,7 +23,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Generate PDF
+    console.log(`[generate-pdf] Starting PDF generation for template=${state.templateId}, cardType=${state.cardType}`);
+    const startTime = Date.now();
     const pdfBuffer = await generateCardPDF(state);
+    console.log(`[generate-pdf] PDF generated in ${Date.now() - startTime}ms (${pdfBuffer.byteLength} bytes)`);
 
     // Upload to Supabase Storage
     const supabaseUrl = process.env.supabase_url || process.env.NEXT_PUBLIC_SUPABASE_URL;
