@@ -317,6 +317,18 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
             />
           </div>
         )}
+
+        {/* Border/frame overlay */}
+        {state.border.url && (
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={state.border.url}
+              alt=""
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </div>
+        )}
       </div>
     </>
   );
