@@ -334,26 +334,52 @@ test("PDF Local: downloads valid PDF file", async ({ page }) => {
     return;
   }
 
-  const downloadPromise = page.waitForEvent("download", { timeout: 30000 });
+  // Wait for fonts to finish loading — html2canvas can stall on pending fonts
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(1000);
+
+  // Intercept the blob before it triggers a download — avoids Windows EPERM
+  // on Playwright temp files. We monkey-patch createElement to capture the blob.
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).__pdfResult = null;
+    const origCreateObjectURL = URL.createObjectURL;
+    URL.createObjectURL = function (blob: Blob) {
+      const url = origCreateObjectURL.call(URL, blob);
+      // Read first 5 bytes to verify PDF header
+      blob.slice(0, 5).text().then(header => {
+        (window as unknown as Record<string, unknown>).__pdfResult = {
+          size: blob.size,
+          header,
+          url,
+          type: blob.type,
+        };
+      });
+      return url;
+    };
+  });
+
   await pdfBtn.click();
 
-  try {
-    const download = await downloadPromise;
-    const filePath = await download.path();
-    if (filePath) {
-      const size = fs.statSync(filePath).size;
-      expect(size, "PDF file is empty or too small").toBeGreaterThan(1024);
-
-      const header = Buffer.alloc(5);
-      const fd = fs.openSync(filePath, "r");
-      fs.readSync(fd, header, 0, 5, 0);
-      fs.closeSync(fd);
-      expect(header.toString(), "File is not a valid PDF").toBe("%PDF-");
-    }
-  } catch {
-    await page.screenshot({ path: shot("pdf-download-failed"), fullPage: false });
-    throw new Error("PDF download failed or timed out — see screenshot");
+  // Wait for PDF generation (html2canvas + jsPDF can take a while)
+  let result: { size: number; header: string; type: string } | null = null;
+  for (let i = 0; i < 30; i++) {
+    await page.waitForTimeout(1000);
+    result = await page.evaluate(() =>
+      (window as unknown as Record<string, unknown>).__pdfResult as { size: number; header: string; type: string } | null
+    );
+    if (result) break;
   }
+
+  if (!result) {
+    // Check for error message in the UI
+    const errorVisible = await page.locator("text=Local PDF generation failed").isVisible().catch(() => false);
+    await page.screenshot({ path: shot("pdf-download-failed"), fullPage: false });
+    throw new Error(`PDF generation ${errorVisible ? "failed (error shown in UI)" : "timed out after 30s"}`);
+  }
+
+  expect(result.size, "PDF file is empty or too small").toBeGreaterThan(1024);
+  expect(result.header, "File is not a valid PDF").toBe("%PDF-");
+  await page.screenshot({ path: shot("pdf-download-success"), fullPage: false });
 });
 
 // ── 10. Photo shows in preview ──
