@@ -3,6 +3,10 @@ import path from "path";
 
 /**
  * E2E tests for v2 template engine (TI04-TI09) wizard flow.
+ *
+ * Wizard steps (7 total):
+ *   1=Kartentyp, 2=Vorlage, 3=Foto, 4=Text, 5=Dekoration, 6=Vorschau, 7=Bestellen
+ *   Photo step (3) is skipped for text-only templates like TI04.
  */
 
 test.use({ navigationTimeout: 60000 });
@@ -32,7 +36,8 @@ test.describe("V2 Template Wizard Flow", () => {
     await expect(nextBtn).toBeEnabled();
     await nextBtn.click();
 
-    await expect(page.getByText("Step 2 of 8")).toBeVisible();
+    // Step 2: template selection page
+    await expect(page.getByText("Vorlage wählen")).toBeVisible();
   });
 
   test("Step 2: v2 templates (TI04-TI09) are shown for sterbebild", async ({ page }) => {
@@ -68,15 +73,11 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.locator("h3", { hasText: "Nur Text" }).click();
     await clickNext(page);
 
-    // Step 3: background
-    await page.waitForTimeout(500);
-    await clickNext(page);
-
-    // Should skip step 4 (photo) → step 5 (text)
-    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+    // Should skip step 3 (photo) → step 4 (text)
+    await expect(page.getByText("Text eingeben")).toBeVisible();
   });
 
-  test("TI05 full flow: type → template → bg → photo → text → preview", async ({ page }) => {
+  test("TI05 full flow: type → template → photo → text → preview", async ({ page }) => {
     // Step 1
     await page.getByText("Erinnerungsbild").click();
     await clickNext(page);
@@ -85,12 +86,7 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.getByText("Foto 50/50").click();
     await clickNext(page);
 
-    // Step 3: background
-    await page.waitForTimeout(500);
-    await clickNext(page);
-
-    // Step 4: photo
-    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    // Step 3: photo
     await expect(page.getByRole("heading", { name: "Photo" })).toBeVisible();
 
     // Upload photo
@@ -102,30 +98,29 @@ test.describe("V2 Template Wizard Flow", () => {
     await expect(page.locator("canvas")).toBeVisible();
 
     // Zoom slider
-    await expect(page.locator('input[type="range"]')).toBeVisible();
+    await expect(page.locator('input[type="range"]').first()).toBeVisible();
 
-    // Step 5: text
+    // Step 4: text
     await clickNext(page);
-    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+    await expect(page.getByText("Text eingeben")).toBeVisible();
 
-    // TI05 fields visible (use label locators to avoid multiple matches)
-    await expect(page.locator("label", { hasText: "Heading" })).toBeVisible();
+    // TI05 fields visible (German labels)
+    await expect(page.locator("label", { hasText: "Überschrift" })).toBeVisible();
     await expect(page.locator("label", { hasText: /^Name/ })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Birth Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Death Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: /^Quote$/ })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Quote Author" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Geburtsdatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Sterbedatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /Spruch/ })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Autor" })).toBeVisible();
 
     // Fill name (required)
     await page.getByPlaceholder("Maria Musterfrau").fill("Test Brigitte");
 
-    // Step 6: decorations
+    // Step 5: decorations
     await clickNext(page);
-    await expect(page.getByText("Step 6 of 8")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dekoration" })).toBeVisible();
 
-    // Step 7: preview
+    // Step 6: preview
     await clickNext(page);
-    await expect(page.getByText("Step 7 of 8")).toBeVisible();
 
     // v2 spread preview text
     await expect(page.getByText("Live preview")).toBeVisible();
@@ -138,17 +133,13 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.getByText("Drei-Zonen").click();
     await clickNext(page);
 
-    // Background
-    await page.waitForTimeout(500);
+    // Step 3: photo (skip)
     await clickNext(page);
 
-    // Photo (skip)
-    await clickNext(page);
-
-    // TI07 fields
-    await expect(page.getByText("Birth Place")).toBeVisible();
-    await expect(page.getByText("Death Place")).toBeVisible();
-    await expect(page.getByText("Divider")).toBeVisible();
+    // Step 4: text — TI07 fields (German labels)
+    await expect(page.getByText("Geburtsort")).toBeVisible();
+    await expect(page.getByText("Sterbeort")).toBeVisible();
+    await expect(page.locator("label", { hasText: "Trennzeichen" })).toBeVisible();
   });
 
   test("TI06 full flow: L-Form → photo → text → preview", async ({ page }) => {
@@ -160,37 +151,32 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.getByTestId("TI06").click();
     await clickNext(page);
 
-    // Step 3: background
-    await page.waitForTimeout(500);
-    await clickNext(page);
-
-    // Step 4: photo upload
-    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    // Step 3: photo upload
+    await expect(page.getByRole("heading", { name: "Photo" })).toBeVisible();
     const fileInput = page.locator('input[type="file"]').first();
     await fileInput.setInputFiles(TEST_PHOTO);
     await page.waitForTimeout(1500);
     await expect(page.locator("canvas")).toBeVisible();
 
-    // Step 5: text
+    // Step 4: text
     await clickNext(page);
-    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+    await expect(page.getByText("Text eingeben")).toBeVisible();
 
-    // TI06 required fields: name, birthDate, deathDate, quote
+    // TI06 required fields: name, birthDate, deathDate, quote (German labels)
     await expect(page.locator("label", { hasText: /^Name/ })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Birth Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Death Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: /^Quote$/ })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Geburtsdatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Sterbedatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /Spruch/ })).toBeVisible();
 
     // Fill name (required)
     await page.getByPlaceholder("Maria Musterfrau").fill("Test Thilde");
 
-    // Step 6: decorations
+    // Step 5: decorations
     await clickNext(page);
-    await expect(page.getByText("Step 6 of 8")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dekoration" })).toBeVisible();
 
-    // Step 7: preview
+    // Step 6: preview
     await clickNext(page);
-    await expect(page.getByText("Step 7 of 8")).toBeVisible();
     await expect(page.getByText("Live preview")).toBeVisible();
   });
 
@@ -203,39 +189,34 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.getByTestId("TI09").click();
     await clickNext(page);
 
-    // Step 3: background
-    await page.waitForTimeout(500);
-    await clickNext(page);
-
-    // Step 4: photo upload
-    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    // Step 3: photo upload
+    await expect(page.getByRole("heading", { name: "Photo" })).toBeVisible();
     const fileInput = page.locator('input[type="file"]').first();
     await fileInput.setInputFiles(TEST_PHOTO);
     await page.waitForTimeout(1500);
     await expect(page.locator("canvas")).toBeVisible();
 
-    // Step 5: text
+    // Step 4: text
     await clickNext(page);
-    await expect(page.getByText("Step 5 of 8")).toBeVisible();
+    await expect(page.getByText("Text eingeben")).toBeVisible();
 
-    // TI09 required fields: heading, name, birthDate, deathDate, closingVerse, quote
-    await expect(page.locator("label", { hasText: "Heading" })).toBeVisible();
+    // TI09 required fields: heading, name, birthDate, deathDate, closingVerse, quote (German)
+    await expect(page.locator("label", { hasText: "Überschrift" })).toBeVisible();
     await expect(page.locator("label", { hasText: /^Name/ })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Birth Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Death Date" })).toBeVisible();
-    await expect(page.locator("label", { hasText: "Closing Verse" })).toBeVisible();
-    await expect(page.locator("label", { hasText: /^Quote$/ })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Geburtsdatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Sterbedatum" })).toBeVisible();
+    await expect(page.locator("label", { hasText: "Schlussvers" })).toBeVisible();
+    await expect(page.locator("label", { hasText: /Spruch/ })).toBeVisible();
 
     // Fill name (required)
     await page.getByPlaceholder("Maria Musterfrau").fill("Test Renate");
 
-    // Step 6: decorations
+    // Step 5: decorations
     await clickNext(page);
-    await expect(page.getByText("Step 6 of 8")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Dekoration" })).toBeVisible();
 
-    // Step 7: preview
+    // Step 6: preview
     await clickNext(page);
-    await expect(page.getByText("Step 7 of 8")).toBeVisible();
     await expect(page.getByText("Live preview")).toBeVisible();
   });
 
@@ -246,12 +227,8 @@ test.describe("V2 Template Wizard Flow", () => {
     await page.getByText("Oval-Spiegel").click();
     await clickNext(page);
 
-    // Background
-    await page.waitForTimeout(500);
-    await clickNext(page);
-
-    // Photo step
-    await expect(page.getByText("Step 4 of 8")).toBeVisible();
+    // Step 3: photo
+    await expect(page.getByRole("heading", { name: "Photo" })).toBeVisible();
     const fileInput = page.locator('input[type="file"]').first();
     await fileInput.setInputFiles(TEST_PHOTO);
     await page.waitForTimeout(1500);

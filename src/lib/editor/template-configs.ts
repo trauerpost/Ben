@@ -97,14 +97,14 @@ const TI05: TemplateConfig = {
   thumbnail: { previewName: "Brigitte Musterfrau", previewDates: "* 31. Juli 1950  † 20. Februar 2021", previewQuote: "Das schönste Denkmal..." },
   elements: [
     { id: "photo", type: "image", x: 0, y: 0, w: 480, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
-    { id: "heading", type: "text", x: 530, y: 155, w: 420, h: 38, field: "heading", fontSize: 8, fontStyle: "italic", textAlign: "center" },
-    { id: "line-top", type: "line", x: 625, y: 225, w: 230, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "name", type: "text", x: 520, y: 260, w: 440, h: 95, field: "name", fontSize: 19, fontWeight: "bold", textAlign: "center" },
-    { id: "birthDate", type: "text", x: 530, y: 385, w: 420, h: 26, field: "birthDate", fontSize: 8, textAlign: "center" },
-    { id: "deathDate", type: "text", x: 530, y: 440, w: 420, h: 26, field: "deathDate", fontSize: 8, textAlign: "center" },
-    { id: "line-mid", type: "line", x: 625, y: 510, w: 230, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "quote", type: "text", x: 530, y: 540, w: 420, h: 200, field: "quote", fontSize: 8, fontStyle: "italic", textAlign: "center" },
-    { id: "author", type: "text", x: 530, y: 770, w: 420, h: 30, field: "quoteAuthor", fontSize: 7, textAlign: "center" },
+    { id: "heading", type: "text", x: 530, y: 155, w: 420, h: 38, field: "heading", fontSize: 9, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
+    { id: "line-top", type: "line", x: 575, y: 225, w: 330, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "name", type: "text", x: 520, y: 260, w: 440, h: 95, field: "name", fontSize: 19, fontFamily: "Cormorant Garamond", fontWeight: "bold", textAlign: "center" },
+    { id: "birthDate", type: "text", x: 530, y: 385, w: 420, h: 26, field: "birthDate", fontSize: 9, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "deathDate", type: "text", x: 530, y: 440, w: 420, h: 26, field: "deathDate", fontSize: 9, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "line-mid", type: "line", x: 575, y: 510, w: 330, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "quote", type: "text", x: 530, y: 540, w: 420, h: 200, field: "quote", fontSize: 9, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
+    { id: "author", type: "text", x: 530, y: 770, w: 420, h: 30, field: "quoteAuthor", fontSize: 7.5, fontFamily: "Cormorant Garamond", textAlign: "center" },
   ],
 };
 
