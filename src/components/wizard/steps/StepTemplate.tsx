@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { getTemplatesForCard } from "@/lib/editor/card-templates";
 import type { CardTemplate } from "@/lib/editor/card-templates";
 import { getTemplateConfigsForCard, type TemplateConfig } from "@/lib/editor/template-configs";
@@ -47,12 +47,14 @@ function TemplateWireframe({ template }: { template: CardTemplate }) {
   );
 }
 
-/** Use real reference images as thumbnails where available */
+/** Use real reference images as thumbnails for every template */
 const THUMBNAIL_MAP: Record<string, string> = {
+  TI04: "/test-pdfs/TI04.png",
   TI05: "/test-pdfs/TI05-ref.jpg",
   TI06: "/test-pdfs/TI06-ref.jpg",
   TI07: "/test-pdfs/TI07-ref.jpg",
   TI08: "/test-pdfs/TI08-ref.jpg",
+  TI09: "/test-pdfs/TI09.png",
 };
 
 /** Preview image for v2 spread templates */
@@ -87,6 +89,8 @@ interface TemplateItem {
 
 export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
   const t = useTranslations("wizard.template");
+  const locale = useLocale();
+  const isEn = locale === "en";
 
   const items = useMemo<TemplateItem[]>(() => {
     if (!state.cardType || !state.cardFormat) return [];
@@ -98,8 +102,8 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
     for (const cfg of v2Configs) {
       result.push({
         id: cfg.id,
-        name: cfg.name,
-        description: cfg.description,
+        name: isEn ? cfg.nameEn : cfg.name,
+        description: isEn ? cfg.descriptionEn : cfg.description,
         panelCount: cfg.requiresPhoto ? "Foto" : "Nur Text",
         source: "v2",
         v2: cfg,
@@ -123,7 +127,7 @@ export default function StepTemplate({ state, dispatch }: StepTemplateProps) {
     }
 
     return result;
-  }, [state.cardType, state.cardFormat, t]);
+  }, [state.cardType, state.cardFormat, t, isEn]);
 
   if (!state.cardType || !state.cardFormat) {
     return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import type { CardType, CardFormat } from "@/lib/editor/wizard-state";
 import { CARD_CONFIGS } from "@/lib/editor/wizard-state";
 import {
@@ -16,15 +17,28 @@ interface TemplatePickerProps {
   ) => void;
 }
 
-const CARD_TYPE_OPTIONS: { type: CardType; label: string; icon: string }[] = [
-  { type: "sterbebild", label: "Erinnerungsbild", icon: "🕯️" },
-  { type: "trauerkarte", label: "Trauerkarte", icon: "✉️" },
-  { type: "dankkarte", label: "Dankeskarte", icon: "🙏" },
+const CARD_TYPE_KEYS: { type: CardType; icon: string }[] = [
+  { type: "sterbebild", icon: "🕯️" },
+  { type: "trauerkarte", icon: "✉️" },
+  { type: "dankkarte", icon: "🙏" },
 ];
+
+/** Thumbnail images for each template */
+const THUMB_MAP: Record<string, string> = {
+  TI04: "/test-pdfs/TI04.png",
+  TI05: "/test-pdfs/TI05-ref.jpg",
+  TI06: "/test-pdfs/TI06-ref.jpg",
+  TI07: "/test-pdfs/TI07-ref.jpg",
+  TI08: "/test-pdfs/TI08-ref.jpg",
+  TI09: "/test-pdfs/TI09.png",
+};
 
 export default function TemplatePicker({
   onSelect,
 }: TemplatePickerProps): React.ReactElement {
+  const t = useTranslations("wizard");
+  const locale = useLocale();
+  const isEn = locale === "en";
   const [cardType, setCardType] = useState<CardType | null>(null);
   const [cardFormat, setCardFormat] = useState<CardFormat>("single");
 
@@ -48,11 +62,11 @@ export default function TemplatePicker({
 
   return (
     <div className="p-4 space-y-4">
-      <h3 className="text-sm font-medium text-brand-dark">Kartentyp wählen</h3>
+      <h3 className="text-sm font-medium text-brand-dark">{t("cardType.title")}</h3>
 
       {/* Card type selector */}
       <div className="grid grid-cols-1 gap-2">
-        {CARD_TYPE_OPTIONS.map(({ type, label, icon }) => (
+        {CARD_TYPE_KEYS.map(({ type, icon }) => (
           <button
             key={type}
             onClick={() => handleCardType(type)}
@@ -64,7 +78,7 @@ export default function TemplatePicker({
             }`}
           >
             <span className="text-lg">{icon}</span>
-            <span>{label}</span>
+            <span>{t(`cardType.types.${type}.label`)}</span>
           </button>
         ))}
       </div>
@@ -83,7 +97,7 @@ export default function TemplatePicker({
                   : "text-brand-gray hover:text-brand-dark"
               }`}
             >
-              {fmt === "single" ? "Einfach" : "Gefaltet"}
+              {t(`cardType.formats.${fmt}`)}
             </button>
           ))}
         </div>
@@ -93,7 +107,7 @@ export default function TemplatePicker({
       {templates.length > 0 && (
         <>
           <h3 className="text-sm font-medium text-brand-dark pt-2">
-            Vorlage wählen
+            {t("template.title")}
           </h3>
           <div className="grid grid-cols-2 gap-2">
             {templates.map((tpl) => (
@@ -103,12 +117,17 @@ export default function TemplatePicker({
                 data-testid={`template-${tpl.id}`}
                 className="flex flex-col items-center gap-1.5 p-2 rounded-lg border border-brand-border bg-white hover:border-brand-primary hover:shadow-sm transition-all text-center"
               >
-                {/* Thumbnail placeholder */}
-                <div className="w-full aspect-[4/3] rounded bg-brand-light-gray flex items-center justify-center text-xs text-brand-gray">
-                  {tpl.id}
+                {/* Real thumbnail */}
+                <div className="w-full aspect-[4/3] rounded bg-brand-light-gray overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={THUMB_MAP[tpl.id] ?? `/test-pdfs/${tpl.id}.png`}
+                    alt={isEn ? tpl.nameEn : tpl.name}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
                 <span className="text-[11px] text-brand-dark leading-tight">
-                  {tpl.name}
+                  {isEn ? tpl.nameEn : tpl.name}
                 </span>
               </button>
             ))}

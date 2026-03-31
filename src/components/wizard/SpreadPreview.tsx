@@ -161,15 +161,22 @@ const ElementPreview = React.memo(function ElementPreview({ el, state, activeFie
         <div
           style={{
             ...style,
-            backgroundColor: "#f5f5f5",
+            background: "linear-gradient(145deg, #e8e4df 0%, #d5cfc8 50%, #c9c2b9 100%)",
             display: "flex",
+            flexDirection: "column" as const,
             alignItems: "center",
             justifyContent: "center",
-            color: "#9ca3af",
-            fontSize: "10px",
+            gap: "4px",
+            color: "#8a8078",
+            border: "1px dashed #b8afa5",
           }}
         >
-          Foto
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21,15 16,10 5,21" />
+          </svg>
+          <span style={{ fontSize: "8px", letterSpacing: "0.5px", textTransform: "uppercase" as const }}>Ihr Foto</span>
         </div>
       );
     }

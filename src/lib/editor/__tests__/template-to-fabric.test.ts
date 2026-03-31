@@ -27,7 +27,9 @@ describe("templateToFabricConfigs", () => {
     const mockTemplate: TemplateConfig = {
       id: "TEST",
       name: "Test",
+      nameEn: "Test",
       description: "Test",
+      descriptionEn: "Test",
       referenceImage: "",
       cardType: "sterbebild",
       cardFormat: "single",
@@ -36,6 +38,7 @@ describe("templateToFabricConfigs", () => {
       requiredFields: [],
       requiresPhoto: false,
       thumbnail: { previewName: "Test", previewDates: "Test" },
+      placeholderData: { name: "Test", birthDate: "* 1.1.2000", deathDate: "† 1.1.2020" },
       elements: [
         { id: "t1", type: "text", x: 100, y: 200, w: 800, h: 100, field: "name", fontSize: 12 },
       ],
@@ -152,7 +155,9 @@ describe("templateToFabricConfigs", () => {
     const mockTemplate: TemplateConfig = {
       id: "TEST",
       name: "Test",
+      nameEn: "Test",
       description: "",
+      descriptionEn: "",
       referenceImage: "",
       cardType: "sterbebild",
       cardFormat: "single",
@@ -161,6 +166,7 @@ describe("templateToFabricConfigs", () => {
       requiredFields: [],
       requiresPhoto: false,
       thumbnail: { previewName: "", previewDates: "" },
+      placeholderData: { name: "Test", birthDate: "", deathDate: "" },
       elements: [
         { id: "bad", type: "unknown" as never, x: 0, y: 0, w: 100, h: 100 },
         { id: "good", type: "text", x: 0, y: 0, w: 100, h: 100, field: "name", fontSize: 12 },
@@ -181,7 +187,9 @@ describe("templateToFabricConfigs", () => {
     const mockTemplate: TemplateConfig = {
       id: "TEST",
       name: "Test",
+      nameEn: "Test",
       description: "",
+      descriptionEn: "",
       referenceImage: "",
       cardType: "sterbebild",
       cardFormat: "single",
@@ -190,6 +198,7 @@ describe("templateToFabricConfigs", () => {
       requiredFields: [],
       requiresPhoto: false,
       thumbnail: { previewName: "", previewDates: "" },
+      placeholderData: { name: "Test", birthDate: "", deathDate: "" },
       elements: [],
     };
 

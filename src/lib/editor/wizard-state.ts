@@ -1,3 +1,5 @@
+import { getTemplateConfig } from "./template-configs";
+
 // Internal values match DB constraint: sterbebild, trauerkarte, dankkarte
 export type CardType = "sterbebild" | "trauerkarte" | "dankkarte";
 export type CardFormat = "single" | "folded";
@@ -283,8 +285,30 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
     }
     case "SET_CARD_FORMAT":
       return { ...state, cardFormat: action.cardFormat, templateId: null };
-    case "SET_TEMPLATE":
-      return { ...state, templateId: action.templateId, elementOverrides: {} };
+    case "SET_TEMPLATE": {
+      // Pre-fill text with placeholder data so the card is never blank
+      const tplConfig = getTemplateConfig(action.templateId);
+      const ph = tplConfig?.placeholderData;
+      const prefilled: Partial<TextContent> = ph ? {
+        heading: ph.heading ?? "",
+        name: ph.name,
+        birthDate: ph.birthDate,
+        deathDate: ph.deathDate,
+        quote: ph.quote ?? "",
+        quoteAuthor: ph.quoteAuthor ?? "",
+        relationshipLabels: ph.relationshipLabels ?? "",
+        closingVerse: ph.closingVerse ?? "",
+        locationBirth: ph.locationBirth ?? "",
+        locationDeath: ph.locationDeath ?? "",
+        dividerSymbol: ph.dividerSymbol ?? "",
+      } : {};
+      return {
+        ...state,
+        templateId: action.templateId,
+        elementOverrides: {},
+        textContent: { ...state.textContent, ...prefilled },
+      };
+    }
     case "SET_BACKGROUND":
       return { ...state, background: action.background };
     case "SET_PHOTO":

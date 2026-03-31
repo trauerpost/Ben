@@ -37,10 +37,27 @@ export interface TemplateElement {
   lineStyle?: string;
 }
 
+/** Sample data pre-filled when a template is selected — user replaces, never starts blank */
+export interface PlaceholderData {
+  heading?: string;
+  name: string;
+  birthDate: string;
+  deathDate: string;
+  quote?: string;
+  quoteAuthor?: string;
+  relationshipLabels?: string;
+  closingVerse?: string;
+  locationBirth?: string;
+  locationDeath?: string;
+  dividerSymbol?: string;
+}
+
 export interface TemplateConfig {
   id: string;
   name: string;
+  nameEn: string;
   description: string;
+  descriptionEn: string;
   referenceImage: string;
   cardType: CardType;
   cardFormat: CardFormat;
@@ -53,6 +70,7 @@ export interface TemplateConfig {
     previewDates: string;
     previewQuote?: string;
   };
+  placeholderData: PlaceholderData;
   elements: TemplateElement[];
 }
 
@@ -60,8 +78,10 @@ export interface TemplateConfig {
 
 const TI04: TemplateConfig = {
   id: "TI04",
-  name: "Nur Text",
-  description: "Zwei-Spalten — nur Text, kein Foto",
+  name: "Klassisch Elegant",
+  nameEn: "Classic Elegant",
+  description: "Eleganter Zwei-Spalten-Text ohne Foto — zeitlose Typografie",
+  descriptionEn: "Elegant two-column text without photo — timeless typography",
   referenceImage: "/docs/references/TI04.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -70,6 +90,15 @@ const TI04: TemplateConfig = {
   requiredFields: ["heading", "relationshipLabels", "name", "quote", "quoteAuthor", "birthDate", "deathDate"],
   requiresPhoto: false,
   thumbnail: { previewName: "Sieglinde Musterfrau", previewDates: "24. Juli 1952 – 28. September 2020" },
+  placeholderData: {
+    heading: "In liebevoller Erinnerung an",
+    name: "Sieglinde Musterfrau",
+    relationshipLabels: "Unsere liebe Mutter, Großmutter\nund Schwester",
+    birthDate: "* 24. Juli 1952",
+    deathDate: "† 28. September 2020",
+    quote: "Was man tief in seinem Herzen besitzt,\nkann man nicht durch den Tod verlieren.",
+    quoteAuthor: "Johann Wolfgang von Goethe",
+  },
   elements: [
     { id: "heading", type: "text", x: 70, y: 85, w: 460, h: 45, field: "heading", fontSize: 10, fontStyle: "italic", textAlign: "left", letterSpacing: "0.5px" },
     { id: "labels", type: "text", x: 70, y: 148, w: 460, h: 70, field: "relationshipLabels", fontSize: 8.5, textAlign: "left" },
@@ -85,8 +114,10 @@ const TI04: TemplateConfig = {
 
 const TI05: TemplateConfig = {
   id: "TI05",
-  name: "Foto 50/50",
-  description: "Großes Foto links, Text rechts mit Linien",
+  name: "Foto & Gedenken",
+  nameEn: "Photo & Memorial",
+  description: "Großes Portraitfoto links, Gedenktext rechts — klassische Aufteilung",
+  descriptionEn: "Large portrait photo left, memorial text right — classic layout",
   referenceImage: "/docs/references/TI05.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -95,6 +126,14 @@ const TI05: TemplateConfig = {
   requiredFields: ["heading", "name", "birthDate", "deathDate", "quote", "quoteAuthor"],
   requiresPhoto: true,
   thumbnail: { previewName: "Brigitte Musterfrau", previewDates: "* 31. Juli 1950  † 20. Februar 2021", previewQuote: "Das schönste Denkmal..." },
+  placeholderData: {
+    heading: "In stillem Gedenken",
+    name: "Brigitte Musterfrau",
+    birthDate: "* 31. Juli 1950",
+    deathDate: "† 20. Februar 2021",
+    quote: "Das schönste Denkmal,\ndas ein Mensch bekommen kann,\nsteht in den Herzen\nder Mitmenschen.",
+    quoteAuthor: "Albert Schweitzer",
+  },
   elements: [
     { id: "photo", type: "image", x: 0, y: 0, w: 480, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
     { id: "heading", type: "text", x: 530, y: 155, w: 420, h: 38, field: "heading", fontSize: 9, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
@@ -112,8 +151,10 @@ const TI05: TemplateConfig = {
 
 const TI06: TemplateConfig = {
   id: "TI06",
-  name: "L-Form",
-  description: "Foto oben-links, Name Small-Caps rechts, Spruch unten",
+  name: "Portrait & Spruch",
+  nameEn: "Portrait & Verse",
+  description: "Foto mit Rahmen oben-links, Name in Kapitälchen, Spruch unten",
+  descriptionEn: "Framed photo top-left, name in small caps, verse below",
   referenceImage: "/docs/references/TI06.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -122,6 +163,12 @@ const TI06: TemplateConfig = {
   requiredFields: ["name", "birthDate", "deathDate", "quote"],
   requiresPhoto: true,
   thumbnail: { previewName: "Thilde Muster", previewDates: "* 4.6.1942  † 6.1.2021", previewQuote: "Man sieht die Sonne..." },
+  placeholderData: {
+    name: "Thilde Muster",
+    birthDate: "* 4. Juni 1942",
+    deathDate: "† 6. Januar 2021",
+    quote: "Man sieht die Sonne langsam untergehen\nund erschrickt doch,\nwenn es plötzlich dunkel ist.",
+  },
   elements: [
     { id: "photo", type: "image", x: 55, y: 55, w: 365, h: 540, field: "photo", imageFit: "cover", imageBorder: "1px solid #ddd", useCrop: true },
     { id: "name", type: "text", x: 470, y: 100, w: 490, h: 130, field: "name", fontSize: 24, fontVariant: "small-caps", fontWeight: "normal", letterSpacing: "4px", textAlign: "left" },
@@ -135,8 +182,10 @@ const TI06: TemplateConfig = {
 
 const TI07: TemplateConfig = {
   id: "TI07",
-  name: "Drei-Zonen",
-  description: "Symbol links, Text Mitte, Foto rechts",
+  name: "Kreuz & Rose",
+  nameEn: "Cross & Rose",
+  description: "Rosenkreuz-Ornament links, Gedenktext Mitte, Foto rechts",
+  descriptionEn: "Rose cross ornament left, memorial text center, photo right",
   referenceImage: "/docs/references/TI07.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -145,6 +194,14 @@ const TI07: TemplateConfig = {
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath", "dividerSymbol"],
   requiresPhoto: true,
   thumbnail: { previewName: "Franziska Muster", previewDates: "* 1.12.1954  † 23.1.2021" },
+  placeholderData: {
+    name: "Franziska Muster",
+    birthDate: "* 1. Dezember 1954",
+    deathDate: "† 23. Januar 2021",
+    locationBirth: "in München",
+    locationDeath: "in München",
+    dividerSymbol: "✦ ✦ ✦",
+  },
   elements: [
     { id: "ornament", type: "ornament", x: 10, y: 10, w: 130, h: 880, fixedAsset: "/assets/ornaments/cross-rose-vine.svg", imageFit: "contain" },
     { id: "name", type: "text", x: 150, y: 340, w: 400, h: 200, field: "name", fontSize: 24, textAlign: "left" },
@@ -161,8 +218,10 @@ const TI07: TemplateConfig = {
 
 const TI08: TemplateConfig = {
   id: "TI08",
-  name: "Oval-Spiegel",
-  description: "Kreuz + Linien links, ovales Foto rechts",
+  name: "Ovales Portrait",
+  nameEn: "Oval Portrait",
+  description: "Schlichtes Kreuz mit Linien, ovales Foto rechts — feierlich",
+  descriptionEn: "Simple cross with lines, oval photo right — solemn",
   referenceImage: "/docs/references/TI08.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -171,6 +230,13 @@ const TI08: TemplateConfig = {
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath"],
   requiresPhoto: true,
   thumbnail: { previewName: "Erna Musterfrau", previewDates: "* 1.12.1934  † 20.1.2021" },
+  placeholderData: {
+    name: "Erna Musterfrau",
+    birthDate: "* 1. Dezember 1934",
+    deathDate: "† 20. Januar 2021",
+    locationBirth: "in Wien",
+    locationDeath: "in Salzburg",
+  },
   elements: [
     { id: "cross", type: "ornament", x: 25, y: 35, w: 28, h: 70, fixedAsset: "/assets/ornaments/cross-simple.svg", imageFit: "contain" },
     { id: "line-top", type: "line", x: 58, y: 70, w: 370, h: 1, lineStyle: "1px solid #1A1A1A" },
@@ -188,8 +254,10 @@ const TI08: TemplateConfig = {
 
 const TI09: TemplateConfig = {
   id: "TI09",
-  name: "Floral Symmetrisch",
-  description: "Spruch links, Symbol Mitte, Text + kleines Foto rechts",
+  name: "Blumen & Vers",
+  nameEn: "Flowers & Verse",
+  description: "Blumenornament, Gedicht links, Foto und Gedenken rechts",
+  descriptionEn: "Floral ornament, poem left, photo and memorial right",
   referenceImage: "/docs/references/TI09.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -198,6 +266,14 @@ const TI09: TemplateConfig = {
   requiredFields: ["heading", "name", "birthDate", "deathDate", "closingVerse", "quote"],
   requiresPhoto: true,
   thumbnail: { previewName: "Renate Musterfrau", previewDates: "* 6.5.1933  † 3.2.2021", previewQuote: "Du siehst den Garten..." },
+  placeholderData: {
+    heading: "In liebevoller Erinnerung",
+    name: "Renate Musterfrau",
+    birthDate: "* 6. Mai 1933",
+    deathDate: "† 3. Februar 2021",
+    quote: "Du siehst den Garten nicht mehr grünen,\nin dem du gerne still gesessen.\nDoch wir, die um dich weinen,\nwerden dich nie vergessen.",
+    closingVerse: "Ruhe in Frieden",
+  },
   elements: [
     { id: "ornament", type: "ornament", x: 350, y: 25, w: 300, h: 75, fixedAsset: "/assets/ornaments/floral-divider.svg", imageFit: "contain" },
     { id: "quote", type: "text", x: 55, y: 140, w: 390, h: 730, field: "quote", fontSize: 8.5, fontStyle: "italic", textAlign: "left" },
