@@ -9,6 +9,7 @@ import {
   isStepValid,
   saveDraft,
   loadDraft,
+  clearDraft,
   TOTAL_STEPS,
   WIZARD_FONTS,
 } from "@/lib/editor/wizard-state";
@@ -117,7 +118,7 @@ function WizardShellInner() {
           />
         </>
       ) : undefined;
-      return <SplitLayout state={stepState} toolbar={toolbar}>{stepContent}</SplitLayout>;
+      return <SplitLayout state={stepState} toolbar={toolbar} interactive={true} dispatch={stepDispatch}>{stepContent}</SplitLayout>;
     }
 
     return stepContent;
@@ -138,13 +139,29 @@ function WizardShellInner() {
       {/* Navigation — sticky at bottom of viewport */}
       <div className="sticky bottom-0 border-t border-brand-border bg-white px-6 py-4 z-10">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <button
-            onClick={handlePrev}
-            disabled={state.currentStep === 1}
-            className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray"
-          >
-            &larr; Back
-          </button>
+          <div className="flex items-center gap-2">
+            {state.currentStep > 1 && (
+              <button
+                onClick={() => {
+                  if (window.confirm("Neue Karte erstellen? Alle Eingaben werden gelöscht.")) {
+                    clearDraft();
+                    dispatch({ type: "RESET" });
+                  }
+                }}
+                className="px-3 py-2 rounded-lg text-xs text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors"
+                title="Neue Karte erstellen"
+              >
+                Neue Karte
+              </button>
+            )}
+            <button
+              onClick={handlePrev}
+              disabled={state.currentStep === 1}
+              className="px-6 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-brand-gray hover:text-brand-dark hover:bg-brand-light-gray"
+            >
+              &larr; Back
+            </button>
+          </div>
 
           <span className="text-sm text-brand-gray">
             <span className="hidden md:inline">Step </span>

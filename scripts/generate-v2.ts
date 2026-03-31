@@ -25,7 +25,7 @@ const TEMPLATES: Record<string, WizardState> = {
       textAlign: "left",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   TI05: {
@@ -44,7 +44,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   TI06: {
@@ -61,7 +61,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "EB Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   TI07: {
@@ -80,7 +80,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   TI08: {
@@ -98,7 +98,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Cormorant Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   TI09: {
@@ -118,7 +118,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 };
 

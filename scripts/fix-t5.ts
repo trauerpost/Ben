@@ -23,6 +23,7 @@ const state: WizardState = {
   decoration: { assetUrl: null, assetId: null },
   border: { url: null, id: null },
   corners: { urls: [], ids: [] },
+  elementOverrides: {},
 };
 
 async function main() {

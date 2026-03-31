@@ -34,7 +34,7 @@ const TEMPLATES: Record<string, WizardState> = {
       textAlign: "left",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   T2: {
@@ -51,7 +51,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   T3: {
@@ -70,7 +70,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "EB Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   T4: {
@@ -91,7 +91,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: ORNAMENT_DAISY, assetId: "daisy" },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   T5: {
@@ -110,7 +110,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Cormorant Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 
   T6: {
@@ -134,7 +134,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: ORNAMENT_CROSS, assetId: "cross" },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 };
 

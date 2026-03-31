@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, useLayoutEffect, type RefObject } from "react";
 import { useActiveField } from "./ActiveFieldContext";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { TemplateElement } from "@/lib/editor/template-configs";
-import type { WizardState, TextContent } from "@/lib/editor/wizard-state";
+import type { WizardState, TextContent, WizardAction } from "@/lib/editor/wizard-state";
+import InteractiveElement from "./InteractiveElement";
 
 interface SpreadPreviewProps {
   state: WizardState;
   /** Scale factor for the preview container (default 1 = 100% of parent width) */
   scale?: number;
+  /** When true, elements are clickable/selectable (Batches 3-6 features) */
+  interactive?: boolean;
+  dispatch?: React.Dispatch<import("@/lib/editor/wizard-state").WizardAction>;
 }
 
 function getFieldValue(state: WizardState, field: string): string {
@@ -85,9 +89,38 @@ const ElementPreview = React.memo(function ElementPreview({ el, state, activeFie
     const userSize = getUserFontSize(state.textContent, el.field);
     const templateSize = el.fontSize ?? 9;
     const fontSize = userSize ?? templateSize;
+    const minFontSize = el.minFontSize ?? 10;
+
+    // Auto-shrink: refs for DOM measurement
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLDivElement>(null);
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useLayoutEffect(() => {
+      const container = containerRef.current;
+      const textDiv = textRef.current;
+      if (!container || !textDiv) return;
+
+      // Reset to base size
+      textDiv.style.fontSize = `${fontSize}pt`;
+
+      // Temporarily allow overflow so scrollHeight is accurate
+      container.style.overflow = "visible";
+
+      // Shrink until fits (same algorithm as card-to-html-v2.ts:276-296)
+      let size = fontSize;
+      while (container.scrollHeight > container.clientHeight && size > minFontSize) {
+        size -= 0.5;
+        textDiv.style.fontSize = `${size}pt`;
+      }
+
+      // Restore overflow hidden
+      container.style.overflow = "hidden";
+    }, [value, fontSize, minFontSize]);
 
     return (
       <div
+        ref={containerRef}
         style={{
           ...style,
           display: "flex",
@@ -98,6 +131,7 @@ const ElementPreview = React.memo(function ElementPreview({ el, state, activeFie
         }}
       >
         <div
+          ref={textRef}
           style={{
             fontFamily: `'${font}', serif`,
             fontSize: `${fontSize}pt`,
@@ -227,8 +261,10 @@ const ElementPreview = React.memo(function ElementPreview({ el, state, activeFie
   return null;
 });
 
-export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) {
-  const { activeField } = useActiveField();
+export default function SpreadPreview({ state, scale = 1, interactive = false, dispatch }: SpreadPreviewProps) {
+  const { activeField, selectedElementId, setActiveField, setSelectedElementId } = useActiveField();
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const [changedField, setChangedField] = useState<string | null>(null);
   const prevText = useRef({ ...state.textContent });
 
@@ -281,6 +317,7 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
   return (
     <>
       <div
+        ref={cardContainerRef}
         className="relative bg-white border border-brand-border rounded-xl shadow-lg overflow-hidden mx-auto"
         style={{
           aspectRatio: `${aspect}`,
@@ -289,10 +326,30 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
           opacity: fontsReady ? 1 : 0.5,
           transition: "opacity 0.3s",
         }}
+        onClick={interactive ? () => setSelectedElementId(null) : undefined}
       >
-        {config.elements.map((el) => (
-          <ElementPreview key={el.id} el={el} state={state} activeField={activeField} changedField={changedField} />
-        ))}
+        {config.elements
+          .filter((el) => !state.elementOverrides[el.id]?.hidden)
+          .map((el) =>
+            interactive && dispatch ? (
+              <InteractiveElement
+                key={el.id}
+                el={el}
+                state={state}
+                dispatch={dispatch}
+                isSelected={selectedElementId === el.id}
+                containerRef={cardContainerRef}
+                zoom={scale}
+                isMobile={isMobile}
+                onSelect={() => {
+                  setActiveField(el.field ?? null, "preview");
+                  setSelectedElementId(el.id);
+                }}
+              />
+            ) : (
+              <ElementPreview key={el.id} el={el} state={state} activeField={activeField} changedField={changedField} />
+            )
+          )}
 
         {/* Render user decoration (from Step 6) if present */}
         {state.decoration.assetUrl && (
@@ -313,7 +370,11 @@ export default function SpreadPreview({ state, scale = 1 }: SpreadPreviewProps) 
             <img
               src={state.decoration.assetUrl}
               alt=""
-              style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "100%",
+                objectFit: "contain",
+              }}
             />
           </div>
         )}

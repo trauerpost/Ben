@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { useActiveField } from "@/components/wizard/ActiveFieldContext";
 import {
   DIVIDER_SYMBOLS,
   DEFAULT_TEXT_CONTENT,
@@ -79,6 +80,17 @@ export default function StepText({ state, dispatch, onFieldFocus, validationAtte
 
   const tc = state.textContent;
   const templates = state.cardType ? TEXT_TEMPLATES[state.cardType] : [];
+  const { activeField: contextActiveField, syncSource } = useActiveField();
+
+  // Scroll to field when clicked on preview (syncSource === "preview")
+  useEffect(() => {
+    if (syncSource !== "preview" || !contextActiveField) return;
+    const el = document.querySelector(`[data-field="${contextActiveField}"]`) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.focus();
+    }
+  }, [contextActiveField, syncSource]);
 
   // Determine which fields to show
   const isV2 = state.templateId?.startsWith("TI") ?? false;
@@ -197,6 +209,7 @@ export default function StepText({ state, dispatch, onFieldFocus, validationAtte
         </label>
         {meta.type === "textarea" ? (
           <textarea
+            data-field={fieldName}
             value={value ?? ""}
             onChange={(e) => setString(fieldName as StringField, e.target.value)}
             onFocus={() => handleFieldFocus(fieldName)}
@@ -209,6 +222,7 @@ export default function StepText({ state, dispatch, onFieldFocus, validationAtte
           />
         ) : (
           <input
+            data-field={fieldName}
             type="text"
             value={value ?? ""}
             onChange={(e) => setString(fieldName as StringField, e.target.value)}

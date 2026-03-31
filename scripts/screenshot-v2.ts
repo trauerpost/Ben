@@ -27,7 +27,7 @@ const TEMPLATES: Record<string, WizardState> = {
       textAlign: "left",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
   TI05: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI05",
@@ -45,7 +45,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
   TI06: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI06",
@@ -61,7 +61,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "EB Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
   TI07: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI07",
@@ -79,7 +79,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
   TI08: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI08",
@@ -96,7 +96,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Cormorant Garamond",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
   TI09: {
     currentStep: 7, cardType: "sterbebild", cardFormat: "single", templateId: "TI09",
@@ -114,7 +114,7 @@ const TEMPLATES: Record<string, WizardState> = {
       fontFamily: "Playfair Display",
     },
     decoration: { assetUrl: null, assetId: null },
-    border: { url: null, id: null }, corners: { urls: [], ids: [] },
+    border: { url: null, id: null }, corners: { urls: [], ids: [] }, elementOverrides: {},
   },
 };
 

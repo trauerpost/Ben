@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { WizardState } from "@/lib/editor/wizard-state";
+import type { WizardState, WizardAction } from "@/lib/editor/wizard-state";
 import SpreadPreview from "./SpreadPreview";
 import CardRenderer from "./CardRenderer";
 
@@ -9,9 +9,11 @@ interface SplitLayoutProps {
   children: React.ReactNode;
   state: WizardState;
   toolbar?: React.ReactNode;
+  interactive?: boolean;
+  dispatch?: React.Dispatch<WizardAction>;
 }
 
-function PreviewPanel({ state }: { state: WizardState }) {
+function PreviewPanel({ state, interactive, dispatch }: { state: WizardState; interactive?: boolean; dispatch?: React.Dispatch<WizardAction> }) {
   const templateId = state.templateId;
 
   if (!templateId) {
@@ -24,13 +26,13 @@ function PreviewPanel({ state }: { state: WizardState }) {
 
   // V2 templates (TI-prefix) use SpreadPreview, V1 uses CardRenderer
   if (templateId.startsWith("TI")) {
-    return <SpreadPreview state={state} />;
+    return <SpreadPreview state={state} interactive={interactive} dispatch={dispatch} />;
   }
 
   return <CardRenderer templateId={templateId} panelId="front" state={state} />;
 }
 
-export default function SplitLayout({ children, state, toolbar }: SplitLayoutProps) {
+export default function SplitLayout({ children, state, toolbar, interactive, dispatch }: SplitLayoutProps) {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   return (
@@ -44,7 +46,7 @@ export default function SplitLayout({ children, state, toolbar }: SplitLayoutPro
       {/* Preview column — desktop/tablet only */}
       <div className="hidden md:block md:w-[40%] lg:w-[45%]">
         <div className="sticky top-8">
-          <PreviewPanel state={state} />
+          <PreviewPanel state={state} interactive={interactive} dispatch={dispatch} />
         </div>
       </div>
 
@@ -97,7 +99,7 @@ export default function SplitLayout({ children, state, toolbar }: SplitLayoutPro
             {/* Preview content */}
             <div className="flex-1 overflow-y-auto p-4 flex items-start justify-center">
               <div className="w-full max-w-sm">
-                <PreviewPanel state={state} />
+                <PreviewPanel state={state} interactive={interactive} dispatch={dispatch} />
               </div>
             </div>
           </div>

@@ -7,7 +7,8 @@
 
 import { getTemplateConfig } from "./template-configs";
 import type { TemplateConfig, TemplateElement } from "./template-configs";
-import type { WizardState, TextContent } from "./wizard-state";
+import type { WizardState, TextContent, ElementOverride } from "./wizard-state";
+import { getMergedElement } from "./wizard-state";
 
 // ── Image helpers ──
 
@@ -26,11 +27,21 @@ async function imageToBase64(url: string): Promise<string> {
 
 // ── Position helper ──
 
-function posStyle(el: TemplateElement, gridW: number, gridH: number): string {
-  const left = (el.x / gridW * 100).toFixed(3);
-  const top = (el.y / gridH * 100).toFixed(3);
-  const width = (el.w / gridW * 100).toFixed(3);
-  const height = (el.h / gridH * 100).toFixed(3);
+function posStyle(
+  el: TemplateElement,
+  gridW: number,
+  gridH: number,
+  overrides?: Record<string, ElementOverride>
+): string {
+  const ov = overrides?.[el.id];
+  const x = ov?.x ?? el.x;
+  const y = ov?.y ?? el.y;
+  const w = ov?.w ?? el.w;
+  const h = ov?.h ?? el.h;
+  const left = (x / gridW * 100).toFixed(3);
+  const top = (y / gridH * 100).toFixed(3);
+  const width = (w / gridW * 100).toFixed(3);
+  const height = (h / gridH * 100).toFixed(3);
   return `position:absolute;left:${left}%;top:${top}%;width:${width}%;height:${height}%;box-sizing:border-box;`;
 }
 
@@ -61,17 +72,23 @@ function renderTextElement(el: TemplateElement, state: WizardState, pos: string)
   const value = el.field ? getFieldValue(state.textContent, el.field) : (el.fixedContent ?? "");
   if (!value) return "";
 
-  const globalFont = state.textContent.fontFamily;
-  const font = el.fontFamily ?? globalFont;
+  // Use per-element overrides if available (override > template > global)
+  const merged = getMergedElement(
+    el,
+    state.elementOverrides ?? {},
+    { fontFamily: state.textContent.fontFamily, fontColor: state.textContent.fontColor, textAlign: state.textContent.textAlign }
+  );
+
+  const font = merged.fontFamily;
   const userSize = getUserFontSize(state.textContent, el.field);
-  const size = userSize ?? el.fontSize ?? 9;
+  const size = userSize ?? merged.fontSize;
   const weight = el.fontWeight ?? "normal";
   const style = el.fontStyle ?? "normal";
   const variant = el.fontVariant ?? "normal";
   const transform = el.textTransform ?? "none";
-  const align = el.textAlign ?? "center";
+  const align = merged.textAlign;
   const spacing = el.letterSpacing ?? "0";
-  const color = el.color ?? state.textContent.fontColor ?? "#1A1A1A";
+  const color = merged.fontColor;
   const escaped = value.replace(/\n/g, "<br>");
 
   return `<div id="el-${el.id}" style="${pos}display:flex;flex-direction:column;align-items:${align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"};justify-content:center;overflow:hidden;">
@@ -213,10 +230,12 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
     images["decoration"] = await imageToBase64(state.decoration.assetUrl);
   }
 
-  // Render elements
+  // Render elements (skip hidden)
+  const overrides = state.elementOverrides ?? {};
   let elementsHtml = "";
   for (const el of config.elements) {
-    const pos = posStyle(el, gridW, gridH);
+    if (overrides[el.id]?.hidden) continue;
+    const pos = posStyle(el, gridW, gridH, overrides);
     switch (el.type) {
       case "text":
         elementsHtml += renderTextElement(el, state, pos);

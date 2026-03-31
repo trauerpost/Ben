@@ -131,6 +131,55 @@ export const BACKGROUND_COLORS = [
 
 export const DIVIDER_SYMBOLS = ["", "✦ ✦ ✦", "— — —", "❀ ❀ ❀", "✝", "☆ ☆ ☆"] as const;
 
+// ── Element Overrides (per-element position/style overrides for interactive preview) ──
+
+export interface ElementOverride {
+  x?: number;          // 0-1000 grid position
+  y?: number;
+  w?: number;          // 0-1000 grid size (min 50)
+  h?: number;
+  fontFamily?: string;
+  fontSize?: number;
+  fontColor?: string;
+  textAlign?: "left" | "center" | "right";
+  hidden?: boolean;    // Delete = hide (template is immutable)
+}
+
+function clampGrid(value: number): number {
+  return Math.max(0, Math.min(1000, Math.round(value)));
+}
+
+function clampSize(value: number): number {
+  return Math.max(50, Math.min(1000, Math.round(value)));
+}
+
+/**
+ * Merge template element defaults + per-element overrides + global styles.
+ * Cascade: override > template > global
+ */
+export function getMergedElement(
+  el: { id: string; x: number; y: number; w: number; h: number; fontFamily?: string; fontSize?: number; color?: string; textAlign?: string },
+  overrides: Record<string, ElementOverride>,
+  globalStyles: { fontFamily: string; fontColor: string; textAlign: string }
+): {
+  x: number; y: number; w: number; h: number;
+  fontFamily: string; fontSize: number; fontColor: string; textAlign: string;
+  hidden: boolean;
+} {
+  const ov = overrides[el.id];
+  return {
+    x: clampGrid(ov?.x ?? el.x),
+    y: clampGrid(ov?.y ?? el.y),
+    w: clampSize(ov?.w ?? el.w),
+    h: clampSize(ov?.h ?? el.h),
+    fontFamily: ov?.fontFamily ?? el.fontFamily ?? globalStyles.fontFamily,
+    fontSize: ov?.fontSize ?? el.fontSize ?? 12,
+    fontColor: ov?.fontColor ?? el.color ?? globalStyles.fontColor,
+    textAlign: ov?.textAlign ?? (el.textAlign as "left" | "center" | "right") ?? globalStyles.textAlign,
+    hidden: ov?.hidden ?? false,
+  };
+}
+
 // ── State ──
 
 export const TOTAL_STEPS = 7;
@@ -169,6 +218,7 @@ export interface WizardState {
     urls: string[];
     ids: string[];
   };
+  elementOverrides: Record<string, ElementOverride>;
 }
 
 export type WizardAction =
@@ -193,6 +243,10 @@ export type WizardAction =
   | { type: "SET_STEP"; step: number }
   | { type: "NEXT_STEP" }
   | { type: "PREV_STEP" }
+  | { type: "SET_ELEMENT_OVERRIDE"; elementId: string; override: Partial<ElementOverride> }
+  | { type: "SET_ELEMENT_POSITION"; elementId: string; x: number; y: number }
+  | { type: "SET_ELEMENT_SIZE"; elementId: string; w: number; h: number }
+  | { type: "CLEAR_ELEMENT_OVERRIDE"; elementId: string }
   | { type: "LOAD_STATE"; state: WizardState }
   | { type: "RESET" };
 
@@ -217,6 +271,7 @@ export const initialWizardState: WizardState = {
   decoration: { assetUrl: null, assetId: null },
   border: { url: null, id: null },
   corners: { urls: [], ids: [] },
+  elementOverrides: {},
 };
 
 export function wizardReducer(state: WizardState, action: WizardAction): WizardState {
@@ -229,7 +284,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
     case "SET_CARD_FORMAT":
       return { ...state, cardFormat: action.cardFormat, templateId: null };
     case "SET_TEMPLATE":
-      return { ...state, templateId: action.templateId };
+      return { ...state, templateId: action.templateId, elementOverrides: {} };
     case "SET_BACKGROUND":
       return { ...state, background: action.background };
     case "SET_PHOTO":
@@ -292,8 +347,42 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
       return { ...state, currentStep: Math.min(state.currentStep + 1, TOTAL_STEPS) };
     case "PREV_STEP":
       return { ...state, currentStep: Math.max(state.currentStep - 1, 1) };
+    case "SET_ELEMENT_OVERRIDE": {
+      const existing = state.elementOverrides[action.elementId] ?? {};
+      const merged: ElementOverride = { ...existing, ...action.override };
+      // Clamp position/size values
+      if (merged.x !== undefined) merged.x = clampGrid(merged.x);
+      if (merged.y !== undefined) merged.y = clampGrid(merged.y);
+      if (merged.w !== undefined) merged.w = clampSize(merged.w);
+      if (merged.h !== undefined) merged.h = clampSize(merged.h);
+      return { ...state, elementOverrides: { ...state.elementOverrides, [action.elementId]: merged } };
+    }
+    case "SET_ELEMENT_POSITION": {
+      const existing = state.elementOverrides[action.elementId] ?? {};
+      return {
+        ...state,
+        elementOverrides: {
+          ...state.elementOverrides,
+          [action.elementId]: { ...existing, x: clampGrid(action.x), y: clampGrid(action.y) },
+        },
+      };
+    }
+    case "SET_ELEMENT_SIZE": {
+      const existing = state.elementOverrides[action.elementId] ?? {};
+      return {
+        ...state,
+        elementOverrides: {
+          ...state.elementOverrides,
+          [action.elementId]: { ...existing, w: clampSize(action.w), h: clampSize(action.h) },
+        },
+      };
+    }
+    case "CLEAR_ELEMENT_OVERRIDE": {
+      const { [action.elementId]: _, ...rest } = state.elementOverrides;
+      return { ...state, elementOverrides: rest };
+    }
     case "LOAD_STATE":
-      return action.state;
+      return { ...action.state, elementOverrides: action.state.elementOverrides ?? {} };
     case "RESET":
       return initialWizardState;
     default:
@@ -322,7 +411,7 @@ export function getCardDimensions(state: WizardState): CardDimensions | null {
 }
 
 const STORAGE_KEY = "trauerpost_wizard_draft";
-const DRAFT_VERSION = 8;
+const DRAFT_VERSION = 9;
 
 interface DraftEnvelope {
   version: number;
@@ -336,14 +425,25 @@ export function saveDraft(state: WizardState): void {
   } catch { /* ignore */ }
 }
 
+function migrateDraft(parsed: { version: number; state: unknown }): WizardState | null {
+  if (parsed.version === DRAFT_VERSION) {
+    return parsed.state as WizardState;
+  }
+  // v8 → v9: add empty elementOverrides
+  if (parsed.version === 8) {
+    const v8State = parsed.state as Omit<WizardState, "elementOverrides">;
+    return { ...v8State, elementOverrides: {} } as WizardState;
+  }
+  return null; // too old, discard
+}
+
 export function loadDraft(): WizardState | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (!saved) return null;
     const parsed = JSON.parse(saved);
-    if (parsed.version === DRAFT_VERSION && parsed.state) {
-      return parsed.state;
-    }
+    const migrated = migrateDraft(parsed);
+    if (migrated) return migrated;
     console.warn("[wizard] Discarding old draft — layout model changed");
     localStorage.removeItem(STORAGE_KEY);
   } catch { /* ignore */ }
