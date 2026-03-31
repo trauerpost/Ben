@@ -31,15 +31,15 @@ describe("wizardReducer", () => {
       expect(next.cardFormat).toBe("single");
     });
 
-    it("sets format to null when card type has multiple formats (trauerkarte)", () => {
+    it("auto-selects first format for multi-format card types (trauerkarte)", () => {
       const state = freshState({ cardFormat: "single" });
       const next = wizardReducer(state, { type: "SET_CARD_TYPE", cardType: "trauerkarte" });
-      expect(next.cardFormat).toBeNull();
+      expect(next.cardFormat).toBe("single");
     });
 
-    it("sets format to null when card type has multiple formats (dankkarte)", () => {
+    it("auto-selects first format for multi-format card types (dankkarte)", () => {
       const next = wizardReducer(freshState(), { type: "SET_CARD_TYPE", cardType: "dankkarte" });
-      expect(next.cardFormat).toBeNull();
+      expect(next.cardFormat).toBe("single");
     });
   });
 

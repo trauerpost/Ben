@@ -1,1 +1,42 @@
 @AGENTS.md
+
+---
+
+## IRON RULES — BENJEMIN PRODUCT
+
+### Rule 1: No Technical Artifacts — EVER
+A customer must NEVER see: `[fieldName]`, dashed borders, gray placeholder boxes, "undefined", "null", empty white areas, or ANY developer output. Every template must load looking like a FINISHED, beautiful memorial card — with a real sample photo (nature scene, candle, flowers), real German names ("Maria Musterfrau"), real dates, real quotes. The customer REPLACES content, never builds from scratch.
+
+### Rule 2: Two Builders = Test BOTH
+BENJEMIN has two builders: Wizard (`/builder`) and Canvas Builder (`/builder-v2`). They share template code but render differently. ANY change to templates, rendering, or state MUST be verified in BOTH builders, in BOTH languages (DE + EN), for ALL card types (sterbebild, trauerkarte, dankkarte). Run `node scripts/quality-gate.mjs` before ANY push.
+
+### Rule 3: Screenshot = Truth
+Never claim something works based on test results, DOM checks, or TypeScript compilation. Open the page, LOOK at the screenshot, describe what you SEE. If you can't show a screenshot proving it looks correct, it's not done. Canvas (Fabric.js) renders PIXELS — `page.textContent()` cannot detect what's on a canvas.
+
+### Rule 4: Kartenmacherei is the Standard
+The reference is https://configurator.www.kartenmacherei.de — study their configurator. Cards start pre-filled with background images, sample text, page thumbnails at the bottom. We must match this level of polish. White boxes with dashed borders are unacceptable.
+
+---
+
+## MEMORY PROTOCOL
+
+### Session Start — always at the beginning of every session:
+1. Run: `bash scripts/git-context.sh`
+2. Read: `.claude/primer.md`
+3. Say in one line: "Status: [branch] | Working on: [active task from primer]"
+
+### Session End — always before ending:
+Update `.claude/primer.md` with:
+- What was completed today (date + short description)
+- Exact next step (not "continue" — file name + action)
+- Updated test counts if changed
+- Open blockers
+
+### Push Rule:
+If there are more than 10 unpushed commits — remind user to push before starting.
+
+### Priority order for instructions:
+1. `CLAUDE.md` + `~/.claude/CLAUDE.md` — iron rules (don't change)
+2. `.claude/primer.md` — live state (updated every session)
+3. `git-context.sh` output — what actually changed
+4. `~/.claude/plans/` — only when working on a specific task

@@ -280,7 +280,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
   switch (action.type) {
     case "SET_CARD_TYPE": {
       const config = CARD_CONFIGS[action.cardType];
-      const autoFormat = config.availableFormats.length === 1 ? config.availableFormats[0] : null;
+      const autoFormat = config.availableFormats[0];
       return { ...state, cardType: action.cardType, cardFormat: autoFormat, templateId: null };
     }
     case "SET_CARD_FORMAT":

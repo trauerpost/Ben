@@ -71,6 +71,7 @@ export interface TemplateConfig {
     previewQuote?: string;
   };
   placeholderData: PlaceholderData;
+  placeholderPhotoSrc?: string;
   elements: TemplateElement[];
 }
 
@@ -125,6 +126,7 @@ const TI05: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["heading", "name", "birthDate", "deathDate", "quote", "quoteAuthor"],
   requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-man.jpg",
   thumbnail: { previewName: "Brigitte Musterfrau", previewDates: "* 31. Juli 1950  † 20. Februar 2021", previewQuote: "Das schönste Denkmal..." },
   placeholderData: {
     heading: "In stillem Gedenken",
@@ -162,6 +164,7 @@ const TI06: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "deathDate", "quote"],
   requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
   thumbnail: { previewName: "Thilde Muster", previewDates: "* 4.6.1942  † 6.1.2021", previewQuote: "Man sieht die Sonne..." },
   placeholderData: {
     name: "Thilde Muster",
@@ -193,6 +196,7 @@ const TI07: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath", "dividerSymbol"],
   requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
   thumbnail: { previewName: "Franziska Muster", previewDates: "* 1.12.1954  † 23.1.2021" },
   placeholderData: {
     name: "Franziska Muster",
@@ -229,6 +233,7 @@ const TI08: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath"],
   requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
   thumbnail: { previewName: "Erna Musterfrau", previewDates: "* 1.12.1934  † 20.1.2021" },
   placeholderData: {
     name: "Erna Musterfrau",
@@ -265,6 +270,7 @@ const TI09: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["heading", "name", "birthDate", "deathDate", "closingVerse", "quote"],
   requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
   thumbnail: { previewName: "Renate Musterfrau", previewDates: "* 6.5.1933  † 3.2.2021", previewQuote: "Du siehst den Garten..." },
   placeholderData: {
     heading: "In liebevoller Erinnerung",
@@ -287,9 +293,117 @@ const TI09: TemplateConfig = {
   ],
 };
 
+// ── TE: Trauerkarte Single ──
+
+const TE01: TemplateConfig = {
+  id: "TE01",
+  name: "Klassische Trauerkarte",
+  nameEn: "Classic Sympathy Card",
+  description: "Schlichte Trauerkarte mit Gedenktext — ohne Foto",
+  descriptionEn: "Simple sympathy card with memorial text — no photo",
+  referenceImage: "",
+  cardType: "trauerkarte",
+  cardFormat: "single",
+  spreadWidthMm: 185,
+  spreadHeightMm: 115,
+  requiredFields: ["heading", "name", "birthDate", "deathDate", "quote"],
+  requiresPhoto: false,
+  thumbnail: { previewName: "Hans Muster", previewDates: "* 15. März 1940 – † 10. Januar 2021" },
+  placeholderData: {
+    heading: "In stiller Trauer nehmen wir Abschied von",
+    name: "Hans Muster",
+    birthDate: "* 15. März 1940",
+    deathDate: "† 10. Januar 2021",
+    quote: "Wer im Gedächtnis seiner Lieben lebt,\nder ist nicht tot, der ist nur fern.\nTot ist nur, wer vergessen wird.",
+    quoteAuthor: "Immanuel Kant",
+  },
+  elements: [
+    { id: "heading", type: "text", x: 50, y: 80, w: 900, h: 60, field: "heading", fontSize: 11, fontStyle: "italic", textAlign: "center", letterSpacing: "0.5px" },
+    { id: "name", type: "text", x: 50, y: 200, w: 900, h: 140, field: "name", fontSize: 26, fontWeight: "bold", fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "birthDate", type: "text", x: 200, y: 380, w: 600, h: 35, field: "birthDate", fontSize: 10, textAlign: "center" },
+    { id: "deathDate", type: "text", x: 200, y: 425, w: 600, h: 35, field: "deathDate", fontSize: 10, textAlign: "center" },
+    { id: "line", type: "line", x: 350, y: 500, w: 300, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "quote", type: "text", x: 100, y: 540, w: 800, h: 280, field: "quote", fontSize: 9.5, fontStyle: "italic", textAlign: "center" },
+    { id: "author", type: "text", x: 200, y: 850, w: 600, h: 30, field: "quoteAuthor", fontSize: 8, textAlign: "center" },
+  ],
+};
+
+const TE02: TemplateConfig = {
+  id: "TE02",
+  name: "Trauerkarte mit Foto",
+  nameEn: "Sympathy Card with Photo",
+  description: "Foto links, Gedenktext rechts — persönlich und würdevoll",
+  descriptionEn: "Photo left, memorial text right — personal and dignified",
+  referenceImage: "",
+  cardType: "trauerkarte",
+  cardFormat: "single",
+  spreadWidthMm: 185,
+  spreadHeightMm: 115,
+  requiredFields: ["heading", "name", "birthDate", "deathDate", "quote"],
+  requiresPhoto: true,
+  placeholderPhotoSrc: "/assets/photos/placeholder-man.jpg",
+  thumbnail: { previewName: "Friedrich Muster", previewDates: "* 8. April 1938 – † 5. Februar 2021" },
+  placeholderData: {
+    heading: "In liebevoller Erinnerung an",
+    name: "Friedrich Muster",
+    birthDate: "* 8. April 1938",
+    deathDate: "† 5. Februar 2021",
+    quote: "Der Tod ist nicht das Ende,\nsondern der Anfang vom Leben.",
+    quoteAuthor: "",
+  },
+  elements: [
+    { id: "photo", type: "image", x: 0, y: 0, w: 400, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
+    { id: "heading", type: "text", x: 440, y: 100, w: 520, h: 50, field: "heading", fontSize: 10, fontStyle: "italic", textAlign: "center" },
+    { id: "line-top", type: "line", x: 490, y: 175, w: 420, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "name", type: "text", x: 430, y: 210, w: 540, h: 120, field: "name", fontSize: 22, fontWeight: "bold", fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "birthDate", type: "text", x: 440, y: 370, w: 520, h: 35, field: "birthDate", fontSize: 9.5, textAlign: "center" },
+    { id: "deathDate", type: "text", x: 440, y: 415, w: 520, h: 35, field: "deathDate", fontSize: 9.5, textAlign: "center" },
+    { id: "line-bottom", type: "line", x: 490, y: 490, w: 420, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "quote", type: "text", x: 440, y: 520, w: 520, h: 280, field: "quote", fontSize: 9.5, fontStyle: "italic", textAlign: "center" },
+  ],
+};
+
+// ── TD: Dankkarte Single (same layouts as Trauerkarte) ──
+
+const TD01: TemplateConfig = {
+  ...TE01,
+  id: "TD01",
+  name: "Klassische Dankeskarte",
+  nameEn: "Classic Thank-you Card",
+  description: "Schlichte Dankeskarte für die Anteilnahme",
+  descriptionEn: "Simple thank-you card for condolences",
+  cardType: "dankkarte",
+  placeholderData: {
+    heading: "Danksagung",
+    name: "Familie Muster",
+    birthDate: "",
+    deathDate: "",
+    quote: "Für die vielen Zeichen der Anteilnahme,\ndie tröstenden Worte und die stille Begleitung\nin unserer schweren Zeit\nbedanken wir uns von Herzen.",
+    quoteAuthor: "",
+  },
+};
+
+const TD02: TemplateConfig = {
+  ...TE02,
+  id: "TD02",
+  name: "Dankeskarte mit Foto",
+  nameEn: "Thank-you Card with Photo",
+  description: "Dankeskarte mit Foto — persönlich und herzlich",
+  descriptionEn: "Thank-you card with photo — personal and heartfelt",
+  cardType: "dankkarte",
+  placeholderData: {
+    heading: "Herzlichen Dank",
+    name: "Familie Muster",
+    birthDate: "",
+    deathDate: "",
+    quote: "Für die liebevolle Anteilnahme,\ndie Blumen und Spenden\nsagen wir herzlichen Dank.",
+    quoteAuthor: "",
+  },
+};
+
 // ── All Configs ──
 
-export const ALL_TEMPLATE_CONFIGS: TemplateConfig[] = [TI04, TI05, TI06, TI07, TI08, TI09];
+export const ALL_TEMPLATE_CONFIGS: TemplateConfig[] = [TI04, TI05, TI06, TI07, TI08, TI09, TE01, TE02, TD01, TD02];
 
 export function getTemplateConfig(id: string): TemplateConfig | null {
   return ALL_TEMPLATE_CONFIGS.find((c) => c.id === id) ?? null;

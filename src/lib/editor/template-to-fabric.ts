@@ -12,6 +12,7 @@ export interface FabricElementConfig {
     imageBorder?: string;
     useCrop?: boolean;
     fixedAsset?: string;
+    placeholderSrc?: string;
   };
 }
 
@@ -61,7 +62,7 @@ function convertElement(
     case "text":
       return convertTextElement(el, left, top, width, height, baseData, textContent, template);
     case "image":
-      return convertImagePlaceholder(el, left, top, width, height, baseData);
+      return convertImagePlaceholder(el, left, top, width, height, baseData, template);
     case "line":
       return convertLineElement(el, left, top, width, height, baseData);
     case "ornament":
@@ -120,8 +121,33 @@ function convertImagePlaceholder(
   top: number,
   width: number,
   height: number,
-  baseData: Record<string, unknown>
+  baseData: Record<string, unknown>,
+  template: TemplateConfig
 ): FabricElementConfig {
+  const placeholderSrc = template.placeholderPhotoSrc;
+
+  if (placeholderSrc) {
+    return {
+      id: el.id,
+      fabricType: "image",
+      field: el.field,
+      meta: {
+        imageClip: el.imageClip,
+        imageBorder: el.imageBorder,
+        useCrop: el.useCrop,
+        placeholderSrc,
+      },
+      options: {
+        left,
+        top,
+        width,
+        height,
+        data: { ...baseData, isImagePlaceholder: true },
+      },
+    };
+  }
+
+  // Fallback: gray rect for templates without a placeholder photo
   return {
     id: el.id,
     fabricType: "rect",

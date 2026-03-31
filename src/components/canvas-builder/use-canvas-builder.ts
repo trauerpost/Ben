@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, type RefObject } from "react";
-import type { CardType, CardFormat, WizardState } from "@/lib/editor/wizard-state";
+import type { CardType, CardFormat, WizardState, TextContent } from "@/lib/editor/wizard-state";
 import {
   getCanvasDimensions,
   type CanvasDimensions,
@@ -96,12 +96,28 @@ export function useCanvasBuilder(
       const newDims = getCanvasDimensions(ct, cf);
       canvas.resize(newDims.width, newDims.height);
 
-      // Convert template elements to Fabric configs
-      const configs = templateToFabricConfigs(template, newDims);
+      // Build textContent from placeholder data so canvas shows real text, not [fieldName]
+      const ph = template.placeholderData;
+      const textContent: Partial<TextContent> = ph ? {
+        heading: ph.heading ?? "",
+        name: ph.name,
+        birthDate: ph.birthDate,
+        deathDate: ph.deathDate,
+        quote: ph.quote ?? "",
+        quoteAuthor: ph.quoteAuthor ?? "",
+        relationshipLabels: ph.relationshipLabels ?? "",
+        closingVerse: ph.closingVerse ?? "",
+        locationBirth: ph.locationBirth ?? "",
+        locationDeath: ph.locationDeath ?? "",
+        dividerSymbol: ph.dividerSymbol ?? "",
+      } : {};
 
-      // Add each element to canvas
+      // Convert template elements to Fabric configs
+      const configs = templateToFabricConfigs(template, newDims, textContent);
+
+      // Add each element to canvas (await for async image loading)
       for (const cfg of configs) {
-        addFabricObject(canvas, cfg);
+        await addFabricObject(canvas, cfg);
       }
 
       setCardType(ct);
@@ -260,10 +276,10 @@ export function useCanvasBuilder(
 }
 
 /** Create Fabric objects from config and add to canvas */
-function addFabricObject(
+async function addFabricObject(
   canvas: FabricCanvasHandle,
   config: FabricElementConfig
-): void {
+): Promise<void> {
   switch (config.fabricType) {
     case "textbox":
       canvas.addText(
@@ -274,13 +290,36 @@ function addFabricObject(
     case "rect":
       canvas.addRect(config.options);
       break;
+    case "image": {
+      // Load real image: placeholder photo or ornament asset
+      const src = config.meta?.placeholderSrc ?? config.meta?.fixedAsset;
+      if (src) {
+        try {
+          const fabricCanvas = canvas.getCanvas();
+          if (!fabricCanvas) break;
+          const { FabricImage } = await import("fabric");
+          const img = await FabricImage.fromURL(src, { crossOrigin: "anonymous" });
+          const targetW = config.options.width as number;
+          const targetH = config.options.height as number;
+          img.set({
+            left: config.options.left as number,
+            top: config.options.top as number,
+            scaleX: targetW / (img.width ?? 1),
+            scaleY: targetH / (img.height ?? 1),
+            data: config.options.data,
+          });
+          fabricCanvas.add(img);
+        } catch (err) {
+          console.warn("[addFabricObject] Failed to load image:", src, err);
+          canvas.addRect({ ...config.options, fill: "#f0ebe6", stroke: "#ccc", strokeWidth: 1 });
+        }
+      } else {
+        canvas.addRect({ ...config.options, fill: "transparent" });
+      }
+      break;
+    }
     case "line":
-    case "image":
-      // Lines and ornament images added as rects for now (placeholder)
-      canvas.addRect({
-        ...config.options,
-        fill: "transparent",
-      });
+      canvas.addRect({ ...config.options, fill: "transparent" });
       break;
   }
 }

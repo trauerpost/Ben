@@ -3,7 +3,7 @@
 <!-- Last updated: 2026-03-31 -->
 
 ## Active Task
-FIX THE UX — wizard looks nothing like kartenmacherei. Template picker has no thumbnails. Need to install ROFLO system (from QlikMCP Builder project). English builder broken.
+COMPLETE REBUILD PLAN — Canvas builder broken (shows [fieldName] tags, dashed boxes). Wizard works only for sterbebild. Must match kartenmacherei: every template = FINISHED card with real photos + text. Quality gate fails 5+ bugs. New plan via /write-plan → /plan-qa → /review-plan.
 
 ## Current Branch
 master

@@ -88,27 +88,25 @@ describe("templateToFabricConfigs", () => {
     expect(heading!.options.fontFamily).toBe("Inter");
   });
 
-  it("image element produces rect placeholder", () => {
+  it("image element with placeholderPhotoSrc produces image config", () => {
     const config = getTemplateConfig("TI05")!;
     const results = templateToFabricConfigs(config, STERBE_DIMS);
     const photo = results.find((r) => r.field === "photo");
     expect(photo).toBeDefined();
-    expect(photo!.fabricType).toBe("rect");
-    expect(photo!.options.fill).toBe("#f5f5f5");
-    expect(photo!.options.strokeDashArray).toEqual([6, 4]);
-    // TI05 photo has useCrop but no imageClip
+    expect(photo!.fabricType).toBe("image");
+    expect(photo!.meta?.placeholderSrc).toBe("/assets/photos/placeholder-man.jpg");
     expect(photo!.meta?.useCrop).toBe(true);
   });
 
-  it("image element with imageClip='rounded' has rounded corners", () => {
+  it("image element with imageClip='rounded' preserves clip metadata", () => {
     // TI07 photo has imageClip: "rounded"
     const config = getTemplateConfig("TI07")!;
     const results = templateToFabricConfigs(config, STERBE_DIMS);
     const photo = results.find((r) => r.field === "photo");
     expect(photo).toBeDefined();
+    expect(photo!.fabricType).toBe("image");
     expect(photo!.meta?.imageClip).toBe("rounded");
-    expect(photo!.options.rx).toBe(8);
-    expect(photo!.options.ry).toBe(8);
+    expect(photo!.meta?.placeholderSrc).toBe("/assets/photos/placeholder-woman.png");
   });
 
   it("line element produces line config", () => {
@@ -204,5 +202,47 @@ describe("templateToFabricConfigs", () => {
 
     const results = templateToFabricConfigs(mockTemplate, STERBE_DIMS);
     expect(results).toHaveLength(0);
+  });
+
+  // ── Placeholder data integration (canvas builder contract) ──
+
+  it("ALL templates with placeholderData: zero [fieldName] tags in text", () => {
+    const templateIds = ["TI04", "TI05", "TI06", "TI07", "TI08", "TI09"];
+    for (const id of templateIds) {
+      const config = getTemplateConfig(id)!;
+      expect(config.placeholderData).toBeDefined();
+
+      // Build textContent from placeholderData (same as canvas builder does)
+      const ph = config.placeholderData;
+      const textContent: Partial<TextContent> = {
+        heading: ph.heading ?? "",
+        name: ph.name,
+        birthDate: ph.birthDate,
+        deathDate: ph.deathDate,
+        quote: ph.quote ?? "",
+        quoteAuthor: ph.quoteAuthor ?? "",
+        relationshipLabels: ph.relationshipLabels ?? "",
+        closingVerse: ph.closingVerse ?? "",
+        locationBirth: ph.locationBirth ?? "",
+        locationDeath: ph.locationDeath ?? "",
+        dividerSymbol: ph.dividerSymbol ?? "",
+      };
+
+      const results = templateToFabricConfigs(config, STERBE_DIMS, textContent);
+      const textElements = results.filter((r) => r.fabricType === "textbox");
+
+      for (const el of textElements) {
+        const text = el.options.text as string;
+        expect(text, `${id}/${el.id}: got "${text}"`).not.toMatch(/^\[.+\]$/);
+      }
+    }
+  });
+
+  it("NEG: without textContent, text falls back to [fieldName]", () => {
+    const config = getTemplateConfig("TI05")!;
+    const results = templateToFabricConfigs(config, STERBE_DIMS); // no textContent
+    const nameEl = results.find((r) => r.field === "name");
+    expect(nameEl).toBeDefined();
+    expect(nameEl!.options.text).toBe("[name]");
   });
 });
