@@ -326,13 +326,21 @@ async function addFabricObject(
           const imgW = img.width ?? 1;
           const imgH = img.height ?? 1;
 
-          // Simple approach: scale to fill target dimensions exactly
+          // Cover crop: scale uniformly to fill, then crop overflow from center
+          const scale = Math.max(targetW / imgW, targetH / imgH);
+          const cropX = ((imgW * scale - targetW) / 2) / scale;
+          const cropY = ((imgH * scale - targetH) / 2) / scale;
+
           img.set({
             left: config.options.left as number,
             top: config.options.top as number,
-            scaleX: targetW / imgW,
-            scaleY: targetH / imgH,
-            data: config.options.data,
+            cropX,
+            cropY,
+            width: targetW / scale,
+            height: targetH / scale,
+            scaleX: scale,
+            scaleY: scale,
+            data: { ...(config.options.data as Record<string, unknown>), slotWidth: targetW, slotHeight: targetH },
           });
           fabricCanvas.add(img);
         } catch (err) {

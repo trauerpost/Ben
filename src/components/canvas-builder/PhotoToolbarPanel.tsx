@@ -34,13 +34,26 @@ export default function PhotoToolbarPanel({
     try {
       const img = await fabric.FabricImage.fromURL(url, { crossOrigin: "anonymous" });
 
-      // Match position/size of current object
+      // Cover crop: preserve aspect ratio, clip overflow from center
+      const data = (object as unknown as { data?: Record<string, unknown> }).data;
+      const slotW = (data?.slotWidth as number) ?? (object.width! * (object.scaleX ?? 1));
+      const slotH = (data?.slotHeight as number) ?? (object.height! * (object.scaleY ?? 1));
+      const imgW = img.width ?? 1;
+      const imgH = img.height ?? 1;
+      const scale = Math.max(slotW / imgW, slotH / imgH);
+      const cropX = ((imgW * scale - slotW) / 2) / scale;
+      const cropY = ((imgH * scale - slotH) / 2) / scale;
+
       img.set({
         left: object.left,
         top: object.top,
-        scaleX: (object.width! * (object.scaleX ?? 1)) / (img.width ?? 1),
-        scaleY: (object.height! * (object.scaleY ?? 1)) / (img.height ?? 1),
-        data: (object as unknown as { data?: unknown }).data,
+        cropX,
+        cropY,
+        width: slotW / scale,
+        height: slotH / scale,
+        scaleX: scale,
+        scaleY: scale,
+        data: { ...data, slotWidth: slotW, slotHeight: slotH },
       });
 
       canvas.remove(object);
@@ -57,17 +70,39 @@ export default function PhotoToolbarPanel({
 
   function handleFitMode(mode: "fill" | "contain"): void {
     if (object instanceof fabric.FabricImage) {
-      // For fill: scale to cover; for contain: scale to fit
-      const parent = object.getBoundingRect();
-      const imgW = object.width ?? 1;
-      const imgH = object.height ?? 1;
+      const data = (object as unknown as { data?: Record<string, unknown> }).data;
+      const slotW = (data?.slotWidth as number) ?? (object.width! * (object.scaleX ?? 1));
+      const slotH = (data?.slotHeight as number) ?? (object.height! * (object.scaleY ?? 1));
+
+      // Get original image dimensions (before any cropping)
+      const el = object.getElement() as HTMLImageElement;
+      const origW = el?.naturalWidth || object.width!;
+      const origH = el?.naturalHeight || object.height!;
 
       if (mode === "fill") {
-        const scale = Math.max(parent.width / imgW, parent.height / imgH);
-        object.set({ scaleX: scale, scaleY: scale });
+        // Cover crop: uniform scale to fill slot, crop overflow from center
+        const scale = Math.max(slotW / origW, slotH / origH);
+        const cropX = ((origW * scale - slotW) / 2) / scale;
+        const cropY = ((origH * scale - slotH) / 2) / scale;
+        object.set({
+          cropX,
+          cropY,
+          width: slotW / scale,
+          height: slotH / scale,
+          scaleX: scale,
+          scaleY: scale,
+        });
       } else {
-        const scale = Math.min(parent.width / imgW, parent.height / imgH);
-        object.set({ scaleX: scale, scaleY: scale });
+        // Contain: fit entire image within slot, no cropping
+        const scale = Math.min(slotW / origW, slotH / origH);
+        object.set({
+          cropX: 0,
+          cropY: 0,
+          width: origW,
+          height: origH,
+          scaleX: scale,
+          scaleY: scale,
+        });
       }
       onChange();
     }
