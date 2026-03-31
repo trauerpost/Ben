@@ -13,6 +13,12 @@ BENJEMIN has two builders: Wizard (`/builder`) and Canvas Builder (`/builder-v2`
 ### Rule 3: Screenshot = Truth
 Never claim something works based on test results, DOM checks, or TypeScript compilation. Open the page, LOOK at the screenshot, describe what you SEE. If you can't show a screenshot proving it looks correct, it's not done. Canvas (Fabric.js) renders PIXELS — `page.textContent()` cannot detect what's on a canvas.
 
+### Rule 6: Templates Must Be Perfect — Zero Excuses
+Never say "the customer will replace it" or "it's slightly stretched." If a photo doesn't fit, use proper cover-crop with face centering. V1 wizard has smart image handling — use the same standard. Every template must look like a finished product someone would PAY for.
+
+### Rule 5: Never Scope Out Visible Bugs
+If you can see a bug on the page you're testing — it's in scope. The customer sees ONE page, not "components." Don't narrow scope unless the user explicitly says to. "Funeral mail" in the header of the builder page means the builder is broken, even if the header is "a different component."
+
 ### Rule 4: Kartenmacherei is the Standard
 The reference is https://configurator.www.kartenmacherei.de — study their configurator. Cards start pre-filled with background images, sample text, page thumbnails at the bottom. We must match this level of polish. White boxes with dashed borders are unacceptable.
 

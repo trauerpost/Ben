@@ -113,11 +113,37 @@ export function useCanvasBuilder(
       } : {};
 
       // Convert template elements to Fabric configs
-      const configs = templateToFabricConfigs(template, newDims, textContent);
+      const allConfigs = templateToFabricConfigs(template, newDims, textContent);
 
-      // Add each element to canvas (await for async image loading)
-      for (const cfg of configs) {
+      // Split elements by page (default to "front" if no page specified)
+      const pageDefs = getPageDefs(cf);
+      const firstPageId = pageDefs[0].id;
+      const frontConfigs = allConfigs.filter(
+        cfg => (cfg.options.data as Record<string, unknown>)?.page === firstPageId ||
+               !(cfg.options.data as Record<string, unknown>)?.page
+      );
+
+      // Add front page elements to canvas
+      for (const cfg of frontConfigs) {
         await addFabricObject(canvas, cfg);
+      }
+
+      // Pre-build other pages: create a temporary canvas for each, serialize to JSON
+      for (const pageDef of pageDefs.slice(1)) {
+        const pageConfigs = allConfigs.filter(
+          cfg => (cfg.options.data as Record<string, unknown>)?.page === pageDef.id
+        );
+        if (pageConfigs.length > 0) {
+          // Save current canvas, load page elements, serialize, restore
+          const currentJSON = canvas.toJSON();
+          await canvas.loadJSON(JSON.stringify({ version: "6.0.0", objects: [], background: "#ffffff" }));
+          for (const cfg of pageConfigs) {
+            await addFabricObject(canvas, cfg);
+          }
+          pagesDataRef.current[pageDef.id] = canvas.toJSON();
+          // Restore front page
+          await canvas.loadJSON(currentJSON);
+        }
       }
 
       setCardType(ct);
@@ -125,11 +151,7 @@ export function useCanvasBuilder(
       setTemplateId(tid);
       setDims(newDims);
       setIsTemplateLoaded(true);
-
-      // Set initial page
-      const pageDefs = getPageDefs(cf);
-      setActivePageId(pageDefs[0].id);
-      pagesDataRef.current = {};
+      setActivePageId(firstPageId);
     },
     [canvasRef]
   );
@@ -301,11 +323,15 @@ async function addFabricObject(
           const img = await FabricImage.fromURL(src, { crossOrigin: "anonymous" });
           const targetW = config.options.width as number;
           const targetH = config.options.height as number;
+          const imgW = img.width ?? 1;
+          const imgH = img.height ?? 1;
+
+          // Simple approach: scale to fill target dimensions exactly
           img.set({
             left: config.options.left as number,
             top: config.options.top as number,
-            scaleX: targetW / (img.width ?? 1),
-            scaleY: targetH / (img.height ?? 1),
+            scaleX: targetW / imgW,
+            scaleY: targetH / imgH,
             data: config.options.data,
           });
           fabricCanvas.add(img);

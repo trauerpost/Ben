@@ -56,6 +56,7 @@ function convertElement(
     field: el.field,
     templateElementId: el.id,
     elementType: el.type,
+    page: el.page ?? "front",
   };
 
   switch (el.type) {

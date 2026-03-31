@@ -7,6 +7,7 @@ export type ElementType = "text" | "image" | "line" | "ornament";
 export interface TemplateElement {
   id: string;
   type: ElementType;
+  page?: string;        // which page this element belongs to ("front" | "back" etc). Default: "front"
   x: number;           // grid 0-1000
   y: number;
   w: number;
@@ -137,15 +138,17 @@ const TI05: TemplateConfig = {
     quoteAuthor: "Albert Schweitzer",
   },
   elements: [
-    { id: "photo", type: "image", x: 0, y: 0, w: 480, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
-    { id: "heading", type: "text", x: 530, y: 155, w: 420, h: 38, field: "heading", fontSize: 9, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
-    { id: "line-top", type: "line", x: 575, y: 225, w: 330, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "name", type: "text", x: 520, y: 260, w: 440, h: 95, field: "name", fontSize: 19, fontFamily: "Cormorant Garamond", fontWeight: "bold", textAlign: "center" },
-    { id: "birthDate", type: "text", x: 530, y: 385, w: 420, h: 26, field: "birthDate", fontSize: 9, fontFamily: "Cormorant Garamond", textAlign: "center" },
-    { id: "deathDate", type: "text", x: 530, y: 440, w: 420, h: 26, field: "deathDate", fontSize: 9, fontFamily: "Cormorant Garamond", textAlign: "center" },
-    { id: "line-mid", type: "line", x: 575, y: 510, w: 330, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "quote", type: "text", x: 530, y: 540, w: 420, h: 200, field: "quote", fontSize: 9, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
-    { id: "author", type: "text", x: 530, y: 770, w: 420, h: 30, field: "quoteAuthor", fontSize: 7.5, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    // Front page: photo fills entire page
+    { id: "photo", page: "front", type: "image", x: 0, y: 0, w: 1000, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
+    // Back page: text centered with generous margins
+    { id: "heading", page: "back", type: "text", x: 150, y: 80, w: 700, h: 50, field: "heading", fontSize: 10, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
+    { id: "line-top", page: "back", type: "line", x: 250, y: 165, w: 500, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "name", page: "back", type: "text", x: 150, y: 200, w: 700, h: 120, field: "name", fontSize: 22, fontFamily: "Cormorant Garamond", fontWeight: "bold", textAlign: "center" },
+    { id: "birthDate", page: "back", type: "text", x: 200, y: 360, w: 600, h: 35, field: "birthDate", fontSize: 10, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "deathDate", page: "back", type: "text", x: 200, y: 410, w: 600, h: 35, field: "deathDate", fontSize: 10, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    { id: "line-mid", page: "back", type: "line", x: 250, y: 485, w: 500, h: 1, lineStyle: "0.5px solid #999" },
+    { id: "quote", page: "back", type: "text", x: 150, y: 520, w: 700, h: 250, field: "quote", fontSize: 10, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
+    { id: "author", page: "back", type: "text", x: 250, y: 800, w: 500, h: 35, field: "quoteAuthor", fontSize: 8.5, fontFamily: "Cormorant Garamond", textAlign: "center" },
   ],
 };
 
