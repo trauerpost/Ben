@@ -34,26 +34,24 @@ export default function PhotoToolbarPanel({
     try {
       const img = await fabric.FabricImage.fromURL(url, { crossOrigin: "anonymous" });
 
-      // Cover crop: preserve aspect ratio, clip overflow from center
+      // Cover: scale uniformly to fill, center overflow
       const data = (object as unknown as { data?: Record<string, unknown> }).data;
       const slotW = (data?.slotWidth as number) ?? (object.width! * (object.scaleX ?? 1));
       const slotH = (data?.slotHeight as number) ?? (object.height! * (object.scaleY ?? 1));
+      const slotLeft = (data?.slotLeft as number) ?? object.left!;
+      const slotTop = (data?.slotTop as number) ?? object.top!;
       const imgW = img.width ?? 1;
       const imgH = img.height ?? 1;
-      const scale = Math.max(slotW / imgW, slotH / imgH);
-      const cropX = ((imgW * scale - slotW) / 2) / scale;
-      const cropY = ((imgH * scale - slotH) / 2) / scale;
+      const coverScale = Math.max(slotW / imgW, slotH / imgH);
 
       img.set({
-        left: object.left,
-        top: object.top,
-        cropX,
-        cropY,
-        width: slotW / scale,
-        height: slotH / scale,
-        scaleX: scale,
-        scaleY: scale,
-        data: { ...data, slotWidth: slotW, slotHeight: slotH },
+        originX: "left",
+        originY: "top",
+        left: slotLeft - (imgW * coverScale - slotW) / 2,
+        top: slotTop - (imgH * coverScale - slotH) / 2,
+        scaleX: coverScale,
+        scaleY: coverScale,
+        data: { ...data, slotWidth: slotW, slotHeight: slotH, slotLeft, slotTop },
       });
 
       canvas.remove(object);
@@ -79,30 +77,20 @@ export default function PhotoToolbarPanel({
       const origW = el?.naturalWidth || object.width!;
       const origH = el?.naturalHeight || object.height!;
 
+      const sLeft = (data?.slotLeft as number) ?? object.left!;
+      const sTop = (data?.slotTop as number) ?? object.top!;
+
       if (mode === "fill") {
-        // Cover crop: uniform scale to fill slot, crop overflow from center
-        const scale = Math.max(slotW / origW, slotH / origH);
-        const cropX = ((origW * scale - slotW) / 2) / scale;
-        const cropY = ((origH * scale - slotH) / 2) / scale;
+        const coverScale = Math.max(slotW / origW, slotH / origH);
         object.set({
-          cropX,
-          cropY,
-          width: slotW / scale,
-          height: slotH / scale,
-          scaleX: scale,
-          scaleY: scale,
+          left: sLeft - (origW * coverScale - slotW) / 2,
+          top: sTop - (origH * coverScale - slotH) / 2,
+          scaleX: coverScale,
+          scaleY: coverScale,
         });
       } else {
-        // Contain: fit entire image within slot, no cropping
         const scale = Math.min(slotW / origW, slotH / origH);
-        object.set({
-          cropX: 0,
-          cropY: 0,
-          width: origW,
-          height: origH,
-          scaleX: scale,
-          scaleY: scale,
-        });
+        object.set({ left: sLeft, top: sTop, scaleX: scale, scaleY: scale });
       }
       onChange();
     }

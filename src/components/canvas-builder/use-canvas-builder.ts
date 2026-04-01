@@ -313,7 +313,6 @@ async function addFabricObject(
       canvas.addRect(config.options);
       break;
     case "image": {
-      // Load real image: placeholder photo or ornament asset
       const src = config.meta?.placeholderSrc ?? config.meta?.fixedAsset;
       if (src) {
         try {
@@ -325,22 +324,19 @@ async function addFabricObject(
           const targetH = config.options.height as number;
           const imgW = img.width ?? 1;
           const imgH = img.height ?? 1;
+          const slotLeft = config.options.left as number;
+          const slotTop = config.options.top as number;
 
-          // Cover crop: scale uniformly to fill, then crop overflow from center
-          const scale = Math.max(targetW / imgW, targetH / imgH);
-          const cropX = ((imgW * scale - targetW) / 2) / scale;
-          const cropY = ((imgH * scale - targetH) / 2) / scale;
-
+          // Cover crop: scale uniformly to fill, center overflow
+          const coverScale = Math.max(targetW / imgW, targetH / imgH);
           img.set({
-            left: config.options.left as number,
-            top: config.options.top as number,
-            cropX,
-            cropY,
-            width: targetW / scale,
-            height: targetH / scale,
-            scaleX: scale,
-            scaleY: scale,
-            data: { ...(config.options.data as Record<string, unknown>), slotWidth: targetW, slotHeight: targetH },
+            originX: "left",
+            originY: "top",
+            left: slotLeft - (imgW * coverScale - targetW) / 2,
+            top: slotTop - (imgH * coverScale - targetH) / 2,
+            scaleX: coverScale,
+            scaleY: coverScale,
+            data: { ...(config.options.data as Record<string, unknown>), slotWidth: targetW, slotHeight: targetH, slotLeft, slotTop },
           });
           fabricCanvas.add(img);
         } catch (err) {

@@ -93,6 +93,8 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
       });
 
       fabricRef.current = canvas;
+      // Expose for testing/debugging
+      (canvasElRef.current as unknown as { __fabricCanvas: fabric.Canvas }).__fabricCanvas = canvas;
       saveToHistory();
 
       canvas.on("object:modified", saveToHistory);
