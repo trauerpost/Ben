@@ -145,7 +145,7 @@ const TI05: TemplateConfig = {
     // Fixes: heading up 40, lines wider x=150 w=700, quote down, author down, quote lineHeight up
     { id: "heading", page: "back", type: "text", x: 100, y: 190, w: 800, h: 30, field: "heading", fontSize: 11, fontFamily: "Inter", fontStyle: "italic", textAlign: "center", color: "#000000" },
     { id: "line-top", page: "back", type: "line", x: 150, y: 250, w: 700, h: 1, lineStyle: "0.5px solid #000000" },
-    { id: "name", page: "back", type: "text", x: 50, y: 280, w: 900, h: 60, field: "name", fontSize: 28, fontFamily: "Inter", fontWeight: "300", textAlign: "center", color: "#000000" },
+    { id: "name", page: "back", type: "text", x: 50, y: 260, w: 900, h: 100, field: "name", fontSize: 28, fontFamily: "Inter", fontWeight: "300", textAlign: "center", color: "#000000" },
     { id: "birthDate", page: "back", type: "text", x: 100, y: 380, w: 800, h: 25, field: "birthDate", fontSize: 12, fontFamily: "Inter", textAlign: "center", color: "#000000" },
     { id: "deathDate", page: "back", type: "text", x: 100, y: 420, w: 800, h: 25, field: "deathDate", fontSize: 12, fontFamily: "Inter", textAlign: "center", color: "#000000" },
     { id: "line-mid", page: "back", type: "line", x: 150, y: 490, w: 700, h: 1, lineStyle: "0.5px solid #000000" },
