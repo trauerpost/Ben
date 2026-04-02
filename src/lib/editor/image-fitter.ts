@@ -113,6 +113,33 @@ export function fitImageToSlot(
 }
 
 /**
+ * Calculate pixel offsets for Fabric.js cover-crop with face bias.
+ *
+ * Face bias: when image is taller than slot proportionally,
+ * keep upper 25% visible (faces are usually in upper portion).
+ */
+export function getFabricCropOffset(
+  imgW: number,
+  imgH: number,
+  targetW: number,
+  targetH: number,
+): { offsetX: number; offsetY: number } {
+  const coverScale = Math.max(targetW / imgW, targetH / imgH);
+  const overflowX = imgW * coverScale - targetW;
+  const overflowY = imgH * coverScale - targetH;
+
+  // Face bias: if image is taller than slot proportionally, keep upper 25%
+  const imageRatio = imgW / imgH;
+  const slotRatio = targetW / targetH;
+  const faceBias = imageRatio < slotRatio;
+
+  return {
+    offsetX: overflowX / 2,
+    offsetY: faceBias ? overflowY * 0.25 : overflowY / 2,
+  };
+}
+
+/**
  * Get recommended image dimensions for a template slot.
  * Returns the minimum pixel dimensions for print quality (300 DPI).
  */
