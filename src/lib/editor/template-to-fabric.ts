@@ -84,9 +84,16 @@ function convertTextElement(
   textContent: Partial<TextContent> | undefined,
   template: TemplateConfig
 ): FabricElementConfig {
-  const text = el.field && textContent
+  let text = el.field && textContent
     ? (textContent[el.field as keyof TextContent] as string) ?? el.fixedContent ?? ""
     : el.fixedContent ?? "";
+
+  // SC fonts (e.g. "Playfair Display SC") handle small-caps natively — skip transform.
+  // For non-SC fonts, simulate CSS font-variant: small-caps with uppercase.
+  const isSCFont = (el.fontFamily ?? "").endsWith(" SC");
+  if (!isSCFont && (el.fontVariant === "small-caps" || el.textTransform === "uppercase")) {
+    text = text.toUpperCase();
+  }
 
   const globalFont = textContent?.fontFamily;
   const fontFamily = el.fontFamily ?? globalFont ?? "Playfair Display";
@@ -108,7 +115,7 @@ function convertTextElement(
       fontStyle: el.fontStyle ?? "normal",
       textAlign: el.textAlign ?? "center",
       fill: el.color ?? globalColor ?? "#1A1A1A",
-      lineHeight: 1.5,
+      lineHeight: el.lineHeight ?? 1.5,
       editable: true,
       splitByGrapheme: true,
       data: baseData,

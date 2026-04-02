@@ -110,7 +110,7 @@ export const WIZARD_FONTS = [
   "Fira Sans", "Source Serif Pro",
   // Added for template engine v2
   "Pinyon Script", "Alex Brush",
-  "Cormorant SC", "EB Garamond SC",
+  "Cormorant SC", "EB Garamond SC", "Playfair Display SC",
   "Cormorant Infant", "Crimson Pro",
 ] as const;
 
@@ -221,6 +221,7 @@ export interface WizardState {
     ids: string[];
   };
   elementOverrides: Record<string, ElementOverride>;
+  freeFormElements?: import("./fabric-to-wizard-state").FreeFormElement[];
 }
 
 export type WizardAction =

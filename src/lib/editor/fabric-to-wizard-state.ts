@@ -111,6 +111,7 @@ export function fabricToWizardState(
       color: bgColor,
       imageUrl: bgImageUrl,
     },
+    freeFormElements: freeFormElements.length > 0 ? freeFormElements : undefined,
   };
 }
 

@@ -196,8 +196,8 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
         : `https://www.svgrepo.com/show/${el.fixedAsset.replace("/assets/ornaments/", "").replace(".svg", "")}.svg`;
 
       // Try the direct path first (for PNGs from freesvg.org stored locally)
-      if (el.fixedAsset.endsWith(".png")) {
-        // For local PNG files, read from filesystem
+      if (typeof window === "undefined" && el.fixedAsset.endsWith(".png")) {
+        // For local PNG files, read from filesystem (server-side only)
         try {
           const fs = await import("fs");
           const path = await import("path");
@@ -209,7 +209,7 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
           }
         } catch { /* fall through to URL fetch */ }
       }
-      if (el.fixedAsset.endsWith(".svg")) {
+      if (typeof window === "undefined" && el.fixedAsset.endsWith(".svg")) {
         try {
           const fs = await import("fs");
           const path = await import("path");
@@ -249,6 +249,23 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
       case "ornament":
         elementsHtml += renderOrnamentElement(el, images, pos);
         break;
+    }
+  }
+
+  // Free-form elements (user-added, not from template)
+  if (state.freeFormElements) {
+    for (const ff of state.freeFormElements) {
+      const ffLeft = (ff.left / (spreadWidthMm * 3.7795) * 100).toFixed(3);
+      const ffTop = (ff.top / (spreadHeightMm * 3.7795) * 100).toFixed(3);
+      const ffWidth = (ff.width / (spreadWidthMm * 3.7795) * 100).toFixed(3);
+      const ffHeight = (ff.height / (spreadHeightMm * 3.7795) * 100).toFixed(3);
+      const ffPos = `position:absolute;left:${ffLeft}%;top:${ffTop}%;width:${ffWidth}%;height:${ffHeight}%;`;
+      if (ff.type === "text" && ff.text) {
+        const escaped = ff.text.replace(/\n/g, "<br>");
+        elementsHtml += `<div style="${ffPos}font-family:'${ff.fontFamily ?? "Playfair Display"}',serif;font-size:${ff.fontSize ?? 12}pt;color:${ff.fill ?? "#1A1A1A"};text-align:${ff.textAlign ?? "left"};white-space:pre-wrap;">${escaped}</div>`;
+      } else if (ff.type === "image" && ff.src) {
+        elementsHtml += `<div style="${ffPos}background-image:url('${ff.src}');background-size:cover;background-position:center;"></div>`;
+      }
     }
   }
 

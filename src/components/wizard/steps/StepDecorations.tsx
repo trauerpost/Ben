@@ -35,9 +35,25 @@ export default function StepDecorations({ state, dispatch }: StepDecorationsProp
         .order("sort_order", { ascending: true });
 
       const items = (data as Asset[]) ?? [];
+
+      // Filter out horizontal dividers from the decoration picker —
+      // they're meant for template-level placement between text sections,
+      // not for the bottom-right corner decoration slot.
+      const isCornerOrnament = (a: Asset): boolean => {
+        const url = a.file_url;
+        const vbMatch = url.match(/viewBox='(\d+)\s+(\d+)\s+(\d+)\s+(\d+)'/);
+        if (vbMatch) {
+          const w = parseInt(vbMatch[3], 10);
+          const h = parseInt(vbMatch[4], 10);
+          if (h > 0 && w / h > 2.5) return false; // Wide divider — filter out
+        }
+        return true;
+      };
+
       setAssets({
-        // Symbols and ornaments go into the decoration slot
-        symbol: items.filter((a) => a.category === "symbol" || a.category === "ornament"),
+        symbol: items
+          .filter((a) => a.category === "symbol" || a.category === "ornament")
+          .filter(isCornerOrnament),
         border: items.filter((a) => a.category === "border"),
       });
       setLoading(false);
