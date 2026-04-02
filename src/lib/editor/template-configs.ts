@@ -25,6 +25,7 @@ export interface TemplateElement {
   textTransform?: string;
   textAlign?: string;
   letterSpacing?: string;
+  lineHeight?: number;
   color?: string;
   // Text overflow
   autoShrink?: boolean;  // default true
@@ -135,20 +136,21 @@ const TI05: TemplateConfig = {
     birthDate: "* 31. Juli 1950",
     deathDate: "† 20. Februar 2021",
     quote: "Das schönste Denkmal,\ndas ein Mensch bekommen kann,\nsteht in den Herzen\nder Mitmenschen.",
-    quoteAuthor: "Albert Schweitzer",
+    quoteAuthor: "(Albert Schweitzer)",
   },
   elements: [
     // Front page: photo fills entire page
     { id: "photo", page: "front", type: "image", x: 0, y: 0, w: 1000, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
-    // Back page: text centered with generous margins
-    { id: "heading", page: "back", type: "text", x: 150, y: 80, w: 700, h: 50, field: "heading", fontSize: 10, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
-    { id: "line-top", page: "back", type: "line", x: 250, y: 165, w: 500, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "name", page: "back", type: "text", x: 150, y: 200, w: 700, h: 120, field: "name", fontSize: 22, fontFamily: "Cormorant Garamond", fontWeight: "bold", textAlign: "center" },
-    { id: "birthDate", page: "back", type: "text", x: 200, y: 360, w: 600, h: 35, field: "birthDate", fontSize: 10, fontFamily: "Cormorant Garamond", textAlign: "center" },
-    { id: "deathDate", page: "back", type: "text", x: 200, y: 410, w: 600, h: 35, field: "deathDate", fontSize: 10, fontFamily: "Cormorant Garamond", textAlign: "center" },
-    { id: "line-mid", page: "back", type: "line", x: 250, y: 485, w: 500, h: 1, lineStyle: "0.5px solid #999" },
-    { id: "quote", page: "back", type: "text", x: 150, y: 520, w: 700, h: 250, field: "quote", fontSize: 10, fontFamily: "Cormorant Garamond", fontStyle: "italic", textAlign: "center" },
-    { id: "author", page: "back", type: "text", x: 250, y: 800, w: 500, h: 35, field: "quoteAuthor", fontSize: 8.5, fontFamily: "Cormorant Garamond", textAlign: "center" },
+    // Back page: portrait 70×105mm. Grid-calibrated round 2.
+    // Fixes: heading up 40, lines wider x=150 w=700, quote down, author down, quote lineHeight up
+    { id: "heading", page: "back", type: "text", x: 100, y: 190, w: 800, h: 30, field: "heading", fontSize: 11, fontFamily: "Inter", fontStyle: "italic", textAlign: "center", color: "#000000" },
+    { id: "line-top", page: "back", type: "line", x: 150, y: 250, w: 700, h: 1, lineStyle: "0.5px solid #000000" },
+    { id: "name", page: "back", type: "text", x: 50, y: 280, w: 900, h: 60, field: "name", fontSize: 28, fontFamily: "Inter", fontWeight: "300", textAlign: "center", color: "#000000" },
+    { id: "birthDate", page: "back", type: "text", x: 100, y: 380, w: 800, h: 25, field: "birthDate", fontSize: 12, fontFamily: "Inter", textAlign: "center", color: "#000000" },
+    { id: "deathDate", page: "back", type: "text", x: 100, y: 420, w: 800, h: 25, field: "deathDate", fontSize: 12, fontFamily: "Inter", textAlign: "center", color: "#000000" },
+    { id: "line-mid", page: "back", type: "line", x: 150, y: 490, w: 700, h: 1, lineStyle: "0.5px solid #000000" },
+    { id: "quote", page: "back", type: "text", x: 80, y: 545, w: 840, h: 160, field: "quote", fontSize: 12, fontFamily: "Inter", fontStyle: "italic", textAlign: "center", lineHeight: 1.5, color: "#000000" },
+    { id: "author", page: "back", type: "text", x: 100, y: 765, w: 800, h: 25, field: "quoteAuthor", fontSize: 11, fontFamily: "Inter", fontStyle: "italic", textAlign: "center", color: "#000000" },
   ],
 };
 
@@ -158,8 +160,8 @@ const TI06: TemplateConfig = {
   id: "TI06",
   name: "Portrait & Spruch",
   nameEn: "Portrait & Verse",
-  description: "Foto mit Rahmen oben-links, Name in Kapitälchen, Spruch unten",
-  descriptionEn: "Framed photo top-left, name in small caps, verse below",
+  description: "Foto mit Rahmen links, Name in Kapitälchen, Spruch rechts",
+  descriptionEn: "Bordered photo left, name in small caps, verse right",
   referenceImage: "/docs/references/TI06.jpg",
   cardType: "sterbebild",
   cardFormat: "single",
@@ -167,20 +169,22 @@ const TI06: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "deathDate", "quote"],
   requiresPhoto: true,
-  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
+  placeholderPhotoSrc: "/assets/photos/placeholder-man-2.jpg",
   thumbnail: { previewName: "Thilde Muster", previewDates: "* 4.6.1942  † 6.1.2021", previewQuote: "Man sieht die Sonne..." },
   placeholderData: {
     name: "Thilde Muster",
-    birthDate: "* 4. Juni 1942",
-    deathDate: "† 6. Januar 2021",
-    quote: "Man sieht die Sonne langsam untergehen\nund erschrickt doch,\nwenn es plötzlich dunkel ist.",
+    birthDate: "* 4.6.1942",
+    deathDate: "† 6.1.2021",
+    quote: "Man sieht die Sonne\nlangsam untergehen\nund erschrickt dennoch,\ndass es plötzlich dunkel ist.",
   },
   elements: [
-    { id: "photo", type: "image", x: 55, y: 55, w: 365, h: 540, field: "photo", imageFit: "cover", imageBorder: "1px solid #ddd", useCrop: true },
-    { id: "name", type: "text", x: 470, y: 100, w: 490, h: 130, field: "name", fontSize: 24, fontVariant: "small-caps", fontWeight: "normal", letterSpacing: "4px", textAlign: "left" },
-    { id: "birthDate", type: "text", x: 470, y: 310, w: 470, h: 35, field: "birthDate", fontSize: 9, textAlign: "right" },
-    { id: "deathDate", type: "text", x: 470, y: 355, w: 470, h: 35, field: "deathDate", fontSize: 9, textAlign: "right" },
-    { id: "quote", type: "text", x: 455, y: 590, w: 510, h: 370, field: "quote", fontSize: 8, fontVariant: "small-caps", letterSpacing: "1px", textAlign: "center" },
+    // Front page: photo with thin border and padding — ref: y=8-80%, x=15-85%
+    { id: "photo", page: "front", type: "image", x: 150, y: 80, w: 700, h: 720, field: "photo", imageFit: "cover", imageBorder: "1px solid #ddd", useCrop: true },
+    // Back page: name SC serif y≈30%, dates centered y≈43/49%, quote sans-serif caps y≈64%
+    { id: "name", page: "back", type: "text", x: 50, y: 280, w: 900, h: 120, field: "name", fontSize: 38, fontFamily: "Playfair Display SC", fontWeight: "normal", letterSpacing: "6px", textAlign: "center", color: "#000000" },
+    { id: "birthDate", page: "back", type: "text", x: 100, y: 395, w: 800, h: 40, field: "birthDate", fontSize: 14, fontFamily: "Inter", textAlign: "center", color: "#000000" },
+    { id: "deathDate", page: "back", type: "text", x: 100, y: 455, w: 800, h: 40, field: "deathDate", fontSize: 14, fontFamily: "Inter", textAlign: "center", color: "#000000" },
+    { id: "quote", page: "back", type: "text", x: 80, y: 640, w: 840, h: 310, field: "quote", fontSize: 13, fontFamily: "Inter", fontVariant: "small-caps", letterSpacing: "1px", textAlign: "center", lineHeight: 1.9, color: "#000000" },
   ],
 };
 
@@ -199,25 +203,34 @@ const TI07: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath", "dividerSymbol"],
   requiresPhoto: true,
-  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
+  placeholderPhotoSrc: "/assets/photos/placeholder-man-2.jpg",
   thumbnail: { previewName: "Franziska Muster", previewDates: "* 1.12.1954  † 23.1.2021" },
   placeholderData: {
-    name: "Franziska Muster",
-    birthDate: "* 1. Dezember 1954",
-    deathDate: "† 23. Januar 2021",
-    locationBirth: "in München",
-    locationDeath: "in München",
-    dividerSymbol: "✦ ✦ ✦",
+    name: "Franziska\nMuster",
+    birthDate: "* 1.12.1954",
+    deathDate: "† 23.1.2021",
+    locationBirth: "in Starnberg",
+    locationDeath: "in Augsburg",
+    dividerSymbol: "✦  ✦  ✦",
   },
   elements: [
-    { id: "ornament", type: "ornament", x: 10, y: 10, w: 130, h: 880, fixedAsset: "/assets/ornaments/cross-rose-vine.svg", imageFit: "contain" },
-    { id: "name", type: "text", x: 150, y: 340, w: 400, h: 200, field: "name", fontSize: 24, textAlign: "left" },
-    { id: "birthDate", type: "text", x: 160, y: 565, w: 390, h: 28, field: "birthDate", fontSize: 9, textAlign: "left" },
-    { id: "birthPlace", type: "text", x: 170, y: 597, w: 380, h: 25, field: "locationBirth", fontSize: 8, textAlign: "left" },
-    { id: "deathDate", type: "text", x: 160, y: 660, w: 390, h: 28, field: "deathDate", fontSize: 9, textAlign: "left" },
-    { id: "deathPlace", type: "text", x: 170, y: 692, w: 380, h: 25, field: "locationDeath", fontSize: 8, textAlign: "left" },
-    { id: "divider", type: "text", x: 155, y: 845, w: 390, h: 30, field: "dividerSymbol", fontSize: 9, color: "#cc0000", textAlign: "center" },
-    { id: "photo", type: "image", x: 580, y: 35, w: 390, h: 730, field: "photo", imageFit: "cover", imageClip: "rounded", imageBorder: "1px solid #ddd", useCrop: true },
+    // Front page (left half of spread): ornament + name + dates
+    // Ref grid: ornament x=5-18% y=3-82%, name x=25% y=20%, dates x=28% y=48-62%, divider y=83%
+    // Gemini-measured positions from reference grid (×10 for 0-1000):
+    // ornament x=26-59% y=18-86%, name x=53-91% y=41-54%, dates x=62% y=59-77%, divider x=68-76% y=86-88%
+    // Measured diffs: all text ~6% too left. Shift RIGHT by +60 grid units.
+    // Ornament w too narrow (13 vs 33). Widen container.
+    // REF: ornament x=15 y=10, name x=46 y=35, birth x=56 y=55, death x=56 y=67, stars x=63 y=84
+    { id: "ornament", page: "front", type: "ornament", x: 10, y: 10, w: 500, h: 820, fixedAsset: "/assets/ornaments/cross-rose-vine.png", imageFit: "contain" },
+    { id: "name", page: "front", type: "text", x: 420, y: 310, w: 530, h: 160, field: "name", fontSize: 38, fontFamily: "Inter", fontWeight: "300", textAlign: "left", color: "#000000" },
+    { id: "birthDate", page: "front", type: "text", x: 510, y: 510, w: 380, h: 35, field: "birthDate", fontSize: 15, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    { id: "birthPlace", page: "front", type: "text", x: 510, y: 555, w: 380, h: 30, field: "locationBirth", fontSize: 13, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    { id: "deathDate", page: "front", type: "text", x: 510, y: 630, w: 380, h: 35, field: "deathDate", fontSize: 15, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    { id: "deathPlace", page: "front", type: "text", x: 510, y: 675, w: 380, h: 30, field: "locationDeath", fontSize: 13, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    { id: "divider", page: "front", type: "text", x: 560, y: 830, w: 180, h: 25, field: "dividerSymbol", fontSize: 14, fontWeight: "bold", color: "#000000", textAlign: "center" },
+    // Back page (right half of spread): photo with visible padding + rounded corners
+    // REF measured: x=27 y=23 w=61 h=60. Current build was too big/top-left.
+    { id: "photo", page: "back", type: "image", x: 150, y: 140, w: 700, h: 670, field: "photo", imageFit: "cover", imageClip: "rounded", imageBorder: "1px solid #ddd", useCrop: true },
   ],
 };
 
@@ -236,25 +249,26 @@ const TI08: TemplateConfig = {
   spreadHeightMm: 105,
   requiredFields: ["name", "birthDate", "locationBirth", "deathDate", "locationDeath"],
   requiresPhoto: true,
-  placeholderPhotoSrc: "/assets/photos/placeholder-woman.png",
+  placeholderPhotoSrc: "/assets/photos/placeholder-man-2.jpg",
   thumbnail: { previewName: "Erna Musterfrau", previewDates: "* 1.12.1934  † 20.1.2021" },
   placeholderData: {
-    name: "Erna Musterfrau",
-    birthDate: "* 1. Dezember 1934",
-    deathDate: "† 20. Januar 2021",
-    locationBirth: "in Wien",
-    locationDeath: "in Salzburg",
+    name: "Erna\nMusterfrau",
+    birthDate: "* 1. 12. 1934",
+    deathDate: "† 20. 1. 2021",
+    locationBirth: "in Starnberg",
+    locationDeath: "in Augsburg",
   },
   elements: [
-    { id: "cross", type: "ornament", x: 25, y: 35, w: 28, h: 70, fixedAsset: "/assets/ornaments/cross-simple.svg", imageFit: "contain" },
-    { id: "line-top", type: "line", x: 58, y: 70, w: 370, h: 1, lineStyle: "1px solid #1A1A1A" },
-    { id: "name", type: "text", x: 55, y: 220, w: 400, h: 200, field: "name", fontSize: 23, fontWeight: "300", textAlign: "left" },
-    { id: "birthDate", type: "text", x: 55, y: 465, w: 400, h: 28, field: "birthDate", fontSize: 9, textAlign: "left" },
-    { id: "birthPlace", type: "text", x: 55, y: 495, w: 400, h: 25, field: "locationBirth", fontSize: 8, textAlign: "left" },
-    { id: "deathDate", type: "text", x: 55, y: 555, w: 400, h: 28, field: "deathDate", fontSize: 9, textAlign: "left" },
-    { id: "deathPlace", type: "text", x: 55, y: 585, w: 400, h: 25, field: "locationDeath", fontSize: 8, textAlign: "left" },
-    { id: "line-bottom", type: "line", x: 25, y: 700, w: 420, h: 1, lineStyle: "1px solid #1A1A1A" },
-    { id: "photo", type: "image", x: 515, y: 30, w: 450, h: 830, field: "photo", imageFit: "cover", imageClip: "ellipse", useCrop: true },
+    // REF: cross x=16 y=12 w=23 h=76, name x=37-51 y=37-45, birth x=49 y=57, death x=49 y=68
+    // Fixes: cross taller (h=45→76), name right (x+150), name up (y-60), death up (y-50)
+    { id: "cross", page: "front", type: "ornament", x: 60, y: 10, w: 250, h: 950, fixedAsset: "/assets/ornaments/cross-simple-thin.png", imageFit: "contain" },
+    { id: "name", page: "front", type: "text", x: 330, y: 310, w: 640, h: 200, field: "name", fontSize: 42, fontFamily: "Inter", fontWeight: "300", textAlign: "left", color: "#000000" },
+    { id: "birthDate", page: "front", type: "text", x: 450, y: 540, w: 400, h: 35, field: "birthDate", fontSize: 16, fontFamily: "Inter", fontWeight: "bold", textAlign: "left", color: "#000000" },
+    { id: "birthPlace", page: "front", type: "text", x: 450, y: 590, w: 370, h: 30, field: "locationBirth", fontSize: 14, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    { id: "deathDate", page: "front", type: "text", x: 450, y: 660, w: 400, h: 35, field: "deathDate", fontSize: 16, fontFamily: "Inter", fontWeight: "bold", textAlign: "left", color: "#000000" },
+    { id: "deathPlace", page: "front", type: "text", x: 450, y: 710, w: 370, h: 30, field: "locationDeath", fontSize: 14, fontFamily: "Inter", textAlign: "left", color: "#000000" },
+    // REF: photo x=17 y=15 w=74 h=70. BUILD was x=21 y=13 w=65 h=78 → widen, shorten
+    { id: "photo", page: "back", type: "image", x: 100, y: 100, w: 800, h: 750, field: "photo", imageFit: "cover", imageClip: "ellipse", useCrop: true },
   ],
 };
 

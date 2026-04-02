@@ -1,98 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 420" fill="none" stroke="#1A1A1A" stroke-linecap="round" stroke-linejoin="round">
-  <!-- Main vertical beam -->
-  <line x1="50" y1="8" x2="50" y2="412" stroke-width="3.5"/>
-  <!-- Horizontal beam -->
-  <line x1="2" y1="112" x2="98" y2="112" stroke-width="3.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="500" viewBox="0 0 140 500" fill="none" stroke="#1A1A1A" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Cross: vertical beam centered at x=70 -->
+  <line x1="70" y1="10" x2="70" y2="490" stroke-width="2.5"/>
+  <!-- Horizontal bar -->
+  <line x1="30" y1="130" x2="110" y2="130" stroke-width="2.5"/>
 
-  <!-- Decorative endpoints -->
-  <path d="M2,112 L0,109 L0,115 Z" fill="#1A1A1A" stroke="none"/>
-  <path d="M98,112 L100,109 L100,115 Z" fill="#1A1A1A" stroke="none"/>
-  <path d="M50,8 L47,4 L53,4 Z" fill="#1A1A1A" stroke="none"/>
-
-  <!-- ===== ROSE BLOOM ===== -->
-  <!-- Large outer petals (very prominent) -->
-  <path d="M50,56 Q22,36 14,62 Q30,82 50,72" stroke-width="2.5" fill="none"/>
-  <path d="M50,56 Q78,36 86,62 Q70,82 50,72" stroke-width="2.5" fill="none"/>
-  <path d="M50,50 Q26,30 18,56 Q34,78 50,68" stroke-width="2.5" fill="none"/>
-  <path d="M50,50 Q74,30 82,56 Q66,78 50,68" stroke-width="2.5" fill="none"/>
-  <!-- Additional outer petals for fullness -->
-  <path d="M50,54 Q30,44 24,60 Q36,74 50,66" stroke-width="2.2" fill="none"/>
-  <path d="M50,54 Q70,44 76,60 Q64,74 50,66" stroke-width="2.2" fill="none"/>
-  <!-- Mid petals -->
-  <path d="M50,55 Q36,46 30,58 Q40,68 50,63" stroke-width="2" fill="none"/>
-  <path d="M50,55 Q64,46 70,58 Q60,68 50,63" stroke-width="2" fill="none"/>
-  <!-- Inner petals -->
-  <path d="M50,56 Q42,50 38,58 Q44,64 50,61" stroke-width="1.8" fill="none"/>
-  <path d="M50,56 Q58,50 62,58 Q56,64 50,61" stroke-width="1.8" fill="none"/>
-  <!-- Rose center -->
-  <circle cx="50" cy="58" r="6" fill="#1A1A1A" stroke="none"/>
-  <path d="M46,58 Q50,53 54,58 Q50,63 46,58" fill="none" stroke="#666" stroke-width="1"/>
+  <!-- ===== ROSE at top ===== -->
+  <path d="M70,60 C58,46 44,50 42,66 C40,80 56,90 70,80" stroke-width="2" fill="none"/>
+  <path d="M70,60 C82,46 96,50 98,66 C100,80 84,90 70,80" stroke-width="2" fill="none"/>
+  <path d="M70,56 C60,44 48,47 47,60 C46,72 58,80 70,74" stroke-width="1.8" fill="none"/>
+  <path d="M70,56 C80,44 92,47 93,60 C94,72 82,80 70,74" stroke-width="1.8" fill="none"/>
+  <path d="M70,58 C64,50 55,53 54,63 C53,72 62,76 70,71" stroke-width="1.5" fill="none"/>
+  <path d="M70,58 C76,50 85,53 86,63 C87,72 78,76 70,71" stroke-width="1.5" fill="none"/>
+  <path d="M67,64 C65,60 68,57 71,60 C74,63 71,66 68,65" stroke-width="1.2" fill="none"/>
+  <circle cx="70" cy="63" r="3.5" fill="#1A1A1A" stroke="none"/>
   <!-- Sepals -->
-  <path d="M36,74 Q28,82 26,94" stroke-width="1.8" fill="none"/>
-  <path d="M64,74 Q72,82 74,94" stroke-width="1.8" fill="none"/>
-  <path d="M42,76 Q36,84 34,94" stroke-width="1.3" fill="none"/>
-  <path d="M58,76 Q64,84 66,94" stroke-width="1.3" fill="none"/>
+  <path d="M58,82 C52,94 50,108 54,120" stroke-width="1.5" fill="none"/>
+  <path d="M82,82 C88,94 90,108 86,120" stroke-width="1.5" fill="none"/>
 
-  <!-- Large sweeping leaves at rose level -->
-  <path d="M24,76 Q2,56 0,24 Q10,50 24,68" stroke-width="3.5" fill="none"/>
-  <line x1="10" y1="40" x2="18" y2="58" stroke-width="1.5"/>
-  <line x1="6" y1="32" x2="16" y2="52" stroke-width="1.5"/>
-  <line x1="2" y1="28" x2="14" y2="48" stroke-width="1.2"/>
-  <path d="M76,76 Q98,56 100,24 Q90,50 76,68" stroke-width="3.5" fill="none"/>
-  <line x1="90" y1="40" x2="82" y2="58" stroke-width="1.5"/>
-  <line x1="94" y1="32" x2="84" y2="52" stroke-width="1.5"/>
-  <line x1="98" y1="28" x2="86" y2="48" stroke-width="1.2"/>
+  <!-- Bud at very top -->
+  <path d="M70,28 C66,18 70,8 70,8 C70,8 74,18 70,28" stroke-width="1.5" fill="none"/>
+  <path d="M68,22 C66,16 70,10 70,10" stroke-width="1" fill="none"/>
+  <path d="M72,22 C74,16 70,10 70,10" stroke-width="1" fill="none"/>
 
-  <!-- Bud above rose -->
-  <path d="M50,28 Q42,16 50,8 Q58,16 50,28" stroke-width="2.2" fill="none"/>
+  <!-- ===== SWEEPING VINE LEAVES — big curves reaching far LEFT ===== -->
 
-  <!-- ===== LARGE LEAVES - LEFT SIDE ===== -->
-  <!-- Leaf 1 -->
-  <path d="M47,158 Q12,140 2,108 Q18,134 47,152" stroke-width="3.5" fill="none"/>
-  <line x1="18" y1="124" x2="30" y2="140" stroke-width="1.5"/>
-  <line x1="12" y1="118" x2="24" y2="134" stroke-width="1.5"/>
-  <line x1="8" y1="112" x2="20" y2="130" stroke-width="1.2"/>
+  <!-- Large leaf LEFT at 34% — sweeps to x=5 -->
+  <path d="M66,170 C40,155 10,162 5,185 C0,208 25,218 50,205" stroke-width="2.2" fill="none"/>
+  <path d="M20,178 C28,190 38,198" stroke-width="0.9" fill="none"/>
+  <path d="M12,186 C22,196 34,202" stroke-width="0.9" fill="none"/>
+  <path d="M6,194 C18,200 30,206" stroke-width="0.7" fill="none"/>
 
-  <!-- Leaf 2 -->
-  <path d="M47,250 Q8,230 0,192 Q16,218 47,242" stroke-width="3.5" fill="none"/>
-  <line x1="16" y1="210" x2="28" y2="228" stroke-width="1.5"/>
-  <line x1="10" y1="202" x2="22" y2="220" stroke-width="1.5"/>
-  <line x1="4" y1="196" x2="18" y2="214" stroke-width="1.2"/>
+  <!-- Large leaf LEFT at 46% — sweeps to x=2 -->
+  <path d="M66,232 C36,216 6,226 2,252 C-2,278 28,286 52,270" stroke-width="2.2" fill="none"/>
+  <path d="M18,242 C28,254 40,262" stroke-width="0.9" fill="none"/>
+  <path d="M10,252 C22,262 36,268" stroke-width="0.9" fill="none"/>
+  <path d="M4,260 C18,268 32,272" stroke-width="0.7" fill="none"/>
 
-  <!-- Leaf 3 -->
-  <path d="M47,342 Q12,324 2,292 Q18,318 47,336" stroke-width="3.5" fill="none"/>
-  <line x1="18" y1="308" x2="30" y2="324" stroke-width="1.5"/>
-  <line x1="12" y1="302" x2="24" y2="318" stroke-width="1.5"/>
-  <line x1="8" y1="296" x2="20" y2="314" stroke-width="1.2"/>
+  <!-- Large leaf LEFT at 60% — sweeps to x=8 -->
+  <path d="M66,300 C38,286 12,296 8,320 C4,344 30,350 54,336" stroke-width="2.2" fill="none"/>
+  <path d="M22,310 C30,320 42,328" stroke-width="0.9" fill="none"/>
+  <path d="M14,318 C26,328 38,334" stroke-width="0.9" fill="none"/>
+  <path d="M8,326 C22,332 34,338" stroke-width="0.7" fill="none"/>
 
-  <!-- ===== LARGE LEAVES - RIGHT SIDE ===== -->
-  <!-- Leaf 1 -->
-  <path d="M53,204 Q88,186 98,154 Q82,180 53,198" stroke-width="3.5" fill="none"/>
-  <line x1="82" y1="168" x2="70" y2="186" stroke-width="1.5"/>
-  <line x1="88" y1="162" x2="76" y2="180" stroke-width="1.5"/>
-  <line x1="92" y1="156" x2="80" y2="174" stroke-width="1.2"/>
+  <!-- Large leaf LEFT at 74% — sweeps to x=10 -->
+  <path d="M66,370 C40,356 14,366 10,388 C6,410 32,416 54,402" stroke-width="2.2" fill="none"/>
+  <path d="M24,378 C32,388 42,396" stroke-width="0.9" fill="none"/>
+  <path d="M16,388 C28,396 38,400" stroke-width="0.9" fill="none"/>
+  <path d="M10,396 C24,400 34,404" stroke-width="0.7" fill="none"/>
 
-  <!-- Leaf 2 -->
-  <path d="M53,296 Q88,278 100,242 Q84,268 53,290" stroke-width="3.5" fill="none"/>
-  <line x1="84" y1="256" x2="72" y2="274" stroke-width="1.5"/>
-  <line x1="90" y1="250" x2="78" y2="268" stroke-width="1.5"/>
-  <line x1="94" y1="244" x2="82" y2="262" stroke-width="1.2"/>
+  <!-- Small right accents (subtle, reference has some right detail) -->
+  <path d="M74,200 C90,192 100,200 96,214 C92,226 80,224 74,216" stroke-width="1.4" fill="none"/>
+  <path d="M74,268 C92,260 102,270 98,284 C94,296 80,292 74,284" stroke-width="1.4" fill="none"/>
+  <path d="M74,336 C90,328 100,336 96,350 C92,362 80,358 74,350" stroke-width="1.4" fill="none"/>
+  <path d="M74,402 C88,396 96,402 94,414 C92,424 82,422 74,416" stroke-width="1.2" fill="none"/>
 
-  <!-- Leaf 3 -->
-  <path d="M53,382 Q88,364 98,332 Q82,358 53,376" stroke-width="3.5" fill="none"/>
-  <line x1="82" y1="348" x2="70" y2="364" stroke-width="1.5"/>
-  <line x1="88" y1="340" x2="76" y2="358" stroke-width="1.5"/>
-  <line x1="92" y1="334" x2="80" y2="352" stroke-width="1.2"/>
-
-  <!-- Thorns on stem -->
-  <circle cx="47" cy="182" r="2.5" fill="#1A1A1A" stroke="none"/>
-  <circle cx="53" cy="228" r="2.5" fill="#1A1A1A" stroke="none"/>
-  <circle cx="47" cy="274" r="2.5" fill="#1A1A1A" stroke="none"/>
-  <circle cx="53" cy="320" r="2.5" fill="#1A1A1A" stroke="none"/>
-  <circle cx="47" cy="362" r="2.5" fill="#1A1A1A" stroke="none"/>
-  <circle cx="53" cy="400" r="2.5" fill="#1A1A1A" stroke="none"/>
-
-  <!-- Bottom leaf pair -->
-  <path d="M47,402 Q22,394 12,374 Q26,388 47,398" stroke-width="3" fill="none"/>
-  <path d="M53,408 Q78,400 88,380 Q74,394 53,404" stroke-width="3" fill="none"/>
+  <!-- Bottom vine taper -->
+  <path d="M66,448 C48,440 36,448 38,462 C40,474 52,476 66,468" stroke-width="1.8" fill="none"/>
+  <path d="M74,456 C84,450 90,456 88,466 C86,474 78,474 74,468" stroke-width="1.2" fill="none"/>
 </svg>
