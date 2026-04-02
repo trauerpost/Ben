@@ -18,6 +18,10 @@ if (!fabric.FabricObject.customProperties.includes("data")) {
   fabric.FabricObject.customProperties.push("data");
 }
 
+// Fabric.js v7 defaults originX/originY to "center" — force top-left for predictable positioning
+fabric.FabricObject.ownDefaults.originX = "left";
+fabric.FabricObject.ownDefaults.originY = "top";
+
 export interface FabricCanvasHandle {
   getCanvas: () => fabric.Canvas | null;
   toJSON: () => string;
@@ -26,7 +30,9 @@ export interface FabricCanvasHandle {
   addText: (text: string, options?: Partial<Record<string, unknown>>) => void;
   addImage: (url: string) => Promise<void>;
   addRect: (options: Partial<Record<string, unknown>>) => void;
+  addLine: (options: Partial<Record<string, unknown>>) => void;
   resize: (width: number, height: number) => void;
+  toggleGrid: () => boolean;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
@@ -183,10 +189,69 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
         fabricRef.current.setActiveObject(rect);
       },
 
+      addLine: (options: Partial<Record<string, unknown>>) => {
+        if (!fabricRef.current) return;
+        const x1 = (options.x1 as number) ?? 0;
+        const y1 = (options.y1 as number) ?? 0;
+        const x2 = (options.x2 as number) ?? 0;
+        const y2 = (options.y2 as number) ?? 0;
+        const line = new fabric.Line([x1, y1, x2, y2], {
+          left: (options.left as number) ?? 0,
+          top: (options.top as number) ?? 0,
+          stroke: (options.stroke as string) ?? "#cccccc",
+          strokeWidth: (options.strokeWidth as number) ?? 1,
+          selectable: true,
+          data: options.data,
+        });
+        fabricRef.current.add(line);
+      },
+
       resize: (newWidth: number, newHeight: number) => {
         if (!fabricRef.current) return;
         fabricRef.current.setDimensions({ width: newWidth, height: newHeight });
         fabricRef.current.renderAll();
+      },
+
+      toggleGrid: () => {
+        if (!fabricRef.current) return false;
+        const canvas = fabricRef.current;
+        const existing = canvas.getObjects().filter(o => (o as any).data?.isGrid);
+        if (existing.length > 0) {
+          existing.forEach(o => canvas.remove(o));
+          canvas.renderAll();
+          return false;
+        }
+        const w = canvas.getWidth();
+        const h = canvas.getHeight();
+        const gridLines: fabric.FabricObject[] = [];
+        for (let i = 1; i <= 9; i++) {
+          const x = Math.round(w * i / 10);
+          const y = Math.round(h * i / 10);
+          gridLines.push(new fabric.Line([x, 0, x, h], {
+            stroke: "rgba(0, 150, 255, 0.25)", strokeWidth: 1,
+            selectable: false, evented: false, excludeFromExport: true,
+            data: { isGrid: true },
+          }));
+          gridLines.push(new fabric.Line([0, y, w, y], {
+            stroke: "rgba(0, 150, 255, 0.25)", strokeWidth: 1,
+            selectable: false, evented: false, excludeFromExport: true,
+            data: { isGrid: true },
+          }));
+          // Labels at top and left
+          gridLines.push(new fabric.Text(`${i * 10}`, {
+            left: x - 6, top: 2, fontSize: 8, fill: "rgba(0, 150, 255, 0.6)",
+            selectable: false, evented: false, excludeFromExport: true,
+            data: { isGrid: true },
+          }));
+          gridLines.push(new fabric.Text(`${i * 10}`, {
+            left: 2, top: y - 5, fontSize: 8, fill: "rgba(0, 150, 255, 0.6)",
+            selectable: false, evented: false, excludeFromExport: true,
+            data: { isGrid: true },
+          }));
+        }
+        gridLines.forEach(l => canvas.add(l));
+        canvas.renderAll();
+        return true;
       },
 
       undo: () => {

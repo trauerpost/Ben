@@ -10,6 +10,7 @@ import {
   templateToFabricConfigs,
   type FabricElementConfig,
 } from "@/lib/editor/template-to-fabric";
+import { getFabricCropOffset } from "@/lib/editor/image-fitter";
 import { fabricToWizardState } from "@/lib/editor/fabric-to-wizard-state";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { FabricCanvasHandle } from "./FabricCanvas";
@@ -93,8 +94,13 @@ export function useCanvasBuilder(
         return;
       }
 
-      const newDims = getCanvasDimensions(ct, cf);
+      // Templates with front/back pages render each page as portrait (half spread width)
+      const hasMultiplePages = template.elements.some(el => el.page && el.page !== "front");
+      const newDims = getCanvasDimensions(ct, cf, undefined, hasMultiplePages);
       canvas.resize(newDims.width, newDims.height);
+
+      // Wait for fonts before measuring/rendering text
+      await document.fonts.ready;
 
       // Build textContent from placeholder data so canvas shows real text, not [fieldName]
       const ph = template.placeholderData;
@@ -253,7 +259,10 @@ export function useCanvasBuilder(
       const canvas = canvasRef.current;
       if (!canvas) return false;
 
-      const newDims = getCanvasDimensions(envelope.cardType, envelope.cardFormat);
+      // Check if template has multiple pages for perPage sizing
+      const tmpl = getTemplateConfig(envelope.templateId);
+      const hasPages = tmpl?.elements.some(el => el.page && el.page !== "front") ?? false;
+      const newDims = getCanvasDimensions(envelope.cardType, envelope.cardFormat, undefined, hasPages);
       canvas.resize(newDims.width, newDims.height);
 
       // Load the active page
@@ -327,17 +336,69 @@ async function addFabricObject(
           const slotLeft = config.options.left as number;
           const slotTop = config.options.top as number;
 
-          // Cover crop: scale uniformly to fill, center overflow
-          const coverScale = Math.max(targetW / imgW, targetH / imgH);
+          // Ornaments use contain-fit (no crop), photos use cover-crop with face bias
+          const isOrnament = !!config.meta?.fixedAsset && !config.meta?.placeholderSrc;
+          let scale: number;
+          let imgLeft: number;
+          let imgTop: number;
+
+          if (isOrnament) {
+            // Contain: fit entirely inside slot, center
+            scale = Math.min(targetW / imgW, targetH / imgH);
+            imgLeft = slotLeft + (targetW - imgW * scale) / 2;
+            imgTop = slotTop + (targetH - imgH * scale) / 2;
+          } else {
+            // Cover crop with face bias
+            scale = Math.max(targetW / imgW, targetH / imgH);
+            const { offsetX, offsetY } = getFabricCropOffset(imgW, imgH, targetW, targetH);
+            imgLeft = slotLeft - offsetX;
+            imgTop = slotTop - offsetY;
+          }
+
           img.set({
-            originX: "left",
-            originY: "top",
-            left: slotLeft - (imgW * coverScale - targetW) / 2,
-            top: slotTop - (imgH * coverScale - targetH) / 2,
-            scaleX: coverScale,
-            scaleY: coverScale,
+            left: imgLeft,
+            top: imgTop,
+            scaleX: scale,
+            scaleY: scale,
             data: { ...(config.options.data as Record<string, unknown>), slotWidth: targetW, slotHeight: targetH, slotLeft, slotTop },
           });
+
+          // Apply clipping — always clip photos to their slot bounds
+          const imageClip = config.meta?.imageClip;
+          if (!imageClip && !isOrnament) {
+            // Default: rectangular clip to slot
+            const { Rect } = await import("fabric");
+            img.clipPath = new Rect({
+              width: targetW,
+              height: targetH,
+              left: slotLeft,
+              top: slotTop,
+              absolutePositioned: true,
+            });
+          } else if (imageClip === "ellipse") {
+            const { Ellipse } = await import("fabric");
+            img.clipPath = new Ellipse({
+              rx: targetW / 2,
+              ry: targetH / 2,
+              left: slotLeft + targetW / 2,
+              top: slotTop + targetH / 2,
+              originX: "center",
+              originY: "center",
+              absolutePositioned: true,
+            });
+          } else if (imageClip === "rounded") {
+            const { Rect } = await import("fabric");
+            img.clipPath = new Rect({
+              width: targetW,
+              height: targetH,
+              rx: 8,
+              ry: 8,
+              left: slotLeft,
+              top: slotTop,
+              absolutePositioned: true,
+            });
+          }
+
           fabricCanvas.add(img);
         } catch (err) {
           console.warn("[addFabricObject] Failed to load image:", src, err);
@@ -349,7 +410,7 @@ async function addFabricObject(
       break;
     }
     case "line":
-      canvas.addRect({ ...config.options, fill: "transparent" });
+      canvas.addLine(config.options);
       break;
   }
 }

@@ -303,20 +303,29 @@ export default function CanvasBuilderPage(): React.ReactElement {
               activePageId={builder.activePageId}
               onPageSelect={(id) => builder.switchPage(id)}
             />
-            <ZoomControls
-              zoom={builder.zoom}
-              onZoomChange={builder.setZoom}
-              onFit={() => {
-                const container = canvasContainerRef.current;
-                if (container) {
-                  builder.handleZoomFit(
-                    container.clientWidth - 64,
-                    container.clientHeight - 64
-                  );
-                }
-              }}
-              onReset={builder.handleZoomReset}
-            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => canvasRef.current?.toggleGrid()}
+                className="px-2 py-1 text-xs border border-brand-border rounded hover:bg-gray-100"
+                title="Toggle 10×10 grid"
+              >
+                Grid
+              </button>
+              <ZoomControls
+                zoom={builder.zoom}
+                onZoomChange={builder.setZoom}
+                onFit={() => {
+                  const container = canvasContainerRef.current;
+                  if (container) {
+                    builder.handleZoomFit(
+                      container.clientWidth - 64,
+                      container.clientHeight - 64
+                    );
+                  }
+                }}
+                onReset={builder.handleZoomReset}
+              />
+            </div>
           </div>
         </div>
       </div>
