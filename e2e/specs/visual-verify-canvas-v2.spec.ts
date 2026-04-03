@@ -784,27 +784,28 @@ test.describe("CB-U4: Preview modal content", () => {
 
     await page.screenshot({ path: path.join(SCREENSHOTS, "CBU4-TI08-preview.png") });
 
-    // Preview renders canvas page snapshots as images inside an iframe.
-    // Verify: iframe exists AND contains at least one <img> with a data URL
-    // (proof that the canvas was snapshot successfully with rendered content).
-    const iframe = page.frameLocator("iframe");
-    const images = iframe.locator("img");
-    const imageCount = await images.count().catch(() => 0);
-    console.log(`Preview iframe images: ${imageCount}`);
+    // Preview uses server-side rendering (/api/preview) which returns HTML
+    // with nested iframes for multi-page templates:
+    //   outer iframe → "Vorderseite" label + inner iframe (front page HTML)
+    //                → "Rückseite" label + inner iframe (back page HTML)
+    // For single-page: outer iframe contains the card directly.
+    const outerIframe = page.frameLocator("iframe").first();
 
-    if (imageCount > 0) {
-      // At least one page snapshot rendered — check it's a real data URL (not empty)
-      const src = await images.first().getAttribute("src") ?? "";
-      expect(src.startsWith("data:image/"), "Preview image is not a valid data URL").toBe(true);
-      // Verify image has substantial content (>1KB = not blank canvas)
-      expect(src.length, "Preview image appears to be blank").toBeGreaterThan(1000);
-    } else {
-      // Fallback: text-based preview (renderSpreadHTML path)
-      const iframeText = await iframe.locator("body").textContent({ timeout: 3000 }).catch(() => "");
-      const bodyText = await page.textContent("body") ?? "";
-      const hasContent = (iframeText && iframeText.includes("Erna")) || bodyText.includes("Erna");
-      expect(hasContent, "Preview did not render any content").toBe(true);
-    }
+    // Check outer iframe text first (single-page or labels)
+    const outerText = await outerIframe.locator("body").textContent({ timeout: 5000 }).catch(() => "");
+
+    // Check nested iframes (multi-page preview)
+    const innerIframes = outerIframe.frameLocator("iframe");
+    let innerText = "";
+    try {
+      innerText = await innerIframes.first().locator("body").textContent({ timeout: 3000 }) ?? "";
+    } catch { /* no nested iframes = single-page */ }
+
+    const allText = (outerText ?? "") + innerText;
+    console.log(`Preview text (first 200): ${allText.substring(0, 200)}`);
+
+    // Must contain template name "Erna" somewhere in the preview
+    expect(allText.includes("Erna"), "Preview must contain card name 'Erna'").toBe(true);
   });
 });
 
@@ -819,26 +820,38 @@ test.describe("CB-F1: Text editing flow", () => {
     test.setTimeout(60000);
     await loadTemplate(page, "TI08");
 
-    // Find a text object and get its current text
-    const textBefore = await page.evaluate(() => {
-      const fc = (document.querySelector("canvas") as HTMLCanvasElement & { __fabricCanvas?: { getObjects: () => Array<{ type: string; text?: string }> } }).__fabricCanvas;
-      if (!fc) return null;
-      const textObj = fc.getObjects().find((o: { type: string }) => o.type === "textbox" || o.type === "i-text");
-      return textObj?.text ?? null;
+    // Find first text object's position via Fabric (same pattern as getObjectsInfo)
+    const textInfo = await page.evaluate(() => {
+      const canvasEls = document.querySelectorAll("canvas.lower-canvas");
+      for (const c of canvasEls) {
+        const fc = (c as any).__fabricCanvas ?? (c as any).fabric;
+        if (!fc) continue;
+        const textObj = fc.getObjects().find((o: any) => o.type === "textbox" || o.type === "i-text");
+        if (textObj) {
+          return {
+            text: textObj.text as string,
+            left: textObj.left as number,
+            top: textObj.top as number,
+            width: (textObj.width ?? 100) * (textObj.scaleX ?? 1),
+            height: (textObj.height ?? 30) * (textObj.scaleY ?? 1),
+          };
+        }
+      }
+      return null;
     });
-    expect(textBefore, "No text object found on canvas").toBeTruthy();
+    expect(textInfo, "No text object found on canvas").toBeTruthy();
+    console.log(`Text before: "${textInfo!.text}" at (${textInfo!.left}, ${textInfo!.top})`);
 
-    // Click the text on canvas (center of canvas area)
+    // Click the exact center of the text object on the canvas element
     const canvas = page.locator("canvas.lower-canvas");
     const box = await canvas.boundingBox();
     expect(box).toBeTruthy();
-    // Click center-right where name text typically is
-    await page.mouse.click(box!.x + box!.width * 0.6, box!.y + box!.height * 0.3);
-    await page.waitForTimeout(500);
+    const clickX = box!.x + textInfo!.left + textInfo!.width / 2;
+    const clickY = box!.y + textInfo!.top + textInfo!.height / 2;
 
     // Double-click to enter edit mode
-    await page.mouse.dblclick(box!.x + box!.width * 0.6, box!.y + box!.height * 0.3);
-    await page.waitForTimeout(500);
+    await page.mouse.dblclick(clickX, clickY);
+    await page.waitForTimeout(1000);
 
     // Select all and type new text
     await page.keyboard.press("Control+a");
@@ -851,11 +864,18 @@ test.describe("CB-F1: Text editing flow", () => {
 
     // Verify text changed on canvas
     const textAfter = await page.evaluate(() => {
-      const fc = (document.querySelector("canvas") as HTMLCanvasElement & { __fabricCanvas?: { getObjects: () => Array<{ type: string; text?: string }> } }).__fabricCanvas;
-      if (!fc) return null;
-      const texts = fc.getObjects().filter((o: { type: string }) => o.type === "textbox" || o.type === "i-text");
-      return texts.map((t: { text?: string }) => t.text).join("|");
+      const canvasEls = document.querySelectorAll("canvas.lower-canvas");
+      for (const c of canvasEls) {
+        const fc = (c as any).__fabricCanvas ?? (c as any).fabric;
+        if (!fc) continue;
+        return fc.getObjects()
+          .filter((o: any) => o.type === "textbox" || o.type === "i-text")
+          .map((t: any) => t.text)
+          .join("|");
+      }
+      return null;
     });
+    console.log(`Text after: "${textAfter}"`);
     expect(textAfter, "Canvas text should contain typed content").toContain("TestName123");
   });
 
