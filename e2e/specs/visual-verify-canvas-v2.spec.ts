@@ -784,26 +784,26 @@ test.describe("CB-U4: Preview modal content", () => {
 
     await page.screenshot({ path: path.join(SCREENSHOTS, "CBU4-TI08-preview.png") });
 
-    // Preview renders card content inside an iframe. Check iframe first, then fallback to page text.
+    // Preview renders canvas page snapshots as images inside an iframe.
+    // Verify: iframe exists AND contains at least one <img> with a data URL
+    // (proof that the canvas was snapshot successfully with rendered content).
     const iframe = page.frameLocator("iframe");
-    const iframeText = await iframe.locator("body").textContent({ timeout: 5000 }).catch(() => "");
-    console.log(`Preview iframe text: ${(iframeText ?? "").substring(0, 100)}`);
+    const images = iframe.locator("img");
+    const imageCount = await images.count().catch(() => 0);
+    console.log(`Preview iframe images: ${imageCount}`);
 
-    if (iframeText && iframeText.includes("Erna")) {
-      expect(iframeText, "Preview missing card name").toContain("Erna");
+    if (imageCount > 0) {
+      // At least one page snapshot rendered — check it's a real data URL (not empty)
+      const src = await images.first().getAttribute("src") ?? "";
+      expect(src.startsWith("data:image/"), "Preview image is not a valid data URL").toBe(true);
+      // Verify image has substantial content (>1KB = not blank canvas)
+      expect(src.length, "Preview image appears to be blank").toBeGreaterThan(1000);
     } else {
-      // Fallback: check for modal/dialog or page-level text
-      const previewArea = page.locator('[role="dialog"], [class*="preview"], [class*="Preview"], [class*="modal"]');
-      const hasPreview = await previewArea.first().isVisible({ timeout: 3000 }).catch(() => false);
-      if (hasPreview) {
-        const previewText = await previewArea.first().textContent() ?? "";
-        expect(previewText, "Preview missing card name").toContain("Erna");
-      } else {
-        const bodyText = await page.textContent("body") ?? "";
-        const hasName = bodyText.includes("Erna") || bodyText.includes("Musterfrau");
-        console.log(`Preview modal not found — checking body for name: ${hasName}`);
-        expect(hasPreview || hasName, "Preview did not open or show content").toBe(true);
-      }
+      // Fallback: text-based preview (renderSpreadHTML path)
+      const iframeText = await iframe.locator("body").textContent({ timeout: 3000 }).catch(() => "");
+      const bodyText = await page.textContent("body") ?? "";
+      const hasContent = (iframeText && iframeText.includes("Erna")) || bodyText.includes("Erna");
+      expect(hasContent, "Preview did not render any content").toBe(true);
     }
   });
 });
