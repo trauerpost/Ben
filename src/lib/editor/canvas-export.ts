@@ -20,9 +20,15 @@ export async function exportCanvasToPreview(
 
   const dims = getCanvasDimensions(cardType, cardFormat);
 
-  // Use the front page as the primary content (contains text fields).
-  // For single-format cards the front page key is "front";
-  // for folded cards it is "front-left" or "front-right".
+  // Multi-page templates (e.g. TI05) split content across pages: photo on
+  // "front", text on "back".  We must merge text content from ALL pages so
+  // that renderSpreadHTML (which iterates every template element regardless
+  // of page) sees every field value.
+  //
+  // Strategy: convert each page independently, then merge non-empty
+  // textContent fields + photo/background from the first page that has them.
+
+  // Use the front page as the base state (photo, background, freeFormElements)
   const frontKey =
     pageKeys.find(k => k === "front") ??
     pageKeys.find(k => k.startsWith("front")) ??
@@ -36,6 +42,37 @@ export async function exportCanvasToPreview(
     cardFormat,
     templateId
   );
+
+  // Merge text content from other pages (back page, inside pages, etc.)
+  for (const key of pageKeys) {
+    if (key === frontKey) continue;
+    const pageJSON = pagesData[key];
+    if (!pageJSON) continue;
+
+    const pageState = fabricToWizardState(
+      JSON.parse(pageJSON),
+      dims,
+      cardType,
+      cardFormat,
+      templateId
+    );
+
+    // Copy non-empty text fields from this page into the merged state.
+    // Skip formatting meta-fields (fontFamily, fontColor, textAlign, *FontSize).
+    for (const [field, value] of Object.entries(pageState.textContent)) {
+      if (typeof value !== "string" || !value) continue;
+      if (field === "fontFamily" || field === "fontColor" || field === "textAlign") continue;
+      const current = wizardState.textContent[field as keyof typeof wizardState.textContent];
+      if (!current || current === "") {
+        (wizardState.textContent as unknown as Record<string, unknown>)[field] = value;
+      }
+    }
+
+    // If the front page has no photo but another page does, take it
+    if (!wizardState.photo.url && pageState.photo.url) {
+      wizardState.photo = pageState.photo;
+    }
+  }
 
   const previewHTML = await renderSpreadHTML(wizardState);
 

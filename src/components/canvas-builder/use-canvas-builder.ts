@@ -79,10 +79,12 @@ export function useCanvasBuilder(
   const [activePageId, setActivePageId] = useState("front");
   const [zoom, setZoom] = useState(1);
   const [dims, setDims] = useState<CanvasDimensions | null>(null);
+  const [hasMultiplePages, setHasMultiplePages] = useState(false);
 
   const pagesDataRef = useRef<Record<string, string>>({});
 
-  const pages = getPageDefs(cardFormat);
+  const allPages = getPageDefs(cardFormat);
+  const pages = hasMultiplePages ? allPages : allPages.slice(0, 1);
 
   const loadTemplate = useCallback(
     async (ct: CardType, cf: CardFormat, tid: string) => {
@@ -96,8 +98,9 @@ export function useCanvasBuilder(
       }
 
       // Templates with front/back pages render each page as portrait (half spread width)
-      const hasMultiplePages = template.elements.some(el => el.page && el.page !== "front");
-      const newDims = getCanvasDimensions(ct, cf, undefined, hasMultiplePages);
+      const multiPage = template.elements.some(el => el.page && el.page !== "front");
+      setHasMultiplePages(multiPage);
+      const newDims = getCanvasDimensions(ct, cf, undefined, multiPage);
       canvas.resize(newDims.width, newDims.height);
 
       // Wait for fonts before measuring/rendering text

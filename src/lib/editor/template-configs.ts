@@ -305,7 +305,7 @@ const TI09: TemplateConfig = {
     { id: "quote", type: "text", x: 55, y: 100, w: 890, h: 730, page: "back", field: "quote", fontSize: 8.5, fontStyle: "italic", textAlign: "left" },
     { id: "line", type: "line", x: 200, y: 430, w: 600, h: 1, page: "back", lineStyle: "0.5px solid #bbb" },
     { id: "verse", type: "text", x: 100, y: 450, w: 800, h: 105, page: "back", field: "closingVerse", fontSize: 8.5, fontStyle: "italic", textAlign: "center" },
-    { id: "photo", type: "image", x: 250, y: 590, w: 500, h: 360, page: "back", field: "photo", imageFit: "cover", imageClip: "rounded", useCrop: true },
+    { id: "photo", type: "image", x: 250, y: 590, w: 500, h: 360, page: "front", field: "photo", imageFit: "cover", imageClip: "rounded", useCrop: true },
   ],
 };
 
