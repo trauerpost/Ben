@@ -6,35 +6,57 @@ import { getTemplateConfig } from "./template-configs";
 import type { WizardState } from "./wizard-state";
 import type { Browser } from "puppeteer-core";
 
+/**
+ * Chromium binary URL for @sparticuz/chromium-min on Vercel.
+ * Must match the installed @sparticuz/chromium-min version.
+ */
+const CHROMIUM_REMOTE_URL =
+  "https://github.com/nichochar/chromium-min-binaries/releases/download/v143.0.4/chromium-v143.0.4-pack.tar";
+
 /** Launch browser with exponential backoff retry (1s → 2s → 4s) */
 async function launchBrowserWithRetry(maxAttempts = 3): Promise<Browser> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(`[pdf] Browser launch attempt ${attempt}/${maxAttempts}`);
       const puppeteerCore = await import("puppeteer-core");
-      const chromium = await import("@sparticuz/chromium");
-      return await puppeteerCore.default.launch({
-        args: chromium.default.args,
-        executablePath: await chromium.default.executablePath(),
-        headless: true,
-      }) as Browser;
-    } catch (coreErr) {
-      // First attempt: try puppeteer fallback
-      if (attempt === 1) {
-        try {
-          const puppeteer = await import("puppeteer");
-          return await puppeteer.default.launch({ headless: true }) as unknown as Browser;
-        } catch {
-          // fallback also failed, continue retry loop
-        }
+
+      // Try chromium-min first (Vercel serverless — downloads binary at runtime)
+      try {
+        const chromiumMin = await import("@sparticuz/chromium-min");
+        const execPath = await chromiumMin.default.executablePath(CHROMIUM_REMOTE_URL);
+        console.log(`[pdf] Using chromium-min, execPath: ${execPath}`);
+        return await puppeteerCore.default.launch({
+          args: chromiumMin.default.args,
+          executablePath: execPath,
+          headless: true,
+        }) as Browser;
+      } catch (minErr) {
+        console.warn(`[pdf] chromium-min failed, trying chromium:`, minErr);
       }
+
+      // Fallback: try regular @sparticuz/chromium (local dev)
+      try {
+        const chromium = await import("@sparticuz/chromium");
+        return await puppeteerCore.default.launch({
+          args: chromium.default.args,
+          executablePath: await chromium.default.executablePath(),
+          headless: true,
+        }) as Browser;
+      } catch {
+        // fall through
+      }
+
+      // Last resort: full puppeteer with bundled Chromium (local dev only)
+      const puppeteer = await import("puppeteer");
+      return await puppeteer.default.launch({ headless: true }) as unknown as Browser;
+    } catch (err) {
       if (attempt < maxAttempts) {
-        const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-        console.warn(`[pdf] Browser launch failed (attempt ${attempt}), retrying in ${delay}ms:`, coreErr);
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        console.warn(`[pdf] Browser launch failed (attempt ${attempt}), retrying in ${delay}ms:`, err);
         await new Promise(r => setTimeout(r, delay));
       } else {
-        console.error(`[pdf] Browser launch failed after ${maxAttempts} attempts:`, coreErr);
-        throw coreErr;
+        console.error(`[pdf] Browser launch failed after ${maxAttempts} attempts:`, err);
+        throw err;
       }
     }
   }
