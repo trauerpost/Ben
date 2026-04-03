@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { generateCardPDF } from "@/lib/editor/pdf-generator";
 import type { WizardState } from "@/lib/editor/wizard-state";
 
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
