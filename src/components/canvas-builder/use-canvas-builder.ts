@@ -65,6 +65,7 @@ export interface UseCanvasBuilderReturn {
   handleZoomReset: () => void;
   exportToWizardState: () => WizardState | null;
   getAllPagesData: () => Record<string, string>;
+  getAllPageImages: () => Promise<Record<string, string>>;
   saveDraft: () => void;
   restoreDraft: () => boolean;
 }
@@ -244,6 +245,40 @@ export function useCanvasBuilder(
     return { ...pagesDataRef.current };
   }, [canvasRef, activePageId]);
 
+  const getAllPageImages = useCallback(async (): Promise<Record<string, string>> => {
+    const canvas = canvasRef.current;
+    if (!canvas) return {};
+
+    // Save current page state
+    pagesDataRef.current[activePageId] = canvas.toJSON();
+    const originalPageId = activePageId;
+    const images: Record<string, string> = {};
+
+    for (const page of pages) {
+      if (page.id === originalPageId) {
+        // Current page — just capture it directly
+        images[page.id] = canvas.toDataURL();
+      } else {
+        // Switch to this page, capture, switch back
+        const pageJSON = pagesDataRef.current[page.id];
+        if (pageJSON) {
+          await canvas.loadJSON(pageJSON);
+          images[page.id] = canvas.toDataURL();
+        }
+      }
+    }
+
+    // Restore original page
+    if (pages.length > 1) {
+      const origJSON = pagesDataRef.current[originalPageId];
+      if (origJSON) {
+        await canvas.loadJSON(origJSON);
+      }
+    }
+
+    return images;
+  }, [canvasRef, activePageId, pages]);
+
   const saveDraft = useCallback(() => {
     if (!cardType || !cardFormat || !templateId) return;
     const canvas = canvasRef.current;
@@ -321,6 +356,7 @@ export function useCanvasBuilder(
     handleZoomReset,
     exportToWizardState,
     getAllPagesData,
+    getAllPageImages,
     saveDraft,
     restoreDraft,
   };

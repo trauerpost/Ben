@@ -102,13 +102,12 @@ export default function CanvasBuilderPage(): React.ReactElement {
     if (!canvasRef.current) return;
 
     setIsGeneratingPDF(true);
-    // Get all pages data (saves current page first) so the front page text
-    // is always included even when viewing the back page
-    const pagesData = builder.getAllPagesData();
 
     try {
+      // Export each page as image directly from canvas — no HTML re-rendering
+      const pageImages = await builder.getAllPageImages();
       const blob = await exportCanvasToPDF(
-        pagesData,
+        pageImages,
         builder.cardType,
         builder.cardFormat,
         builder.templateId

@@ -82,32 +82,48 @@ export async function exportCanvasToPreview(
 }
 
 /**
- * Export canvas to PDF via the existing server-side pipeline.
- * POSTs WizardState to /api/generate-pdf and returns the PDF blob.
+ * Export canvas pages directly to PDF using page images.
+ * Each page image (from Fabric.js toDataURL) is placed at 70×105mm (half of 140×105 spread).
+ * No server-side rendering needed — the canvas IS the output.
  */
 export async function exportCanvasToPDF(
-  pagesData: Record<string, string>,
+  pageImages: Record<string, string>,
   cardType: CardType,
   cardFormat: CardFormat,
-  templateId: string
+  _templateId: string
 ): Promise<Blob> {
-  const wizardState = exportCanvasToWizardState(
-    pagesData,
-    cardType,
-    cardFormat,
-    templateId
-  );
+  const { jsPDF } = await import("jspdf");
 
-  const response = await fetch("/api/generate-pdf", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state: wizardState }),
+  const config = (await import("./wizard-state")).CARD_CONFIGS[cardType];
+  const format = config?.formats[cardFormat];
+  if (!format) throw new Error(`Unknown card format: ${cardType}/${cardFormat}`);
+
+  // Each page is half the spread width (front/back of a folded card)
+  const pageWidthMm = format.widthMm / 2;
+  const pageHeightMm = format.heightMm;
+
+  const pageKeys = Object.keys(pageImages);
+  if (pageKeys.length === 0) throw new Error("No page images provided");
+
+  // Sort: "front" first, "back" second
+  const sorted = pageKeys.sort((a, b) => {
+    if (a === "front") return -1;
+    if (b === "front") return 1;
+    return a.localeCompare(b);
   });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(`PDF generation failed: ${(error as { error?: string }).error ?? response.status}`);
+  const pdf = new jsPDF({
+    orientation: pageHeightMm > pageWidthMm ? "portrait" : "landscape",
+    unit: "mm",
+    format: [pageWidthMm, pageHeightMm],
+  });
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (i > 0) pdf.addPage([pageWidthMm, pageHeightMm]);
+    const imgData = pageImages[sorted[i]];
+    if (!imgData) continue;
+    pdf.addImage(imgData, "PNG", 0, 0, pageWidthMm, pageHeightMm);
   }
 
-  return response.blob();
+  return pdf.output("blob");
 }
