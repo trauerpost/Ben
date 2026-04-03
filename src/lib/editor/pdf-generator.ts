@@ -73,62 +73,126 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
 
   // Generate HTML — v2 (absolute positioning) or v1 (CSS Grid)
   console.log(`[pdf] Step: generate HTML (${isV2 ? "v2" : "v1"})`);
-  let html: string;
+  let htmlPages: string[];
   let pageWidthMm: number;
   let pageHeightMm: number;
 
   if (isV2) {
     const config = getTemplateConfig(templateId);
     if (!config) throw new Error(`Template config not found: ${templateId}`);
-    html = await renderSpreadHTML(state, { baseUrl: options?.baseUrl });
     pageWidthMm = config.spreadWidthMm;
     pageHeightMm = config.spreadHeightMm;
+
+    // Check if template has multiple pages (front/back)
+    const hasBackPage = config.elements.some(el => el.page && el.page !== "front");
+
+    if (hasBackPage) {
+      // Multi-page: render front and back as separate PDF pages
+      const frontState = buildPageState(state, config, "front");
+      const backState = buildPageState(state, config, "back");
+      htmlPages = [
+        await renderSpreadHTML(frontState, { baseUrl: options?.baseUrl }),
+        await renderSpreadHTML(backState, { baseUrl: options?.baseUrl }),
+      ];
+      console.log(`[pdf] Multi-page template: ${htmlPages.length} pages`);
+    } else {
+      htmlPages = [await renderSpreadHTML(state, { baseUrl: options?.baseUrl })];
+    }
   } else {
     const template = getTemplateById(templateId);
     if (!template) throw new Error("No template selected");
-    html = await renderCardHTML(state);
+    htmlPages = [await renderCardHTML(state)];
     pageWidthMm = dims.widthMm;
     pageHeightMm = dims.heightMm;
   }
 
-  console.log(`[pdf] Template: ${state.templateId}, Page: ${pageWidthMm}x${pageHeightMm}mm`);
+  console.log(`[pdf] Template: ${state.templateId}, Page: ${pageWidthMm}x${pageHeightMm}mm, Pages: ${htmlPages.length}`);
 
   // Launch browser with retry
   console.log(`[pdf] Step: launch browser`);
   const browser = await launchBrowserWithRetry();
 
   try {
-    console.log(`[pdf] Step: create page + set content`);
-    const page = await browser.newPage();
-    page.setDefaultTimeout(15000);
+    const pdfBuffers: Buffer[] = [];
 
-    await page.setContent(html, { waitUntil: "networkidle2", timeout: 60000 });
+    for (let i = 0; i < htmlPages.length; i++) {
+      console.log(`[pdf] Step: render page ${i + 1}/${htmlPages.length}`);
+      const page = await browser.newPage();
+      page.setDefaultTimeout(15000);
 
-    // v2: auto-shrink text that overflows
-    if (isV2) {
-      console.log(`[pdf] Step: auto-shrink text`);
-      const config = getTemplateConfig(templateId)!;
-      await autoShrinkText(page, config);
+      await page.setContent(htmlPages[i], { waitUntil: "networkidle2", timeout: 60000 });
+
+      // v2: auto-shrink text that overflows
+      if (isV2) {
+        const config = getTemplateConfig(templateId)!;
+        await autoShrinkText(page, config);
+      }
+
+      // Wait for fonts to finish loading before generating PDF
+      await page.evaluateHandle(() => document.fonts.ready);
+
+      const pdfBuffer = await page.pdf({
+        width: `${pageWidthMm}mm`,
+        height: `${pageHeightMm}mm`,
+        printBackground: true,
+        margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      });
+
+      pdfBuffers.push(Buffer.from(pdfBuffer));
+      await page.close();
     }
 
-    // Wait for fonts to finish loading before generating PDF
-    console.log(`[pdf] Step: wait for fonts`);
-    await page.evaluateHandle(() => document.fonts.ready);
+    // Merge PDF pages if multiple
+    let finalPdf: Buffer;
+    if (pdfBuffers.length === 1) {
+      finalPdf = pdfBuffers[0];
+    } else {
+      finalPdf = await mergePdfBuffers(pdfBuffers);
+    }
 
-    console.log(`[pdf] Step: generate PDF buffer`);
-    const pdfBuffer = await page.pdf({
-      width: `${pageWidthMm}mm`,
-      height: `${pageHeightMm}mm`,
-      printBackground: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
-    });
-
-    console.log(`[pdf] Step: complete (${pdfBuffer.byteLength} bytes)`);
-    return Buffer.from(pdfBuffer);
+    console.log(`[pdf] Step: complete (${finalPdf.byteLength} bytes, ${pdfBuffers.length} pages)`);
+    return finalPdf;
   } catch (err) {
     console.error(`[pdf] PDF generation failed at runtime:`, err);
     throw err;
   } finally {
     await browser.close();
   }
+}
+
+/**
+ * Build a WizardState that hides all elements NOT on the given page.
+ * Same logic as preview route's buildPageState.
+ */
+function buildPageState(
+  state: WizardState,
+  config: NonNullable<ReturnType<typeof getTemplateConfig>>,
+  pageId: string
+): WizardState {
+  const overrides = { ...(state.elementOverrides ?? {}) };
+  for (const el of config.elements) {
+    const elPage = el.page ?? "front";
+    if (elPage !== pageId) {
+      overrides[el.id] = { ...overrides[el.id], hidden: true };
+    }
+  }
+  return { ...state, elementOverrides: overrides };
+}
+
+/**
+ * Merge multiple single-page PDF buffers into one multi-page PDF.
+ * Uses pdf-lib for proper PDF merging.
+ */
+async function mergePdfBuffers(buffers: Buffer[]): Promise<Buffer> {
+  const { PDFDocument } = await import("pdf-lib");
+  const merged = await PDFDocument.create();
+  for (const buf of buffers) {
+    const doc = await PDFDocument.load(buf);
+    const pages = await merged.copyPages(doc, doc.getPageIndices());
+    for (const page of pages) {
+      merged.addPage(page);
+    }
+  }
+  const bytes = await merged.save();
+  return Buffer.from(bytes);
 }
