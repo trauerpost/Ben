@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeCropStyle } from "../card-to-html-v2";
+import { computeCropStyle, fontPxToMm } from "../card-to-html-v2";
 
 describe("computeCropStyle", () => {
   // ── Positive tests ──
@@ -45,6 +45,26 @@ describe("computeCropStyle", () => {
 
   it("invalid: height=0 → null", () => {
     expect(computeCropStyle({ x: 0, y: 0, width: 0.5, height: 0 })).toBeNull();
+  });
+});
+
+describe("fontPxToMm", () => {
+  it("42px at 140mm spread → ~7.11mm", () => {
+    // Canvas at 150 DPI: 140mm = round(140*150/25.4) = 827px
+    // 42px * 140/827 = 7.11mm
+    const result = fontPxToMm(42, 140);
+    expect(result).toBeCloseTo(7.11, 1);
+  });
+
+  it("12px at 140mm spread → ~2.03mm", () => {
+    const result = fontPxToMm(12, 140);
+    expect(result).toBeCloseTo(2.03, 1);
+  });
+
+  it("wider spread → larger mm value for same px", () => {
+    const narrow = fontPxToMm(42, 100);
+    const wide = fontPxToMm(42, 200);
+    expect(wide).toBeGreaterThan(narrow);
   });
 
   // ── NEG: old bug regression ──

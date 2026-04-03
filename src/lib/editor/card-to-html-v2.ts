@@ -98,7 +98,17 @@ function getUserFontSize(tc: TextContent, field: string | undefined): number | n
   return typeof val === "number" ? val : null;
 }
 
-function renderTextElement(el: TemplateElement, state: WizardState, pos: string): string {
+/**
+ * Convert Fabric.js pixel font size to mm for HTML rendering.
+ * Fabric.js canvas is at 150 DPI, so 1px = spreadWidthMm / canvasWidthPx mm.
+ * Canvas width at 150 DPI: Math.round(spreadWidthMm * 150 / 25.4)
+ */
+export function fontPxToMm(fontSizePx: number, spreadWidthMm: number): number {
+  const canvasWidthPx = Math.round(spreadWidthMm * 150 / 25.4);
+  return fontSizePx * spreadWidthMm / canvasWidthPx;
+}
+
+function renderTextElement(el: TemplateElement, state: WizardState, pos: string, spreadWidthMm: number): string {
   const value = el.field ? getFieldValue(state.textContent, el.field) : (el.fixedContent ?? "");
   if (!value) return "";
 
@@ -111,7 +121,8 @@ function renderTextElement(el: TemplateElement, state: WizardState, pos: string)
 
   const font = merged.fontFamily;
   const userSize = getUserFontSize(state.textContent, el.field);
-  const size = userSize ?? merged.fontSize;
+  const sizePx = userSize ?? merged.fontSize;
+  const sizeMm = fontPxToMm(sizePx, spreadWidthMm).toFixed(2);
   const weight = el.fontWeight ?? "normal";
   const style = el.fontStyle ?? "normal";
   const variant = el.fontVariant ?? "normal";
@@ -122,7 +133,7 @@ function renderTextElement(el: TemplateElement, state: WizardState, pos: string)
   const escaped = value.replace(/\n/g, "<br>");
 
   return `<div id="el-${el.id}" style="${pos}display:flex;flex-direction:column;align-items:${align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center"};justify-content:center;overflow:hidden;">
-    <div style="font-family:'${font}',serif;font-size:${size}pt;font-weight:${weight};font-style:${style};font-variant:${variant};text-transform:${transform};text-align:${align};letter-spacing:${spacing};color:${color};line-height:1.5;white-space:pre-wrap;word-wrap:break-word;width:100%;">${escaped}</div>
+    <div style="font-family:'${font}',serif;font-size:${sizeMm}mm;font-weight:${weight};font-style:${style};font-variant:${variant};text-transform:${transform};text-align:${align};letter-spacing:${spacing};color:${color};line-height:1.5;white-space:pre-wrap;word-wrap:break-word;width:100%;">${escaped}</div>
   </div>`;
 }
 
@@ -270,7 +281,7 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
     const pos = posStyle(el, gridW, gridH, overrides);
     switch (el.type) {
       case "text":
-        elementsHtml += renderTextElement(el, state, pos);
+        elementsHtml += renderTextElement(el, state, pos, spreadWidthMm);
         break;
       case "image":
         elementsHtml += renderImageElement(el, state, images, pos);
@@ -294,7 +305,8 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
       const ffPos = `position:absolute;left:${ffLeft}%;top:${ffTop}%;width:${ffWidth}%;height:${ffHeight}%;`;
       if (ff.type === "text" && ff.text) {
         const escaped = ff.text.replace(/\n/g, "<br>");
-        elementsHtml += `<div style="${ffPos}font-family:'${ff.fontFamily ?? "Playfair Display"}',serif;font-size:${ff.fontSize ?? 12}pt;color:${ff.fill ?? "#1A1A1A"};text-align:${ff.textAlign ?? "left"};white-space:pre-wrap;">${escaped}</div>`;
+        const ffSizeMm = fontPxToMm(ff.fontSize ?? 12, spreadWidthMm).toFixed(2);
+        elementsHtml += `<div style="${ffPos}font-family:'${ff.fontFamily ?? "Playfair Display"}',serif;font-size:${ffSizeMm}mm;color:${ff.fill ?? "#1A1A1A"};text-align:${ff.textAlign ?? "left"};white-space:pre-wrap;">${escaped}</div>`;
       } else if (ff.type === "image" && ff.src) {
         elementsHtml += `<div style="${ffPos}background-image:url('${ff.src}');background-size:cover;background-position:center;"></div>`;
       }
@@ -327,11 +339,13 @@ document.fonts.ready.then(function() {
     if (!text || !text.style.fontSize) return;
     var size = parseFloat(text.style.fontSize);
     if (isNaN(size)) return;
-    var minSize = 6;
+    var unit = text.style.fontSize.replace(/[0-9.]/g, '') || 'mm';
+    var minSize = unit === 'mm' ? 1 : 6;
+    var step = unit === 'mm' ? 0.1 : 0.5;
     var iterations = 0;
     while (container.scrollHeight > container.clientHeight && size > minSize && iterations < 50) {
-      size -= 0.5;
-      text.style.fontSize = size + 'pt';
+      size -= step;
+      text.style.fontSize = size + unit;
       iterations++;
     }
   });
@@ -374,10 +388,13 @@ export async function autoShrinkText(page: import("puppeteer-core").Page, config
       if (!textDiv) return;
       let size = parseFloat(textDiv.style.fontSize);
       if (isNaN(size)) return;
+      const unit = textDiv.style.fontSize.replace(/[0-9.]/g, "") || "mm";
+      const step = unit === "mm" ? 0.1 : 0.5;
+      const minSafe = unit === "mm" ? min * 0.17 : min; // convert pt min to mm if needed
       let iterations = 0;
-      while (container.scrollHeight > container.clientHeight && size > min && iterations < 50) {
-        size -= 0.5;
-        textDiv.style.fontSize = size + "pt";
+      while (container.scrollHeight > container.clientHeight && size > minSafe && iterations < 50) {
+        size -= step;
+        textDiv.style.fontSize = size + unit;
         iterations++;
       }
     }, { id: el.id, min: minSize });
