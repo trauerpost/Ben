@@ -11,7 +11,7 @@ import type { Browser } from "puppeteer-core";
  * Must match the installed @sparticuz/chromium-min version.
  */
 const CHROMIUM_REMOTE_URL =
-  "https://github.com/nichochar/chromium-min-binaries/releases/download/v143.0.4/chromium-v143.0.4-pack.tar";
+  "https://github.com/Sparticuz/chromium/releases/download/v143.0.4/chromium-v143.0.4-pack.x64.tar";
 
 /** Launch browser with exponential backoff retry (1s → 2s → 4s) */
 async function launchBrowserWithRetry(maxAttempts = 3): Promise<Browser> {
