@@ -1079,7 +1079,7 @@ test.describe("CB-F3: Page navigation flow", () => {
 // ── CB-F4: Preview Flow ──
 
 test.describe("CB-F4: Preview shows correct content", () => {
-  test("F4a: TI08 preview shows both pages with text + photo", async ({ page }) => {
+  test("F4a: TI08 preview — no scrollbars, card fully visible, both pages rendered", async ({ page }) => {
     test.setTimeout(90000);
     await loadTemplate(page, "TI08");
 
@@ -1091,27 +1091,55 @@ test.describe("CB-F4: Preview shows correct content", () => {
 
     await page.screenshot({ path: path.join(SCREENSHOTS, "CBF4a-preview-full.png") });
 
-    // Preview should contain template name text in iframe
-    const iframe = page.frameLocator("iframe");
-    // Check for nested iframes (multi-page layout) or direct content
-    const outerText = await iframe.locator("body").textContent({ timeout: 5000 }).catch(() => "");
+    // ── CHECK 1: Outer PreviewModal iframe must NOT have scrollbars ──
+    const outerIframe = page.locator("iframe").first();
+    const outerBox = await outerIframe.boundingBox();
+    expect(outerBox, "PreviewModal iframe must be visible").toBeTruthy();
+    expect(outerBox!.width, "PreviewModal iframe width must be > 400px (not collapsed)").toBeGreaterThan(400);
+    expect(outerBox!.height, "PreviewModal iframe height must be > 400px (not collapsed)").toBeGreaterThan(400);
 
-    // For multi-page, the outer iframe contains two inner iframes
-    // For single-page, the outer iframe contains the card directly
-    // Either way, "Erna" should be findable somewhere
-    const hasErnaDirect = outerText?.includes("Erna") ?? false;
+    // Check scrollbars on the outer iframe by comparing scrollWidth/clientWidth
+    const outerHasScrollbars = await outerIframe.evaluate((el: HTMLIFrameElement) => {
+      const doc = el.contentDocument;
+      if (!doc) return { h: false, v: false, sw: 0, cw: 0, sh: 0, ch: 0 };
+      const b = doc.documentElement;
+      return {
+        h: b.scrollWidth > b.clientWidth + 2,
+        v: b.scrollHeight > b.clientHeight + 2,
+        sw: b.scrollWidth, cw: b.clientWidth,
+        sh: b.scrollHeight, ch: b.clientHeight,
+      };
+    });
+    console.log(`Outer iframe scroll: ${JSON.stringify(outerHasScrollbars)}`);
+    expect(outerHasScrollbars.h, `Outer iframe has horizontal scrollbar (scrollW=${outerHasScrollbars.sw} > clientW=${outerHasScrollbars.cw})`).toBe(false);
+    expect(outerHasScrollbars.v, `Outer iframe has vertical scrollbar (scrollH=${outerHasScrollbars.sh} > clientH=${outerHasScrollbars.ch})`).toBe(false);
 
-    // Also check if there are inner iframes (multi-page preview)
-    const innerIframeCount = await iframe.locator("iframe").count().catch(() => 0);
-    console.log(`Preview: direct text has Erna=${hasErnaDirect}, inner iframes=${innerIframeCount}`);
+    // ── CHECK 2: Multi-page — must have 2 inner iframes (Vorderseite + Rückseite) ──
+    const innerIframes = page.frameLocator("iframe").first().locator("iframe");
+    const innerCount = await innerIframes.count().catch(() => 0);
+    console.log(`Inner iframe count: ${innerCount}`);
+    expect(innerCount, "TI08 is multi-page: must have 2 inner iframes (front + back)").toBe(2);
 
-    // Must have content — either text directly or via inner iframes
-    expect(hasErnaDirect || innerIframeCount >= 1, "Preview must show card content (text or page iframes)").toBe(true);
+    // ── CHECK 3: Both page labels visible ──
+    const outerFrame = page.frameLocator("iframe").first();
+    const labels = await outerFrame.locator(".page-label").allTextContents();
+    console.log(`Page labels: ${JSON.stringify(labels)}`);
+    expect(labels.length, "Must have 2 page labels").toBe(2);
+    expect(labels[0]).toContain("Vorderseite");
+    expect(labels[1]).toContain("Rückseite");
 
-    // Photo must render — no gray "Foto" placeholder
-    if (innerIframeCount === 0) {
-      expect(outerText).not.toContain("Foto");
+    // ── CHECK 4: Inner iframes have content (not empty/collapsed) ──
+    for (let i = 0; i < 2; i++) {
+      const innerBox = await innerIframes.nth(i).boundingBox();
+      expect(innerBox, `Inner iframe ${i} must be visible`).toBeTruthy();
+      expect(innerBox!.width, `Inner iframe ${i} width must be > 200px`).toBeGreaterThan(200);
+      expect(innerBox!.height, `Inner iframe ${i} height must be > 200px`).toBeGreaterThan(200);
+      console.log(`Inner iframe ${i}: ${innerBox!.width}x${innerBox!.height}`);
     }
+
+    // ── CHECK 5: No "Foto" gray placeholder visible ──
+    const outerText = await outerFrame.locator("body").textContent({ timeout: 3000 }).catch(() => "");
+    expect(outerText).not.toContain("Foto");
 
     await page.screenshot({ path: path.join(SCREENSHOTS, "CBF4a-preview-verified.png") });
   });

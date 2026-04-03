@@ -68,8 +68,8 @@ export default function PreviewModal({
               title="Kartenvorschau"
               className="border-0"
               style={{
-                width: "100%",
-                height: "100%",
+                width: "560px",
+                height: "850px",
                 pointerEvents: "none",
               }}
               sandbox="allow-same-origin allow-scripts"

@@ -325,6 +325,77 @@ try {
   await testCanvasBuilderFlow(p4, "en");
   await p4.close();
 
+  // ── Preview Visual Check (Rule 3: Screenshot = Truth) ──
+  console.log(`\n── Preview Visual Check ──`);
+  const pp = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  try {
+    await pp.goto(`${BASE}/de/builder-v2?_t=${Date.now()}`, { waitUntil: "networkidle", timeout: 30000 });
+
+    // Select sterbebild card type, then TI08 template (same selectors as E2E tests)
+    const sterbebildBtn = pp.locator('[data-testid="card-type-sterbebild"]');
+    await sterbebildBtn.click({ timeout: 15000 });
+    const ti08 = pp.locator('[data-testid="template-TI08"]');
+    await ti08.click({ timeout: 10000 });
+
+    // Wait for canvas to load
+    await pp.locator('button:text-is("Elemente"), button:text-is("Elements")').waitFor({ timeout: 20000 });
+    await pp.waitForTimeout(5000);
+
+    // Click preview
+    const previewBtn = pp.locator('button:has-text("Vorschau"), button:has-text("Preview"), button:has-text("Quick view")');
+    if (await previewBtn.first().isVisible({ timeout: 5000 })) {
+      await previewBtn.first().click();
+      await pp.waitForTimeout(5000);
+
+      // Check: outer iframe exists and is not collapsed
+      const outerIframe = pp.locator("iframe").first();
+      const outerBox = await outerIframe.boundingBox();
+
+      check(
+        "Preview: iframe visible and not collapsed",
+        outerBox !== null && outerBox.width > 400 && outerBox.height > 400,
+        outerBox ? `iframe=${outerBox.width.toFixed(0)}x${outerBox.height.toFixed(0)} (min 400x400)` : "iframe not found"
+      );
+
+      if (outerBox && outerBox.width > 100) {
+        // Check: no scrollbars on outer iframe
+        const scrollInfo = await outerIframe.evaluate((el) => {
+          const doc = el.contentDocument;
+          if (!doc) return null;
+          const b = doc.documentElement;
+          return {
+            h: b.scrollWidth > b.clientWidth + 2,
+            v: b.scrollHeight > b.clientHeight + 2,
+            sw: b.scrollWidth, cw: b.clientWidth,
+            sh: b.scrollHeight, ch: b.clientHeight,
+          };
+        }).catch(() => null);
+
+        if (scrollInfo) {
+          check(
+            "Preview: no horizontal scrollbar",
+            !scrollInfo.h,
+            `scrollW=${scrollInfo.sw} clientW=${scrollInfo.cw}`
+          );
+          check(
+            "Preview: no vertical scrollbar",
+            !scrollInfo.v,
+            `scrollH=${scrollInfo.sh} clientH=${scrollInfo.ch}`
+          );
+        }
+      }
+
+      // Screenshot evidence
+      await pp.screenshot({ path: "e2e/screenshots/quality-gate-preview.png" });
+      check("Preview: screenshot saved", true, "e2e/screenshots/quality-gate-preview.png");
+    } else {
+      check("Preview: button found", false, "Could not find Vorschau/Preview button");
+    }
+  } catch (err) {
+    check("Preview: visual check", false, err.message?.substring(0, 200));
+  }
+  await pp.close();
+
 } finally {
   await browser.close();
 }
