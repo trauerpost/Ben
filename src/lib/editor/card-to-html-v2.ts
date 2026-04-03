@@ -28,6 +28,33 @@ async function imageToBase64(url: string, baseUrl?: string): Promise<string> {
   }
 }
 
+// ── Crop helper (exported for testing) ──
+
+/**
+ * Compute CSS background-size + background-position for a normalized crop rectangle.
+ * Returns null if the crop covers the full image (no cropping needed).
+ *
+ * Crop values: x,y = top-left offset (0-1), width,height = visible fraction (0-1).
+ * Cover crop always has one axis at 1.0 and the other < 1.0.
+ */
+export function computeCropStyle(
+  crop: { x: number; y: number; width: number; height: number }
+): string | null {
+  const { x, y, width, height } = crop;
+  // Guard: invalid or full-image crop → no CSS needed
+  if (width <= 0 || height <= 0) return null;
+  if (width >= 1 && height >= 1 && Math.abs(x) < 0.001 && Math.abs(y) < 0.001) return null;
+
+  const sizeX = (1 / Math.min(width, 1) * 100).toFixed(1);
+  const sizeY = (1 / Math.min(height, 1) * 100).toFixed(1);
+  // background-position: when width=1 (full width), posX is irrelevant (0%)
+  // when width<1, offset maps x/(1-width) to percentage
+  const posX = width >= 1 ? "0" : (x / (1 - width) * 100).toFixed(1);
+  const posY = height >= 1 ? "0" : (y / (1 - height) * 100).toFixed(1);
+
+  return `background-size:${sizeX}% ${sizeY}%;background-position:${posX}% ${posY}%;`;
+}
+
 // ── Position helper ──
 
 function posStyle(
@@ -107,15 +134,11 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
 
   let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center top;background-repeat:no-repeat;`;
 
-  // Apply user crop if available (guard against division by zero when width/height are 0 or 1)
+  // Apply user crop if available
   if (el.useCrop !== false && state.photo.crop) {
-    const { x, y, width, height } = state.photo.crop;
-    if (width > 0 && width < 1 && height > 0 && height < 1) {
-      const sizeX = (1 / width * 100).toFixed(1);
-      const sizeY = (1 / height * 100).toFixed(1);
-      const posX = (x / (1 - width) * 100).toFixed(1);
-      const posY = (y / (1 - height) * 100).toFixed(1);
-      imgStyle = `background-image:url('${base64}');background-size:${sizeX}% ${sizeY}%;background-position:${posX}% ${posY}%;background-repeat:no-repeat;`;
+    const cropCSS = computeCropStyle(state.photo.crop);
+    if (cropCSS) {
+      imgStyle = `background-image:url('${base64}');${cropCSS}background-repeat:no-repeat;`;
     }
   }
 
