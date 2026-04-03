@@ -65,12 +65,11 @@ export default function CanvasBuilderPage(): React.ReactElement {
 
   const handlePreview = useCallback(async () => {
     if (!builder.cardType || !builder.cardFormat || !builder.templateId) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvasRef.current) return;
 
-    // Save current page to pagesData
-    const pagesData: Record<string, string> = {};
-    pagesData[builder.activePageId] = canvas.toJSON();
+    // Get all pages data (saves current page first) so the front page text
+    // is always included even when viewing the back page
+    const pagesData = builder.getAllPagesData();
 
     try {
       const result = await exportCanvasToPreview(
@@ -88,12 +87,12 @@ export default function CanvasBuilderPage(): React.ReactElement {
 
   const handleDownloadPDF = useCallback(async () => {
     if (!builder.cardType || !builder.cardFormat || !builder.templateId) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvasRef.current) return;
 
     setIsGeneratingPDF(true);
-    const pagesData: Record<string, string> = {};
-    pagesData[builder.activePageId] = canvas.toJSON();
+    // Get all pages data (saves current page first) so the front page text
+    // is always included even when viewing the back page
+    const pagesData = builder.getAllPagesData();
 
     try {
       const blob = await exportCanvasToPDF(
@@ -293,6 +292,7 @@ export default function CanvasBuilderPage(): React.ReactElement {
               canvasContainerRef={canvasContainerRef}
               getCanvas={getCanvas}
               zoom={builder.zoom}
+              isCanvasReady={builder.isTemplateLoaded}
             />
           </div>
 

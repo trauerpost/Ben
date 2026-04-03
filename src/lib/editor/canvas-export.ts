@@ -20,8 +20,13 @@ export async function exportCanvasToPreview(
 
   const dims = getCanvasDimensions(cardType, cardFormat);
 
-  // Use the first page (front) as the primary content
-  const frontKey = pageKeys[0];
+  // Use the front page as the primary content (contains text fields).
+  // For single-format cards the front page key is "front";
+  // for folded cards it is "front-left" or "front-right".
+  const frontKey =
+    pageKeys.find(k => k === "front") ??
+    pageKeys.find(k => k.startsWith("front")) ??
+    pageKeys[0];
   const frontJSON = pagesData[frontKey];
 
   const wizardState = fabricToWizardState(

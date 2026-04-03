@@ -64,6 +64,7 @@ export interface UseCanvasBuilderReturn {
   handleZoomFit: (containerWidth: number, containerHeight: number) => void;
   handleZoomReset: () => void;
   exportToWizardState: () => WizardState | null;
+  getAllPagesData: () => Record<string, string>;
   saveDraft: () => void;
   restoreDraft: () => boolean;
 }
@@ -158,6 +159,13 @@ export function useCanvasBuilder(
       setDims(newDims);
       setIsTemplateLoaded(true);
       setActivePageId(firstPageId);
+
+      // Deselect last added element so template loads with no selection borders
+      const fabricCanvas = canvas.getCanvas();
+      if (fabricCanvas) {
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.renderAll();
+      }
     },
     [canvasRef]
   );
@@ -224,6 +232,14 @@ export function useCanvasBuilder(
       templateId
     );
   }, [canvasRef, cardType, cardFormat, templateId, dims, activePageId, pages]);
+
+  const getAllPagesData = useCallback((): Record<string, string> => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      pagesDataRef.current[activePageId] = canvas.toJSON();
+    }
+    return { ...pagesDataRef.current };
+  }, [canvasRef, activePageId]);
 
   const saveDraft = useCallback(() => {
     if (!cardType || !cardFormat || !templateId) return;
@@ -301,6 +317,7 @@ export function useCanvasBuilder(
     handleZoomFit,
     handleZoomReset,
     exportToWizardState,
+    getAllPagesData,
     saveDraft,
     restoreDraft,
   };

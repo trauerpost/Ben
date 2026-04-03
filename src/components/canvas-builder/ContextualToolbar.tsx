@@ -9,6 +9,7 @@ interface ContextualToolbarProps {
   canvasContainerRef: RefObject<HTMLDivElement | null>;
   getCanvas: () => fabric.Canvas | null;
   zoom: number;
+  isCanvasReady?: boolean;
   onHistorySave?: () => void;
 }
 
@@ -23,6 +24,7 @@ export default function ContextualToolbar({
   canvasContainerRef,
   getCanvas,
   zoom,
+  isCanvasReady,
   onHistorySave,
 }: ContextualToolbarProps): React.ReactElement | null {
   const [position, setPosition] = useState<ToolbarPosition>({
@@ -107,7 +109,7 @@ export default function ContextualToolbar({
       canvas.off("object:scaling", handleModified);
       canvas.off("object:moving", handleModified);
     };
-  }, [getCanvas, updatePosition]);
+  }, [getCanvas, updatePosition, isCanvasReady]);
 
   if (!position.visible || !position.objectType) return null;
 
