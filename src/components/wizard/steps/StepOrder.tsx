@@ -152,7 +152,7 @@ export default function StepOrder({ state, dispatch }: StepOrderProps) {
       <div className="max-w-md mx-auto px-6 py-16 text-center">
         <p className="text-lg text-brand-dark mb-6">{t("loginRequired")}</p>
         <button
-          onClick={() => router.push("/login?redirect=/builder")}
+          onClick={() => router.push("/login?redirect=/builder-v2")}
           className="px-8 py-3 bg-brand-primary text-white rounded-xl font-medium hover:bg-brand-primary-hover transition-colors"
         >
           {t("loginButton")}

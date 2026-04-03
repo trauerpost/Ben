@@ -39,7 +39,7 @@ export default function TemplateCard({ template }: TemplateCardProps) {
           ))}
         </div>
         <Link
-          href={`/builder?template=${template.id}`}
+          href={`/builder-v2?template=${template.id}`}
           className="block text-center text-sm bg-brand-primary text-white px-4 py-2 rounded-lg hover:bg-brand-primary-hover transition-colors"
         >
           {t("useTemplate")}

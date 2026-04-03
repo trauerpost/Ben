@@ -17,7 +17,7 @@ export default function Header({ isLoggedIn = false, isAdmin = false }: HeaderPr
   const navLinks = [
     { label: t("nav.templates"), href: "/templates" as const },
     { label: t("nav.products"), href: "/products" as const },
-    { label: t("nav.builder"), href: "/builder" as const },
+    { label: t("nav.builder"), href: "/builder-v2" as const },
     { label: t("nav.pricing"), href: "/pricing" as const },
     { label: t("nav.contact"), href: "/contact" as const },
   ];

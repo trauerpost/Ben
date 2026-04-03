@@ -32,7 +32,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-10">
         <h1 className="text-3xl font-light text-brand-dark">Dashboard</h1>
         <Link
-          href="/builder"
+          href="/builder-v2"
           className="px-5 py-2.5 bg-brand-primary text-white rounded-lg hover:bg-brand-primary-hover transition-colors text-sm"
         >
           + New Card
