@@ -15,6 +15,8 @@ interface FabricObjectJSON {
   fontStyle?: string;
   textAlign?: string;
   fill?: string;
+  scaleX?: number;
+  scaleY?: number;
   src?: string;
   data?: {
     field?: string;
@@ -22,6 +24,10 @@ interface FabricObjectJSON {
     elementType?: string;
     isImagePlaceholder?: boolean;
     fixedAsset?: string;
+    slotWidth?: number;
+    slotHeight?: number;
+    slotLeft?: number;
+    slotTop?: number;
   };
 }
 
@@ -64,6 +70,7 @@ export function fabricToWizardState(
 
   const textContent = { ...DEFAULT_TEXT_CONTENT };
   let photoUrl: string | null = null;
+  let photoCrop: { x: number; y: number; width: number; height: number } | null = null;
   const freeFormElements: FreeFormElement[] = [];
 
   for (const obj of objects) {
@@ -81,9 +88,10 @@ export function fabricToWizardState(
       if (obj.fill && typeof obj.fill === "string") textContent.fontColor = obj.fill;
       if (obj.textAlign) textContent.textAlign = obj.textAlign as "left" | "center" | "right";
     } else if (obj.data?.elementType === "image" && !obj.data?.isImagePlaceholder) {
-      // Bound image → photo URL
+      // Bound image → photo URL + crop
       if (obj.src) {
         photoUrl = obj.src;
+        photoCrop = extractCropFromSlot(obj);
       }
     } else if (!obj.data?.field && !obj.data?.templateElementId) {
       // Free-form element (user-added)
@@ -105,6 +113,7 @@ export function fabricToWizardState(
       ...initialWizardState.photo,
       url: photoUrl,
       originalUrl: photoUrl,
+      crop: photoCrop,
     },
     background: {
       type: bgImageUrl ? "image" : "color",
@@ -149,6 +158,42 @@ function mapFontSize(
   if (sizeField) {
     textContent[sizeField] = fontSize;
   }
+}
+
+/**
+ * Compute normalized 0-1 crop rectangle from position-based cover crop.
+ * Returns null if no slot data or image fits exactly (no overflow).
+ */
+function extractCropFromSlot(
+  obj: FabricObjectJSON
+): { x: number; y: number; width: number; height: number } | null {
+  const data = obj.data;
+  if (!data?.slotWidth || !data?.slotHeight) return null;
+
+  const scaleX = obj.scaleX ?? 1;
+  const scaleY = obj.scaleY ?? 1;
+  const imgW = (obj.width ?? 1) * scaleX;
+  const imgH = (obj.height ?? 1) * scaleY;
+  const slotW = data.slotWidth;
+  const slotH = data.slotHeight;
+  const slotLeft = data.slotLeft ?? 0;
+  const slotTop = data.slotTop ?? 0;
+  const objLeft = obj.left ?? 0;
+  const objTop = obj.top ?? 0;
+
+  // Normalized visible region
+  const x = (slotLeft - objLeft) / imgW;
+  const y = (slotTop - objTop) / imgH;
+  const w = slotW / imgW;
+  const h = slotH / imgH;
+
+  // If image fits exactly (no overflow), no crop needed
+  if (Math.abs(w - 1) < 0.001 && Math.abs(h - 1) < 0.001 &&
+      Math.abs(x) < 0.001 && Math.abs(y) < 0.001) {
+    return null;
+  }
+
+  return { x, y, width: w, height: h };
 }
 
 function collectFreeForm(obj: FabricObjectJSON, list: FreeFormElement[]): void {

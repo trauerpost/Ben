@@ -72,8 +72,8 @@ describe("templateToFabricConfigs", () => {
     const results = templateToFabricConfigs(config, STERBE_DIMS);
     const nameEl = results.find((r) => r.field === "name");
     expect(nameEl).toBeDefined();
-    expect(nameEl!.options.fontFamily).toBe("Cormorant Garamond");
-    expect(nameEl!.options.fontWeight).toBe("bold");
+    expect(nameEl!.options.fontFamily).toBe("Inter");
+    expect(nameEl!.options.fontWeight).toBe("300");
     expect(nameEl!.options.textAlign).toBe("center");
   });
 
@@ -106,7 +106,7 @@ describe("templateToFabricConfigs", () => {
     expect(photo).toBeDefined();
     expect(photo!.fabricType).toBe("image");
     expect(photo!.meta?.imageClip).toBe("rounded");
-    expect(photo!.meta?.placeholderSrc).toBe("/assets/photos/placeholder-woman.png");
+    expect(photo!.meta?.placeholderSrc).toBe("/assets/photos/placeholder-man-2.jpg");
   });
 
   it("line element produces line config", () => {
@@ -123,7 +123,7 @@ describe("templateToFabricConfigs", () => {
     const results = templateToFabricConfigs(config, STERBE_DIMS);
     const ornament = results.find((r) => r.fabricType === "image");
     expect(ornament).toBeDefined();
-    expect(ornament!.meta?.fixedAsset).toContain("cross-rose-vine.svg");
+    expect(ornament!.meta?.fixedAsset).toContain("cross-rose-vine.png");
   });
 
   it("every element has data property with templateElementId", () => {

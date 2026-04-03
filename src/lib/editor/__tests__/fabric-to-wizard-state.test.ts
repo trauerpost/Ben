@@ -151,6 +151,106 @@ describe("fabricToWizardState", () => {
     expect(Object.values(state.textContent)).not.toContain("User's free text");
   });
 
+  // ── Crop extraction tests ──
+
+  it("photo crop extracted from position-based cover crop (centered)", () => {
+    // Simulate: 1000x800 image scaled to cover a 200x300 slot
+    // coverScale = max(200/1000, 300/800) = 0.375
+    // Image rendered size: 1000*0.375=375w x 800*0.375=300h
+    // Centered: left = 50 - (375-200)/2 = 50-87.5 = -37.5
+    //           top = 100 - (300-300)/2 = 100
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/photo.jpg",
+          left: -37.5,
+          top: 100,
+          width: 1000,
+          height: 800,
+          scaleX: 0.375,
+          scaleY: 0.375,
+          data: {
+            field: "photo",
+            elementType: "image",
+            templateElementId: "photo",
+            slotWidth: 200,
+            slotHeight: 300,
+            slotLeft: 50,
+            slotTop: 100,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBe("https://example.com/photo.jpg");
+    expect(state.photo.crop).not.toBeNull();
+    // Visible region: x = (50 - (-37.5)) / (1000 * 0.375) = 87.5/375 ≈ 0.2333
+    //                 y = (100 - 100) / (800 * 0.375) = 0/300 = 0
+    //                 w = 200 / (1000 * 0.375) = 200/375 ≈ 0.5333
+    //                 h = 300 / (800 * 0.375) = 300/300 = 1.0
+    expect(state.photo.crop!.x).toBeCloseTo(0.2333, 2);
+    expect(state.photo.crop!.y).toBeCloseTo(0, 2);
+    expect(state.photo.crop!.width).toBeCloseTo(0.5333, 2);
+    expect(state.photo.crop!.height).toBeCloseTo(1.0, 2);
+  });
+
+  it("photo crop null when image fits exactly (no overflow)", () => {
+    // Image scaled to exactly match slot — no crop needed
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/photo.jpg",
+          left: 50,
+          top: 100,
+          width: 200,
+          height: 300,
+          scaleX: 1,
+          scaleY: 1,
+          data: {
+            field: "photo",
+            elementType: "image",
+            templateElementId: "photo",
+            slotWidth: 200,
+            slotHeight: 300,
+            slotLeft: 50,
+            slotTop: 100,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBe("https://example.com/photo.jpg");
+    // No overflow = no crop
+    expect(state.photo.crop).toBeNull();
+  });
+
+  it("NEG: photo crop without slot data → crop is null (no crash)", () => {
+    // Image has no slot metadata — can't compute crop
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/photo.jpg",
+          left: 0,
+          top: 0,
+          width: 200,
+          height: 300,
+          scaleX: 0.5,
+          scaleY: 0.5,
+          data: { field: "photo", elementType: "image", templateElementId: "photo" },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBe("https://example.com/photo.jpg");
+    expect(state.photo.crop).toBeNull();
+  });
+
   it("NEG: missing canvasJSON.objects treated as empty", () => {
     const canvasJSON = {}; // no objects key
 
