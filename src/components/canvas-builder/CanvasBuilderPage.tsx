@@ -65,34 +65,32 @@ export default function CanvasBuilderPage(): React.ReactElement {
 
   const handlePreview = useCallback(async () => {
     if (!builder.cardType || !builder.cardFormat || !builder.templateId) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvasRef.current) return;
 
     try {
-      // Snapshot every page as a data-URL image directly from the Fabric canvas.
-      // This avoids the server-only renderSpreadHTML pipeline (uses Buffer/fs).
+      // Build WizardState from all canvas pages, then render server-side.
+      // renderSpreadHTML uses Buffer/fs (Node.js only) — must run on server.
       const pagesData = builder.getAllPagesData();
-      const currentPageId = builder.activePageId;
-      const pageImages: string[] = [];
+      const { exportCanvasToWizardState } = await import("@/lib/editor/canvas-export");
+      const wizardState = exportCanvasToWizardState(
+        pagesData,
+        builder.cardType,
+        builder.cardFormat,
+        builder.templateId
+      );
 
-      for (const page of builder.pages) {
-        const json = pagesData[page.id];
-        if (!json) continue;
-        // Load page onto canvas, snapshot, then restore
-        await canvas.loadJSON(json);
-        pageImages.push(canvas.toDataURL());
+      const res = await fetch("/api/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ state: wizardState }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown" }));
+        throw new Error(`Preview failed: ${(err as { error?: string }).error ?? res.status}`);
       }
 
-      // Restore the page the user was viewing
-      const restoreJSON = pagesData[currentPageId];
-      if (restoreJSON) await canvas.loadJSON(restoreJSON);
-
-      // Build a simple HTML with page images side by side
-      const imagesHTML = pageImages
-        .map((src, i) => `<img src="${src}" style="max-width:100%;height:auto;display:block;${i > 0 ? "margin-top:16px;" : ""}" />`)
-        .join("\n");
-
-      setPreviewHTML(`<!DOCTYPE html><html><head><style>*{margin:0;padding:0;}body{display:flex;flex-direction:column;align-items:center;padding:16px;background:white;}</style></head><body>${imagesHTML}</body></html>`);
+      setPreviewHTML(await res.text());
       setShowPreview(true);
     } catch (err) {
       console.error("[CanvasBuilder] Preview failed:", err);

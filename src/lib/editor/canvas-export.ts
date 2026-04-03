@@ -1,32 +1,24 @@
 import type { CardType, CardFormat, WizardState } from "./wizard-state";
 import { getCanvasDimensions } from "./canvas-dimensions";
 import { fabricToWizardState } from "./fabric-to-wizard-state";
-import { renderSpreadHTML } from "./card-to-html-v2";
 
 /**
- * Export canvas pages data to a preview (WizardState + HTML).
- * Uses the shared PDF pipeline (card-to-html-v2.ts).
+ * Convert canvas pages data to a merged WizardState.
+ * Merges text content from ALL pages so that both front and back fields are populated.
+ * Safe to call from browser (no Node.js APIs).
  */
-export async function exportCanvasToPreview(
+export function exportCanvasToWizardState(
   pagesData: Record<string, string>,
   cardType: CardType,
   cardFormat: CardFormat,
   templateId: string
-): Promise<{ wizardState: WizardState; previewHTML: string }> {
+): WizardState {
   const pageKeys = Object.keys(pagesData);
   if (pageKeys.length === 0) {
     throw new Error("Cannot export: no page data available");
   }
 
   const dims = getCanvasDimensions(cardType, cardFormat);
-
-  // Multi-page templates (e.g. TI05) split content across pages: photo on
-  // "front", text on "back".  We must merge text content from ALL pages so
-  // that renderSpreadHTML (which iterates every template element regardless
-  // of page) sees every field value.
-  //
-  // Strategy: convert each page independently, then merge non-empty
-  // textContent fields + photo/background from the first page that has them.
 
   // Use the front page as the base state (photo, background, freeFormElements)
   const frontKey =
@@ -58,7 +50,6 @@ export async function exportCanvasToPreview(
     );
 
     // Copy non-empty text fields from this page into the merged state.
-    // Skip formatting meta-fields (fontFamily, fontColor, textAlign, *FontSize).
     for (const [field, value] of Object.entries(pageState.textContent)) {
       if (typeof value !== "string" || !value) continue;
       if (field === "fontFamily" || field === "fontColor" || field === "textAlign") continue;
@@ -74,8 +65,19 @@ export async function exportCanvasToPreview(
     }
   }
 
-  const previewHTML = await renderSpreadHTML(wizardState);
+  return wizardState;
+}
 
+/** @deprecated Use exportCanvasToWizardState + /api/preview instead */
+export async function exportCanvasToPreview(
+  pagesData: Record<string, string>,
+  cardType: CardType,
+  cardFormat: CardFormat,
+  templateId: string
+): Promise<{ wizardState: WizardState; previewHTML: string }> {
+  const wizardState = exportCanvasToWizardState(pagesData, cardType, cardFormat, templateId);
+  const { renderSpreadHTML } = await import("./card-to-html-v2");
+  const previewHTML = await renderSpreadHTML(wizardState);
   return { wizardState, previewHTML };
 }
 
@@ -89,7 +91,7 @@ export async function exportCanvasToPDF(
   cardFormat: CardFormat,
   templateId: string
 ): Promise<Blob> {
-  const { wizardState } = await exportCanvasToPreview(
+  const wizardState = exportCanvasToWizardState(
     pagesData,
     cardType,
     cardFormat,

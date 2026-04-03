@@ -69,10 +69,10 @@ export default function PreviewModal({
               className="border-0"
               style={{
                 width: "560px",
-                height: "420px",
+                height: "780px",
                 pointerEvents: "none",
               }}
-              sandbox="allow-same-origin"
+              sandbox="allow-same-origin allow-scripts"
             />
           </div>
         </div>
