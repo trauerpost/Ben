@@ -82,9 +82,9 @@ export async function exportCanvasToPreview(
 }
 
 /**
- * Export canvas pages directly to PDF using page images.
- * Each page image (from Fabric.js toDataURL) is placed at 70×105mm (half of 140×105 spread).
- * No server-side rendering needed — the canvas IS the output.
+ * Export canvas pages directly to PDF as a single spread.
+ * The full card (e.g. 140×105mm) is one PDF page with front on the left
+ * and back on the right, each 70×105mm. No server-side rendering needed.
  */
 export async function exportCanvasToPDF(
   pageImages: Record<string, string>,
@@ -98,9 +98,9 @@ export async function exportCanvasToPDF(
   const format = config?.formats[cardFormat];
   if (!format) throw new Error(`Unknown card format: ${cardType}/${cardFormat}`);
 
-  // Each page is half the spread width (front/back of a folded card)
-  const pageWidthMm = format.widthMm / 2;
-  const pageHeightMm = format.heightMm;
+  const spreadW = format.widthMm;   // 140mm
+  const spreadH = format.heightMm;  // 105mm
+  const halfW = spreadW / 2;        // 70mm per side
 
   const pageKeys = Object.keys(pageImages);
   if (pageKeys.length === 0) throw new Error("No page images provided");
@@ -113,16 +113,16 @@ export async function exportCanvasToPDF(
   });
 
   const pdf = new jsPDF({
-    orientation: pageHeightMm > pageWidthMm ? "portrait" : "landscape",
+    orientation: spreadW > spreadH ? "landscape" : "portrait",
     unit: "mm",
-    format: [pageWidthMm, pageHeightMm],
+    format: [spreadW, spreadH],
   });
 
+  // Place pages side by side: front=left (0,0), back=right (halfW,0)
   for (let i = 0; i < sorted.length; i++) {
-    if (i > 0) pdf.addPage([pageWidthMm, pageHeightMm]);
     const imgData = pageImages[sorted[i]];
     if (!imgData) continue;
-    pdf.addImage(imgData, "PNG", 0, 0, pageWidthMm, pageHeightMm);
+    pdf.addImage(imgData, "PNG", i * halfW, 0, halfW, spreadH);
   }
 
   return pdf.output("blob");
