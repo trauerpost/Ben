@@ -143,7 +143,7 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
     return `<div style="${pos}background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:10pt;">Foto</div>`;
   }
 
-  let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center top;background-repeat:no-repeat;`;
+  let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center center;background-repeat:no-repeat;`;
 
   // Apply user crop if available
   if (el.useCrop !== false && state.photo.crop) {
