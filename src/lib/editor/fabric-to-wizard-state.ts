@@ -87,7 +87,7 @@ export function fabricToWizardState(
       if (obj.fontFamily) textContent.fontFamily = obj.fontFamily;
       if (obj.fill && typeof obj.fill === "string") textContent.fontColor = obj.fill;
       if (obj.textAlign) textContent.textAlign = obj.textAlign as "left" | "center" | "right";
-    } else if (obj.data?.elementType === "image" && !obj.data?.isImagePlaceholder) {
+    } else if (obj.data?.elementType === "image") {
       // Bound image → photo URL + crop
       if (obj.src) {
         photoUrl = obj.src;

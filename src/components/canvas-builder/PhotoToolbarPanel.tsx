@@ -51,7 +51,7 @@ export default function PhotoToolbarPanel({
         top: slotTop - (imgH * coverScale - slotH) / 2,
         scaleX: coverScale,
         scaleY: coverScale,
-        data: { ...data, slotWidth: slotW, slotHeight: slotH, slotLeft, slotTop },
+        data: { ...data, isImagePlaceholder: false, slotWidth: slotW, slotHeight: slotH, slotLeft, slotTop },
       });
 
       canvas.remove(object);

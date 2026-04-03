@@ -258,4 +258,130 @@ describe("fabricToWizardState", () => {
     expect(state.textContent.name).toBe("");
     expect(state.cardType).toBe("sterbebild");
   });
+
+  // ── Bug fix: isImagePlaceholder must NOT block photo export ──
+
+  it("BUG-FIX: image with isImagePlaceholder=true AND real src → photo URL exported", () => {
+    // When user replaces placeholder photo, isImagePlaceholder may still be true
+    // (PhotoToolbarPanel carries it over). The photo must still be exported.
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/user-uploaded-photo.jpg",
+          left: 0,
+          top: 0,
+          width: 400,
+          height: 600,
+          scaleX: 0.5,
+          scaleY: 0.5,
+          data: {
+            field: "photo",
+            elementType: "image",
+            templateElementId: "photo",
+            isImagePlaceholder: true, // BUG: this flag was blocking export
+            slotWidth: 200,
+            slotHeight: 300,
+            slotLeft: 0,
+            slotTop: 0,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    // MUST export the photo URL, not null
+    expect(state.photo.url).toBe("https://example.com/user-uploaded-photo.jpg");
+    expect(state.photo.originalUrl).toBe("https://example.com/user-uploaded-photo.jpg");
+  });
+
+  it("BUG-FIX: image with isImagePlaceholder=false → photo URL exported (regression check)", () => {
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/photo.jpg",
+          left: 0,
+          top: 0,
+          width: 200,
+          height: 300,
+          data: {
+            field: "photo",
+            elementType: "image",
+            isImagePlaceholder: false,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBe("https://example.com/photo.jpg");
+  });
+
+  it("BUG-FIX: image with no isImagePlaceholder flag → photo URL exported", () => {
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "https://example.com/photo.jpg",
+          left: 0,
+          top: 0,
+          width: 200,
+          height: 300,
+          data: {
+            field: "photo",
+            elementType: "image",
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBe("https://example.com/photo.jpg");
+  });
+
+  it("NEG-BUG: user-replaced photo (was placeholder) preserves crop in WizardState", () => {
+    // Simulates: user uploaded a tall portrait photo into a landscape slot
+    // Photo: 600×900, Slot: 400×300
+    // coverScale = max(400/600, 300/900) = 0.6667
+    // Rendered: 600*0.667=400w × 900*0.667=600h
+    // Centered: left=100, top=200-(600-300)/2=200-150=50
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "blob:http://localhost:3000/user-upload-abc123",
+          left: 100,
+          top: 50,
+          width: 600,
+          height: 900,
+          scaleX: 0.6667,
+          scaleY: 0.6667,
+          data: {
+            field: "photo",
+            elementType: "image",
+            templateElementId: "photo",
+            isImagePlaceholder: true,  // carried over from template
+            slotWidth: 400,
+            slotHeight: 300,
+            slotLeft: 100,
+            slotTop: 200,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+
+    expect(state.photo.url).toBe("blob:http://localhost:3000/user-upload-abc123");
+    expect(state.photo.crop).not.toBeNull();
+    // Visible: y = (200-50)/(900*0.6667) = 150/600.03 ≈ 0.25
+    //          h = 300/(900*0.6667) = 300/600.03 ≈ 0.5
+    //          x = (100-100)/(600*0.6667) = 0
+    //          w = 400/(600*0.6667) = 400/400.02 ≈ 1.0
+    expect(state.photo.crop!.x).toBeCloseTo(0, 2);
+    expect(state.photo.crop!.y).toBeCloseTo(0.25, 2);
+    expect(state.photo.crop!.width).toBeCloseTo(1.0, 2);
+    expect(state.photo.crop!.height).toBeCloseTo(0.5, 2);
+  });
 });

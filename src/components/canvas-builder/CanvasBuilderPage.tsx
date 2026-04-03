@@ -16,6 +16,18 @@ import type { Asset } from "@/lib/supabase/types";
 // Dynamic import for FabricCanvas (needs browser APIs)
 const FabricCanvas = dynamic(() => import("./FabricCanvas"), { ssr: false });
 
+/** Convert a blob: URL to a data: URL so it can be sent to the server. */
+async function blobUrlToDataUrl(blobUrl: string): Promise<string> {
+  const res = await fetch(blobUrl);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 export default function CanvasBuilderPage(): React.ReactElement {
   const canvasRef = useRef<FabricCanvasHandle>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +90,12 @@ export default function CanvasBuilderPage(): React.ReactElement {
         builder.cardFormat,
         builder.templateId
       );
+
+      // Convert blob URLs to data URLs — blob: is client-only, server can't fetch
+      if (wizardState.photo.url?.startsWith("blob:")) {
+        wizardState.photo.url = await blobUrlToDataUrl(wizardState.photo.url);
+        wizardState.photo.originalUrl = wizardState.photo.url;
+      }
 
       const res = await fetch("/api/preview", {
         method: "POST",
