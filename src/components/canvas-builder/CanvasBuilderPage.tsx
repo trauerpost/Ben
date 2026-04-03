@@ -9,7 +9,7 @@ import ContextualToolbar from "./ContextualToolbar";
 import SpreadNavigator from "./SpreadNavigator";
 import ZoomControls from "./ZoomControls";
 import PreviewModal from "./PreviewModal";
-import { exportCanvasToPreview, exportCanvasToPDF } from "@/lib/editor/canvas-export";
+import { exportCanvasToPDF } from "@/lib/editor/canvas-export";
 import type { CardType, CardFormat } from "@/lib/editor/wizard-state";
 import type { Asset } from "@/lib/supabase/types";
 
@@ -65,25 +65,39 @@ export default function CanvasBuilderPage(): React.ReactElement {
 
   const handlePreview = useCallback(async () => {
     if (!builder.cardType || !builder.cardFormat || !builder.templateId) return;
-    if (!canvasRef.current) return;
-
-    // Get all pages data (saves current page first) so the front page text
-    // is always included even when viewing the back page
-    const pagesData = builder.getAllPagesData();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
     try {
-      const result = await exportCanvasToPreview(
-        pagesData,
-        builder.cardType,
-        builder.cardFormat,
-        builder.templateId
-      );
-      setPreviewHTML(result.previewHTML);
+      // Snapshot every page as a data-URL image directly from the Fabric canvas.
+      // This avoids the server-only renderSpreadHTML pipeline (uses Buffer/fs).
+      const pagesData = builder.getAllPagesData();
+      const currentPageId = builder.activePageId;
+      const pageImages: string[] = [];
+
+      for (const page of builder.pages) {
+        const json = pagesData[page.id];
+        if (!json) continue;
+        // Load page onto canvas, snapshot, then restore
+        await canvas.loadJSON(json);
+        pageImages.push(canvas.toDataURL());
+      }
+
+      // Restore the page the user was viewing
+      const restoreJSON = pagesData[currentPageId];
+      if (restoreJSON) await canvas.loadJSON(restoreJSON);
+
+      // Build a simple HTML with page images side by side
+      const imagesHTML = pageImages
+        .map((src, i) => `<img src="${src}" style="max-width:100%;height:auto;display:block;${i > 0 ? "margin-top:16px;" : ""}" />`)
+        .join("\n");
+
+      setPreviewHTML(`<!DOCTYPE html><html><head><style>*{margin:0;padding:0;}body{display:flex;flex-direction:column;align-items:center;padding:16px;background:white;}</style></head><body>${imagesHTML}</body></html>`);
       setShowPreview(true);
     } catch (err) {
       console.error("[CanvasBuilder] Preview failed:", err);
     }
-  }, [builder]);
+  }, [builder, canvasRef]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!builder.cardType || !builder.cardFormat || !builder.templateId) return;
