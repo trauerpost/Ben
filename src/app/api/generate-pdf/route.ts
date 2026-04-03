@@ -22,10 +22,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Missing name" }, { status: 400 });
     }
 
+    // Extract origin for resolving relative asset URLs
+    const origin = request.headers.get("x-forwarded-proto") && request.headers.get("x-forwarded-host")
+      ? `${request.headers.get("x-forwarded-proto")}://${request.headers.get("x-forwarded-host")}`
+      : request.headers.get("origin")
+      ?? new URL(request.url).origin;
+
     // Generate PDF
     console.log(`[generate-pdf] Starting PDF generation for template=${state.templateId}, cardType=${state.cardType}`);
     const startTime = Date.now();
-    const pdfBuffer = await generateCardPDF(state);
+    const pdfBuffer = await generateCardPDF(state, { baseUrl: origin });
     console.log(`[generate-pdf] PDF generated in ${Date.now() - startTime}ms (${pdfBuffer.byteLength} bytes)`);
 
     // Upload to Supabase Storage

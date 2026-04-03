@@ -12,9 +12,12 @@ import { getMergedElement } from "./wizard-state";
 
 // ── Image helpers ──
 
-async function imageToBase64(url: string): Promise<string> {
+async function imageToBase64(url: string, baseUrl?: string): Promise<string> {
   try {
-    const res = await fetch(url);
+    const resolvedUrl = url.startsWith("/") && baseUrl
+      ? `${baseUrl}${url}`
+      : url;
+    const res = await fetch(resolvedUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
     const contentType = res.headers.get("content-type") || "image/jpeg";
@@ -162,9 +165,15 @@ function renderFontLinks(fonts: string[]): string {
   }).join("\n  ");
 }
 
+// ── Render options ──
+
+export interface RenderOptions {
+  baseUrl?: string;
+}
+
 // ── Main render function ──
 
-export async function renderSpreadHTML(state: WizardState): Promise<string> {
+export async function renderSpreadHTML(state: WizardState, options?: RenderOptions): Promise<string> {
   const config = state.templateId ? getTemplateConfig(state.templateId) : null;
   if (!config) throw new Error(`Template config not found: ${state.templateId}`);
 
@@ -180,9 +189,9 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
 
   // Pre-fetch images
   const images: Record<string, string> = {};
-  const photoSrc = state.photo.sharpenedUrl ?? state.photo.url;
+  const photoSrc = state.photo.sharpenedUrl ?? state.photo.url ?? config.placeholderPhotoSrc;
   if (photoSrc) {
-    images["photo"] = await imageToBase64(photoSrc);
+    images["photo"] = await imageToBase64(photoSrc, options?.baseUrl);
   }
   if (photoSrc && !images["photo"]) {
     console.warn("[card-html] Photo URL provided but conversion failed:", photoSrc);
@@ -222,12 +231,12 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
         } catch { /* fall through */ }
       }
       // Fallback: fetch from URL
-      images[el.fixedAsset] = await imageToBase64(assetUrl);
+      images[el.fixedAsset] = await imageToBase64(assetUrl, options?.baseUrl);
     }
   }
   // Fetch decoration asset if provided
   if (state.decoration.assetUrl) {
-    images["decoration"] = await imageToBase64(state.decoration.assetUrl);
+    images["decoration"] = await imageToBase64(state.decoration.assetUrl, options?.baseUrl);
   }
 
   // Render elements (skip hidden)
@@ -278,13 +287,33 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
 
   // Border/frame overlay (full card)
   if (state.border?.url) {
-    const borderBase64 = await imageToBase64(state.border.url);
+    const borderBase64 = await imageToBase64(state.border.url, options?.baseUrl);
     if (borderBase64) {
       elementsHtml += `<div style="position:absolute;inset:0;pointer-events:none;z-index:10;">
         <img src="${borderBase64}" style="width:100%;height:100%;object-fit:contain;" />
       </div>`;
     }
   }
+
+  // Client-side auto-shrink script — mirrors Puppeteer autoShrinkText() for preview iframes
+  const autoShrinkScript = `
+<script>
+document.fonts.ready.then(function() {
+  document.querySelectorAll('[id^="el-"]').forEach(function(container) {
+    var text = container.querySelector('div');
+    if (!text || !text.style.fontSize) return;
+    var size = parseFloat(text.style.fontSize);
+    if (isNaN(size)) return;
+    var minSize = 6;
+    var iterations = 0;
+    while (container.scrollHeight > container.clientHeight && size > minSize && iterations < 50) {
+      size -= 0.5;
+      text.style.fontSize = size + 'pt';
+      iterations++;
+    }
+  });
+});
+</script>`;
 
   return `<!DOCTYPE html>
 <html>
@@ -301,6 +330,7 @@ export async function renderSpreadHTML(state: WizardState): Promise<string> {
   <div style="position:relative;width:${spreadWidthMm}mm;height:${spreadHeightMm}mm;background:white;overflow:hidden;">
     ${elementsHtml}
   </div>
+  ${autoShrinkScript}
 </body>
 </html>`;
 }

@@ -40,6 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 test-results/
+e2e/screenshots/
+e2e/baselines/
 
 .vercel
 docs/TI 02.pdf

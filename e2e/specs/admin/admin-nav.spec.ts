@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsAdmin } from "./helpers/login";
+import { loginAsAdmin } from "../../helpers/login";
 
 test.describe("Admin Nav Link", () => {
   test("admin user sees Admin + Dashboard links in header", async ({ page }) => {

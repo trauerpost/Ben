@@ -209,8 +209,86 @@ async function testCanvasBuilderFlow(page, locale) {
         "Canvas is empty or zero-sized"
       );
 
-      // Note: Fabric canvas internals not accessible from page.evaluate (React ref).
-      // [fieldName] detection covered by unit test: "ALL templates with placeholderData: zero [fieldName]"
+      // Layout checks via __fabricCanvas (exposed on canvas element)
+      const fabricData = await page.evaluate(() => {
+        const canvases = document.querySelectorAll("canvas.lower-canvas");
+        for (const c of canvases) {
+          const fc = c.__fabricCanvas;
+          if (!fc) continue;
+          const objs = fc.getObjects();
+          return {
+            objects: objs.map(o => ({
+              type: o.type,
+              originX: o.originX,
+              originY: o.originY,
+              left: o.left,
+              top: o.top,
+              width: o.width * (o.scaleX || 1),
+              height: o.height * (o.scaleY || 1),
+              text: o.text,
+              fill: o.fill,
+            })),
+            canvasWidth: fc.width,
+            canvasHeight: fc.height,
+          };
+        }
+        return null;
+      });
+
+      if (fabricData) {
+        // Check 1: All text objects have originX === "left" (global default fix)
+        const textObjs = fabricData.objects.filter(o => o.type === "textbox");
+        const allLeftOrigin = textObjs.every(o => o.originX === "left");
+        check(
+          `${label}: ${cardType} text origins are "left"`,
+          allLeftOrigin,
+          allLeftOrigin ? "" : `Found non-left origins`
+        );
+
+        // Check 2: No overlapping text bounding boxes (>20%)
+        let hasOverlap = false;
+        for (let i = 0; i < textObjs.length; i++) {
+          for (let j = i + 1; j < textObjs.length; j++) {
+            const a = textObjs[i];
+            const b = textObjs[j];
+            const overlapX = Math.max(0, Math.min(a.left + a.width, b.left + b.width) - Math.max(a.left, b.left));
+            const overlapY = Math.max(0, Math.min(a.top + a.height, b.top + b.height) - Math.max(a.top, b.top));
+            const overlapArea = overlapX * overlapY;
+            const minArea = Math.min(a.width * a.height, b.width * b.height);
+            if (minArea > 0 && overlapArea / minArea > 0.20) {
+              hasOverlap = true;
+            }
+          }
+        }
+        check(
+          `${label}: ${cardType} no text overlap >20%`,
+          !hasOverlap,
+          hasOverlap ? "Text boxes overlap >20%" : ""
+        );
+
+        // Check 3: All objects within canvas bounds
+        const outOfBounds = fabricData.objects.filter(o =>
+          o.left < -10 || o.top < -10 ||
+          o.left + o.width > fabricData.canvasWidth + 10 ||
+          o.top + o.height > fabricData.canvasHeight + 10
+        );
+        check(
+          `${label}: ${cardType} objects within bounds`,
+          outOfBounds.length === 0,
+          outOfBounds.length > 0 ? `${outOfBounds.length} object(s) out of bounds` : ""
+        );
+
+        // Check 4: Line objects exist (for templates that should have them)
+        const lineObjs = fabricData.objects.filter(o => o.type === "line");
+        // Don't fail if no lines — some templates don't have them on front page
+        if (lineObjs.length > 0) {
+          check(
+            `${label}: ${cardType} has line objects`,
+            true,
+            `${lineObjs.length} line(s) found`
+          );
+        }
+      }
     }
   }
 

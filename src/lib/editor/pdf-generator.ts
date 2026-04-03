@@ -41,7 +41,7 @@ async function launchBrowserWithRetry(maxAttempts = 3): Promise<Browser> {
   throw new Error("[pdf] Browser launch failed — unreachable");
 }
 
-export async function generateCardPDF(state: WizardState): Promise<Buffer> {
+export async function generateCardPDF(state: WizardState, options?: { baseUrl?: string }): Promise<Buffer> {
   console.log(`[pdf] Step: resolve dimensions`);
   const dims = getCardDimensions(state);
   if (!dims) throw new Error("Cannot determine card dimensions");
@@ -58,7 +58,7 @@ export async function generateCardPDF(state: WizardState): Promise<Buffer> {
   if (isV2) {
     const config = getTemplateConfig(templateId);
     if (!config) throw new Error(`Template config not found: ${templateId}`);
-    html = await renderSpreadHTML(state);
+    html = await renderSpreadHTML(state, { baseUrl: options?.baseUrl });
     pageWidthMm = config.spreadWidthMm;
     pageHeightMm = config.spreadHeightMm;
   } else {

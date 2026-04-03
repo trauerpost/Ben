@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsUser, loginAsAdmin } from "./helpers/login";
+import { loginAsUser, loginAsAdmin } from "../../helpers/login";
 
 /**
  * REAL End-to-End Tests — Card Creation System

@@ -1108,11 +1108,44 @@ test.describe("CB-F4: Preview shows correct content", () => {
     // Must have content — either text directly or via inner iframes
     expect(hasErnaDirect || innerIframeCount >= 1, "Preview must show card content (text or page iframes)").toBe(true);
 
-    // Should NOT show gray "Foto" placeholder
-    const hasFotoPlaceholder = outerText?.includes("Foto") && !outerText?.includes("Fotofeld");
-    if (hasFotoPlaceholder && innerIframeCount === 0) {
-      console.warn("WARNING: Preview still shows 'Foto' placeholder — photo rendering may be broken");
+    // Photo must render — no gray "Foto" placeholder
+    if (innerIframeCount === 0) {
+      expect(outerText).not.toContain("Foto");
     }
+
+    await page.screenshot({ path: path.join(SCREENSHOTS, "CBF4a-preview-verified.png") });
+  });
+
+  test("F4c: NEGATIVE — /api/preview with no photo falls back to placeholder", async ({ request }) => {
+    test.setTimeout(30000);
+    const state = {
+      templateId: "TI08",
+      currentStep: 1,
+      cardType: "sterbebild",
+      cardFormat: "single",
+      textContent: {
+        name: "Test Person",
+        fontFamily: "Inter",
+        fontColor: "#000000",
+        textAlign: "center" as const,
+      },
+      photo: { url: null, originalUrl: null, crop: null, filter: "none" },
+      background: { color: "#ffffff" },
+      decoration: {},
+      border: null,
+      elementOverrides: {},
+    };
+
+    const res = await request.post(`${BASE_URL}/api/preview`, {
+      data: { state },
+      headers: { "Content-Type": "application/json" },
+    });
+    expect(res.status()).toBe(200);
+
+    const html = await res.text();
+    // With placeholder fallback working, "Foto" gray box should NOT appear
+    // If baseUrl is wrong or placeholder fetch fails, ">Foto<" WILL appear
+    expect(html).not.toContain(">Foto<");
   });
 
   test("F4b: Close preview → canvas still works", async ({ page }) => {

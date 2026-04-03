@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginAsAdmin } from "./helpers/login";
+import { loginAsAdmin } from "../../helpers/login";
 
 test.describe("Admin Orders", () => {
   test("admin can see orders list with filter tabs", async ({ page }) => {
