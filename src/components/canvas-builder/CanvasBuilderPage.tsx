@@ -91,15 +91,14 @@ export default function CanvasBuilderPage(): React.ReactElement {
         builder.templateId
       );
 
-      console.log("[Preview] photo.url from canvas export:", wizardState.photo.url?.substring(0, 80) ?? "NULL");
-      console.log("[Preview] photo.crop:", wizardState.photo.crop);
+      // Debug: log what exportCanvasToWizardState returned
+      console.log("[Preview] photo.url:", wizardState.photo.url?.substring(0, 100) ?? "NULL");
 
       // Convert blob URLs to data URLs — blob: is client-only, server can't fetch
       if (wizardState.photo.url?.startsWith("blob:")) {
-        console.log("[Preview] Converting blob URL to data URL...");
         wizardState.photo.url = await blobUrlToDataUrl(wizardState.photo.url);
         wizardState.photo.originalUrl = wizardState.photo.url;
-        console.log("[Preview] Converted, data URL length:", wizardState.photo.url?.length);
+        console.log("[Preview] blob converted, length:", wizardState.photo.url.length);
       }
 
       const res = await fetch("/api/preview", {
