@@ -31,6 +31,22 @@ interface FabricObjectJSON {
   };
 }
 
+/**
+ * A true placeholder is an image that was set by the template and never replaced by the user.
+ * If isImagePlaceholder is true BUT the src is a blob:/data: URL or doesn't match
+ * a known placeholder path, it's a user upload with a stale flag (old draft) → allow export.
+ */
+function isUnreplacedPlaceholder(obj: FabricObjectJSON): boolean {
+  if (!obj.data?.isImagePlaceholder) return false;
+  const src = obj.src ?? "";
+  // User uploads have blob: or data: URLs — never placeholders
+  if (src.startsWith("blob:") || src.startsWith("data:")) return false;
+  // Known placeholder paths from template configs
+  if (src.includes("/assets/photos/placeholder")) return true;
+  // External URLs with isImagePlaceholder=true = stale flag from old draft → allow
+  return false;
+}
+
 interface FabricCanvasJSON {
   version?: string;
   objects?: FabricObjectJSON[];
@@ -87,7 +103,7 @@ export function fabricToWizardState(
       if (obj.fontFamily) textContent.fontFamily = obj.fontFamily;
       if (obj.fill && typeof obj.fill === "string") textContent.fontColor = obj.fill;
       if (obj.textAlign) textContent.textAlign = obj.textAlign as "left" | "center" | "right";
-    } else if (obj.data?.elementType === "image") {
+    } else if (obj.data?.elementType === "image" && !isUnreplacedPlaceholder(obj)) {
       // Bound image → photo URL + crop
       if (obj.src) {
         photoUrl = obj.src;

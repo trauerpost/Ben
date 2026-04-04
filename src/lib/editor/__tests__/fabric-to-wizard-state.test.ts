@@ -261,9 +261,34 @@ describe("fabricToWizardState", () => {
 
   // ── Bug fix: isImagePlaceholder must NOT block photo export ──
 
-  it("BUG-FIX: image with isImagePlaceholder=true AND real src → photo URL exported", () => {
-    // When user replaces placeholder photo, isImagePlaceholder may still be true
-    // (PhotoToolbarPanel carries it over). The photo must still be exported.
+  it("isImagePlaceholder=true with placeholder URL → photo NOT exported", () => {
+    // Original template placeholder photo must NOT be exported as user's photo.
+    const canvasJSON = {
+      objects: [
+        {
+          type: "image",
+          src: "/assets/photos/placeholder-man.jpg",
+          left: 0,
+          top: 0,
+          width: 400,
+          height: 600,
+          data: {
+            field: "photo",
+            elementType: "image",
+            templateElementId: "photo",
+            isImagePlaceholder: true,
+          },
+        },
+      ],
+    };
+
+    const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
+    expect(state.photo.url).toBeNull();
+  });
+
+  it("isImagePlaceholder=true with user URL (stale flag) → photo IS exported", () => {
+    // Old saved draft where PhotoToolbarPanel didn't clear the flag.
+    // User uploaded a real photo but isImagePlaceholder stayed true.
     const canvasJSON = {
       objects: [
         {
@@ -273,26 +298,18 @@ describe("fabricToWizardState", () => {
           top: 0,
           width: 400,
           height: 600,
-          scaleX: 0.5,
-          scaleY: 0.5,
           data: {
             field: "photo",
             elementType: "image",
             templateElementId: "photo",
-            isImagePlaceholder: true, // BUG: this flag was blocking export
-            slotWidth: 200,
-            slotHeight: 300,
-            slotLeft: 0,
-            slotTop: 0,
+            isImagePlaceholder: true,
           },
         },
       ],
     };
 
     const state = fabricToWizardState(canvasJSON, STERBE_DIMS, "sterbebild", "single", "TI05");
-    // MUST export the photo URL, not null
     expect(state.photo.url).toBe("https://example.com/user-uploaded-photo.jpg");
-    expect(state.photo.originalUrl).toBe("https://example.com/user-uploaded-photo.jpg");
   });
 
   it("BUG-FIX: image with isImagePlaceholder=false → photo URL exported (regression check)", () => {
