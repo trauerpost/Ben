@@ -59,6 +59,14 @@ export function exportCanvasToWizardState(
       }
     }
 
+    // Merge per-element overrides from other pages
+    if (pageState.elementOverrides) {
+      wizardState.elementOverrides = {
+        ...(wizardState.elementOverrides ?? {}),
+        ...pageState.elementOverrides,
+      };
+    }
+
     // If the front page has no photo but another page does, take it
     if (!wizardState.photo.url && pageState.photo.url) {
       wizardState.photo = pageState.photo;

@@ -14,6 +14,8 @@ import { getMergedElement } from "./wizard-state";
 
 async function imageToBase64(url: string, baseUrl?: string): Promise<string> {
   try {
+    // Already a data URL — return as-is (no redundant decode/re-encode)
+    if (url.startsWith("data:")) return url;
     const resolvedUrl = url.startsWith("/") && baseUrl
       ? `${baseUrl}${url}`
       : url;
@@ -146,7 +148,7 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
   let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center center;background-repeat:no-repeat;`;
 
   // Apply user crop if available
-  if (el.useCrop !== false && state.photo.crop) {
+  if (el.useCrop !== false && state.photo?.crop) {
     const cropCSS = computeCropStyle(state.photo.crop);
     if (cropCSS) {
       imgStyle = `background-image:url('${base64}');${cropCSS}background-repeat:no-repeat;`;
@@ -223,7 +225,7 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
 
   // Pre-fetch images
   const images: Record<string, string> = {};
-  const photoSrc = state.photo.sharpenedUrl ?? state.photo.url ?? config.placeholderPhotoSrc;
+  const photoSrc = state.photo?.sharpenedUrl ?? state.photo?.url ?? config.placeholderPhotoSrc;
   if (photoSrc) {
     images["photo"] = await imageToBase64(photoSrc, options?.baseUrl);
   }

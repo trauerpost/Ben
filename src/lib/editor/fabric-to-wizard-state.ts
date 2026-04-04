@@ -1,5 +1,5 @@
 import type { CanvasDimensions } from "./canvas-dimensions";
-import type { CardType, CardFormat, WizardState } from "./wizard-state";
+import type { CardType, CardFormat, WizardState, ElementOverride } from "./wizard-state";
 import { initialWizardState, DEFAULT_TEXT_CONTENT } from "./wizard-state";
 
 interface FabricObjectJSON {
@@ -88,6 +88,21 @@ export function fabricToWizardState(
   let photoUrl: string | null = null;
   let photoCrop: { x: number; y: number; width: number; height: number } | null = null;
   const freeFormElements: FreeFormElement[] = [];
+  const elementOverrides: Record<string, ElementOverride> = {};
+  let globalFontSet = false;
+
+  // Debug: log image objects for tracing photo extraction on production
+  const imageObjs = objects.filter(o => o.type === "image" || o.data?.elementType === "image");
+  if (imageObjs.length > 0) {
+    console.log("[fabricToWizardState] image objects:", imageObjs.map(o => ({
+      type: o.type,
+      elementType: o.data?.elementType,
+      isPlaceholder: o.data?.isImagePlaceholder,
+      field: o.data?.field,
+      hasSrc: !!o.src,
+      srcPrefix: o.src?.substring(0, 30),
+    })));
+  }
 
   for (const obj of objects) {
     const field = obj.data?.field;
@@ -99,10 +114,26 @@ export function fabricToWizardState(
       }
       // Also capture font overrides for size fields
       mapFontSize(textContent, field, obj.fontSize);
-      // Capture global formatting from any bound field
-      if (obj.fontFamily) textContent.fontFamily = obj.fontFamily;
+      // Capture global formatting from the FIRST bound field only (avoid "last writer wins")
+      if (!globalFontSet && obj.fontFamily) {
+        textContent.fontFamily = obj.fontFamily;
+        globalFontSet = true;
+      }
       if (obj.fill && typeof obj.fill === "string") textContent.fontColor = obj.fill;
       if (obj.textAlign) textContent.textAlign = obj.textAlign as "left" | "center" | "right";
+
+      // Build per-element overrides for font/color/align
+      const elId = obj.data?.templateElementId ?? field;
+      if (elId) {
+        const override: Partial<ElementOverride> = {};
+        if (obj.fontFamily) override.fontFamily = obj.fontFamily;
+        if (obj.fill && typeof obj.fill === "string") override.fontColor = obj.fill;
+        if (obj.textAlign) override.textAlign = obj.textAlign as "left" | "center" | "right";
+        if (obj.fontSize !== undefined) override.fontSize = obj.fontSize;
+        if (Object.keys(override).length > 0) {
+          elementOverrides[elId] = { ...elementOverrides[elId], ...override };
+        }
+      }
     } else if (obj.data?.elementType === "image" && !isUnreplacedPlaceholder(obj)) {
       // Bound image → photo URL + crop
       if (obj.src) {
@@ -112,6 +143,18 @@ export function fabricToWizardState(
     } else if (!obj.data?.field && !obj.data?.templateElementId) {
       // Free-form element (user-added)
       collectFreeForm(obj, freeFormElements);
+    }
+  }
+
+  // Fallback: if no bound photo found, use the first free-form image
+  // This handles photos added via the "Fotofeld" button (no data.elementType)
+  if (!photoUrl) {
+    const freeFormImg = freeFormElements.find(ff => ff.type === "image" && ff.src);
+    if (freeFormImg) {
+      photoUrl = freeFormImg.src!;
+      // Remove from freeFormElements to avoid duplicate rendering
+      const idx = freeFormElements.indexOf(freeFormImg);
+      freeFormElements.splice(idx, 1);
     }
   }
 
@@ -125,6 +168,7 @@ export function fabricToWizardState(
     cardFormat,
     templateId,
     textContent,
+    elementOverrides,
     photo: {
       ...initialWizardState.photo,
       url: photoUrl,
