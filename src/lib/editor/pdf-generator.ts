@@ -204,9 +204,11 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
 
 
 /**
- * Compose a folded card onto ONE page (140×210mm):
- *   Top half (0, 105→210mm): outside spread at full width
- *   Bottom half (0, 0→105mm): front inner (left) + back inner (right)
+ * Compose a folded card onto A4 (210×297mm):
+ *   Cards centered with crop marks and ruler.
+ *   Top card: outside spread (140×105mm)
+ *   Bottom card: inside spread — front (left 70mm) + back (right 70mm)
+ *   Gap between cards: 10mm
  *
  * pdf-lib uses bottom-left origin, so y=0 is bottom of page.
  */
@@ -215,20 +217,37 @@ async function composeFoldedCardPdf(
   frontBuf: Buffer,
   backBuf: Buffer,
   spreadWidthMm: number,
-  halfHeightMm: number
+  cardHeightMm: number
 ): Promise<Buffer> {
-  const { PDFDocument } = await import("pdf-lib");
+  const { PDFDocument, rgb, StandardFonts } = await import("pdf-lib");
 
-  // mm to PDF points (1mm = 2.83465pt)
   const mmToPt = (mm: number): number => mm * 2.83465;
 
-  const totalWidthPt = mmToPt(spreadWidthMm);
-  const halfHeightPt = mmToPt(halfHeightMm);
-  const totalHeightPt = halfHeightPt * 2;
-  const halfWidthPt = totalWidthPt / 2;
+  // A4 dimensions
+  const a4W = mmToPt(210);
+  const a4H = mmToPt(297);
+  const cardW = mmToPt(spreadWidthMm);   // 140mm
+  const cardH = mmToPt(cardHeightMm);     // 105mm
+  const halfCardW = cardW / 2;            // 70mm
+  const gap = mmToPt(10);                 // 10mm gap between cards
+  const cropLen = mmToPt(5);              // 5mm crop mark length
+  const cropOffset = mmToPt(3);           // 3mm offset from card edge
+
+  // Center horizontally
+  const marginX = (a4W - cardW) / 2;     // (210-140)/2 = 35mm
+  // Center vertically: 2 cards + gap
+  const totalContentH = cardH * 2 + gap;  // 105+105+10 = 220mm
+  const marginY = (a4H - totalContentH) / 2; // (297-220)/2 = 38.5mm
+
+  // Card positions (bottom-left origin)
+  const topCardX = marginX;
+  const topCardY = marginY + cardH + gap;  // bottom card first, then gap, then top card
+  const botCardX = marginX;
+  const botCardY = marginY;
 
   const final = await PDFDocument.create();
-  const page = final.addPage([totalWidthPt, totalHeightPt]);
+  const page = final.addPage([a4W, a4H]);
+  const font = await final.embedFont(StandardFonts.Helvetica);
 
   // Load and embed each section
   const outsideDoc = await PDFDocument.load(outsideBuf);
@@ -239,28 +258,81 @@ async function composeFoldedCardPdf(
   const [frontPage] = await final.embedPdf(frontDoc, [0]);
   const [backPage] = await final.embedPdf(backDoc, [0]);
 
-  // Top half: outside spread (y = halfHeightPt because pdf-lib origin is bottom-left)
-  page.drawPage(outsidePage, {
-    x: 0,
-    y: halfHeightPt,
-    width: totalWidthPt,
-    height: halfHeightPt,
+  // Draw outside spread (top)
+  page.drawPage(outsidePage, { x: topCardX, y: topCardY, width: cardW, height: cardH });
+
+  // Draw inside spread (bottom) — front left + back right
+  page.drawPage(frontPage, { x: botCardX, y: botCardY, width: halfCardW, height: cardH });
+  page.drawPage(backPage, { x: botCardX + halfCardW, y: botCardY, width: halfCardW, height: cardH });
+
+  const gray = rgb(0.5, 0.5, 0.5);
+  const lightGray = rgb(0.75, 0.75, 0.75);
+  const lineW = 0.5;
+
+  // ── Crop marks for both cards ──
+  const cards = [
+    { x: topCardX, y: topCardY, label: "Außenseite (Outside)" },
+    { x: botCardX, y: botCardY, label: "Innenseite (Inside)" },
+  ];
+
+  for (const card of cards) {
+    const cx = card.x;
+    const cy = card.y;
+    // Top-left corner
+    page.drawLine({ start: { x: cx - cropOffset - cropLen, y: cy + cardH }, end: { x: cx - cropOffset, y: cy + cardH }, thickness: lineW, color: gray });
+    page.drawLine({ start: { x: cx, y: cy + cardH + cropOffset }, end: { x: cx, y: cy + cardH + cropOffset + cropLen }, thickness: lineW, color: gray });
+    // Top-right corner
+    page.drawLine({ start: { x: cx + cardW + cropOffset, y: cy + cardH }, end: { x: cx + cardW + cropOffset + cropLen, y: cy + cardH }, thickness: lineW, color: gray });
+    page.drawLine({ start: { x: cx + cardW, y: cy + cardH + cropOffset }, end: { x: cx + cardW, y: cy + cardH + cropOffset + cropLen }, thickness: lineW, color: gray });
+    // Bottom-left corner
+    page.drawLine({ start: { x: cx - cropOffset - cropLen, y: cy }, end: { x: cx - cropOffset, y: cy }, thickness: lineW, color: gray });
+    page.drawLine({ start: { x: cx, y: cy - cropOffset - cropLen }, end: { x: cx, y: cy - cropOffset }, thickness: lineW, color: gray });
+    // Bottom-right corner
+    page.drawLine({ start: { x: cx + cardW + cropOffset, y: cy }, end: { x: cx + cardW + cropOffset + cropLen, y: cy }, thickness: lineW, color: gray });
+    page.drawLine({ start: { x: cx + cardW, y: cy - cropOffset - cropLen }, end: { x: cx + cardW, y: cy - cropOffset }, thickness: lineW, color: gray });
+
+    // Label above card
+    page.drawText(card.label, {
+      x: cx, y: cy + cardH + cropOffset + cropLen + mmToPt(2),
+      size: 7, font, color: gray,
+    });
+  }
+
+  // ── Fold line indicator (center of inside spread) ──
+  const foldX = botCardX + halfCardW;
+  page.drawLine({
+    start: { x: foldX, y: botCardY - cropOffset },
+    end: { x: foldX, y: botCardY + cardH + cropOffset },
+    thickness: 0.3, color: lightGray, dashArray: [3, 3],
+  });
+  page.drawText("Falz / Fold", {
+    x: foldX + mmToPt(1), y: botCardY - cropOffset - mmToPt(4),
+    size: 5, font, color: lightGray,
   });
 
-  // Bottom-left: front inner page
-  page.drawPage(frontPage, {
-    x: 0,
-    y: 0,
-    width: halfWidthPt,
-    height: halfHeightPt,
-  });
+  // ── Ruler (left side, vertical, in mm) ──
+  const rulerX = marginX - mmToPt(15);
+  const rulerStartY = botCardY;
+  const rulerEndY = topCardY + cardH;
+  const rulerTotalMm = Math.round((rulerEndY - rulerStartY) / mmToPt(1));
 
-  // Bottom-right: back inner page
-  page.drawPage(backPage, {
-    x: halfWidthPt,
-    y: 0,
-    width: halfWidthPt,
-    height: halfHeightPt,
+  // Ruler line
+  page.drawLine({ start: { x: rulerX, y: rulerStartY }, end: { x: rulerX, y: rulerEndY }, thickness: 0.3, color: gray });
+
+  // Tick marks every 10mm, labels every 20mm
+  for (let mm = 0; mm <= rulerTotalMm; mm += 10) {
+    const y = rulerStartY + mmToPt(mm);
+    const tickLen = mm % 20 === 0 ? mmToPt(3) : mmToPt(1.5);
+    page.drawLine({ start: { x: rulerX - tickLen, y }, end: { x: rulerX, y }, thickness: 0.3, color: gray });
+    if (mm % 20 === 0) {
+      page.drawText(`${mm}`, { x: rulerX - tickLen - mmToPt(4), y: y - 2, size: 5, font, color: gray });
+    }
+  }
+
+  // ── Dimensions label (bottom center) ──
+  page.drawText(`Card: ${spreadWidthMm}×${cardHeightMm}mm | Page: A4 (210×297mm)`, {
+    x: a4W / 2 - mmToPt(30), y: mmToPt(8),
+    size: 6, font, color: gray,
   });
 
   const bytes = await final.save();

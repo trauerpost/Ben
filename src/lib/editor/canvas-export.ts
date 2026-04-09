@@ -133,29 +133,73 @@ export async function exportCanvasToPDF(
   });
 
   if (hasOutsideSpread) {
-    // Folded card: ONE page (140×210mm) — outside on top, inside (front+back) on bottom
-    const totalH = spreadH * 2; // 210mm
+    // Folded card on A4 (210×297mm) — outside on top, inside on bottom, centered with crop marks
+    const a4W = 210;
+    const a4H = 297;
+    const gap = 10; // mm between cards
+    const marginX = (a4W - spreadW) / 2;   // (210-140)/2 = 35mm
+    const totalContentH = spreadH * 2 + gap; // 105+105+10 = 220mm
+    const marginY = (a4H - totalContentH) / 2; // (297-220)/2 = 38.5mm
+    const topCardY = marginY;
+    const botCardY = marginY + spreadH + gap;
+    const cropLen = 5;
+    const cropOff = 3;
 
-    // Recreate PDF with double height
-    const foldedPdf = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: [spreadW, totalH],
-    });
+    const foldedPdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-    // Top half: outside spread
+    // Outside spread (top)
     const outsideImg = pageImages["outside-spread"];
     if (outsideImg) {
-      foldedPdf.addImage(outsideImg, "PNG", 0, 0, spreadW, spreadH);
+      foldedPdf.addImage(outsideImg, "PNG", marginX, topCardY, spreadW, spreadH);
     }
 
-    // Bottom half: front (left) + back (right) side by side
+    // Inside spread (bottom) — front left + back right
     const innerKeys = sorted.filter(k => k !== "outside-spread");
     for (let i = 0; i < innerKeys.length; i++) {
       const imgData = pageImages[innerKeys[i]];
       if (!imgData) continue;
-      foldedPdf.addImage(imgData, "PNG", i * halfW, spreadH, halfW, spreadH);
+      foldedPdf.addImage(imgData, "PNG", marginX + i * halfW, botCardY, halfW, spreadH);
     }
+
+    // Crop marks + labels
+    foldedPdf.setDrawColor(128, 128, 128);
+    foldedPdf.setLineWidth(0.2);
+    foldedPdf.setFontSize(6);
+    foldedPdf.setTextColor(128, 128, 128);
+
+    for (const { x, y, label } of [
+      { x: marginX, y: topCardY, label: "Außenseite (Outside)" },
+      { x: marginX, y: botCardY, label: "Innenseite (Inside)" },
+    ]) {
+      // Corner crop marks (top-left, top-right, bottom-left, bottom-right)
+      // Top-left
+      foldedPdf.line(x - cropOff - cropLen, y, x - cropOff, y);
+      foldedPdf.line(x, y - cropOff - cropLen, x, y - cropOff);
+      // Top-right
+      foldedPdf.line(x + spreadW + cropOff, y, x + spreadW + cropOff + cropLen, y);
+      foldedPdf.line(x + spreadW, y - cropOff - cropLen, x + spreadW, y - cropOff);
+      // Bottom-left
+      foldedPdf.line(x - cropOff - cropLen, y + spreadH, x - cropOff, y + spreadH);
+      foldedPdf.line(x, y + spreadH + cropOff, x, y + spreadH + cropOff + cropLen);
+      // Bottom-right
+      foldedPdf.line(x + spreadW + cropOff, y + spreadH, x + spreadW + cropOff + cropLen, y + spreadH);
+      foldedPdf.line(x + spreadW, y + spreadH + cropOff, x + spreadW, y + spreadH + cropOff + cropLen);
+      // Label
+      foldedPdf.text(label, x, y - cropOff - cropLen - 2);
+    }
+
+    // Fold line (center of inside spread)
+    foldedPdf.setDrawColor(192, 192, 192);
+    foldedPdf.setLineDashPattern([1, 1], 0);
+    foldedPdf.line(marginX + halfW, botCardY - cropOff, marginX + halfW, botCardY + spreadH + cropOff);
+    foldedPdf.setFontSize(5);
+    foldedPdf.setTextColor(192, 192, 192);
+    foldedPdf.text("Falz / Fold", marginX + halfW + 1, botCardY + spreadH + cropOff + 4);
+
+    // Dimensions label
+    foldedPdf.setFontSize(6);
+    foldedPdf.setTextColor(128, 128, 128);
+    foldedPdf.text(`Card: ${spreadW}\u00d7${spreadH}mm | Page: A4 (210\u00d7297mm)`, a4W / 2 - 30, a4H - 8);
 
     return foldedPdf.output("blob");
   } else {
