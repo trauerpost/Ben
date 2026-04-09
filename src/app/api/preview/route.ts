@@ -86,13 +86,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 </head>
 <body>
   <div>
-    <div class="page-label">Außenseite</div>
+    <div class="page-label">${body.locale === "en" ? "Outside" : "Außenseite"}</div>
     <div class="page">
       <iframe srcdoc="${escapeAttr(scaledOutsideHTML)}" width="${displayW}" height="${displayH}" sandbox="allow-same-origin allow-scripts"></iframe>
     </div>
   </div>
   <div>
-    <div class="page-label">Innenseite</div>
+    <div class="page-label">${body.locale === "en" ? "Inside" : "Innenseite"}</div>
     <div class="inner-spread">
       <div class="page">
         <iframe srcdoc="${escapeAttr(scaledFrontHTML)}" width="${halfDisplayW}" height="${innerDisplayH}" sandbox="allow-same-origin allow-scripts"></iframe>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, type RefObject } from "react";
+import { useTranslations } from "next-intl";
 import type { CardType, CardFormat, WizardState, TextContent } from "@/lib/editor/wizard-state";
 import {
   getCanvasDimensions,
@@ -31,30 +32,33 @@ interface DraftEnvelope {
 function getPageDefs(
   cardFormat: CardFormat | null,
   hasOuterPages: boolean = false,
-  hasBackPage: boolean = true
+  hasBackPage: boolean = true,
+  t?: (key: string) => string
 ): SpreadPage[] {
+  const l = (key: string, fallback: string): string => t ? t(key) : fallback;
+
   if (hasOuterPages) {
     const pages: SpreadPage[] = [
-      { id: "outside-left", label: "Außen links", canvasPageId: "outside-spread", thumbnailCrop: "left" },
-      { id: "outside-right", label: "Außen rechts", canvasPageId: "outside-spread", thumbnailCrop: "right" },
-      { id: "front", label: "Innen links" },
+      { id: "outside-left", label: l("outsideLeft", "Außen links"), canvasPageId: "outside-spread", thumbnailCrop: "left" },
+      { id: "outside-right", label: l("outsideRight", "Außen rechts"), canvasPageId: "outside-spread", thumbnailCrop: "right" },
+      { id: "front", label: l("insideLeft", "Innen links") },
     ];
     if (hasBackPage) {
-      pages.push({ id: "back", label: "Innen rechts" });
+      pages.push({ id: "back", label: l("insideRight", "Innen rechts") });
     }
     return pages;
   }
   if (cardFormat === "folded") {
     return [
-      { id: "front-left", label: "Außen links" },
-      { id: "front-right", label: "Außen rechts" },
-      { id: "inside-left", label: "Innen links" },
-      { id: "inside-right", label: "Innen rechts" },
+      { id: "front-left", label: l("outsideLeft", "Außen links") },
+      { id: "front-right", label: l("outsideRight", "Außen rechts") },
+      { id: "inside-left", label: l("insideLeft", "Innen links") },
+      { id: "inside-right", label: l("insideRight", "Innen rechts") },
     ];
   }
   return [
-    { id: "front", label: "Vorderseite" },
-    { id: "back", label: "Rückseite" },
+    { id: "front", label: l("front", "Vorderseite") },
+    { id: "back", label: l("back", "Rückseite") },
   ];
 }
 
@@ -90,6 +94,7 @@ export interface UseCanvasBuilderReturn {
 export function useCanvasBuilder(
   canvasRef: RefObject<FabricCanvasHandle | null>
 ): UseCanvasBuilderReturn {
+  const t = useTranslations("canvasBuilder");
   const [cardType, setCardType] = useState<CardType | null>(null);
   const [cardFormat, setCardFormat] = useState<CardFormat | null>(null);
   const [templateId, setTemplateId] = useState<string | null>(null);
@@ -118,7 +123,7 @@ export function useCanvasBuilder(
     const tpl = getTemplateConfig(templateId);
     return tpl?.elements.some(el => el.page === "back") ?? false;
   })();
-  const allPages = getPageDefs(cardFormat, hasOuterPages, hasBackPage);
+  const allPages = getPageDefs(cardFormat, hasOuterPages, hasBackPage, t);
   const pages = (hasMultiplePages || hasOuterPages) ? allPages : allPages.slice(0, 1);
 
   const updateActiveThumbnail = useCallback(() => {
@@ -191,7 +196,7 @@ export function useCanvasBuilder(
       setHasMultiplePages(multiPage);
 
       // Determine which page to display first and its dimensions
-      const pageDefs = getPageDefs(cf, hasOuter, hasBack);
+      const pageDefs = getPageDefs(cf, hasOuter, hasBack, t);
       const firstPageDef = pageDefs[0];
       const firstPageId = firstPageDef.id;
       const firstCanvasId = firstPageDef.canvasPageId ?? firstPageId;
@@ -499,7 +504,7 @@ export function useCanvasBuilder(
       const tmpl = getTemplateConfig(envelope.templateId);
       const hasOuter = tmpl?.elements.some(el => el.page === "outside-spread") ?? false;
       const hasBack = tmpl?.elements.some(el => el.page === "back") ?? false;
-      const restoredPages = getPageDefs(envelope.cardFormat, hasOuter, hasBack);
+      const restoredPages = getPageDefs(envelope.cardFormat, hasOuter, hasBack, t);
       const activePage = restoredPages.find(p => p.id === envelope.activePageId);
       const activeIsSpread = activePage?.isSpread ?? false;
       const newDims = getCanvasDimensions(envelope.cardType, envelope.cardFormat, undefined, !activeIsSpread);

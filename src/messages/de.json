@@ -506,5 +506,13 @@
       "save": "Speichern",
       "close": "Schließen"
     }
+  },
+  "canvasBuilder": {
+    "outsideLeft": "Außen links",
+    "outsideRight": "Außen rechts",
+    "insideLeft": "Innen links",
+    "insideRight": "Innen rechts",
+    "front": "Vorderseite",
+    "back": "Rückseite"
   }
 }

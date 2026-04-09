@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useEffect, useState } from "react";
+import { useLocale } from "next-intl";
 import dynamic from "next/dynamic";
 import type { FabricCanvasHandle } from "./FabricCanvas";
 import { useCanvasBuilder } from "./use-canvas-builder";
@@ -29,6 +30,7 @@ async function blobUrlToDataUrl(blobUrl: string): Promise<string> {
 }
 
 export default function CanvasBuilderPage(): React.ReactElement {
+  const locale = useLocale();
   const canvasRef = useRef<FabricCanvasHandle>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
@@ -121,7 +123,7 @@ export default function CanvasBuilderPage(): React.ReactElement {
       const res = await fetch("/api/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: wizardState }),
+        body: JSON.stringify({ state: wizardState, locale }),
       });
 
       if (!res.ok) {
