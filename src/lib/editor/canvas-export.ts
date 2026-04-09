@@ -133,20 +133,31 @@ export async function exportCanvasToPDF(
   });
 
   if (hasOutsideSpread) {
-    // Folded card: Page 1 = outside spread (full width), Pages 2-3 = inner pages (portrait)
+    // Folded card: ONE page (140×210mm) — outside on top, inside (front+back) on bottom
+    const totalH = spreadH * 2; // 210mm
+
+    // Recreate PDF with double height
+    const foldedPdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: [spreadW, totalH],
+    });
+
+    // Top half: outside spread
     const outsideImg = pageImages["outside-spread"];
     if (outsideImg) {
-      pdf.addImage(outsideImg, "PNG", 0, 0, spreadW, spreadH);
+      foldedPdf.addImage(outsideImg, "PNG", 0, 0, spreadW, spreadH);
     }
 
-    // Pages 2-3: each inner page as separate portrait page (70x105mm)
+    // Bottom half: front (left) + back (right) side by side
     const innerKeys = sorted.filter(k => k !== "outside-spread");
-    for (const key of innerKeys) {
-      const imgData = pageImages[key];
+    for (let i = 0; i < innerKeys.length; i++) {
+      const imgData = pageImages[innerKeys[i]];
       if (!imgData) continue;
-      pdf.addPage([halfW, spreadH], "portrait");
-      pdf.addImage(imgData, "PNG", 0, 0, halfW, spreadH);
+      foldedPdf.addImage(imgData, "PNG", i * halfW, spreadH, halfW, spreadH);
     }
+
+    return foldedPdf.output("blob");
   } else {
     // Standard card: place all pages side by side on one PDF page
     for (let i = 0; i < sorted.length; i++) {

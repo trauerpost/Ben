@@ -88,23 +88,23 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     const hasBackPage = config.elements.some(el => el.page && el.page !== "front");
 
     if (hasOuterPages) {
-      // Folded card: outside spread (full width) + inside spread (two half-width pages side by side)
+      // Folded card: render sections separately, then combine onto one 140×210mm page via pdf-lib
+      // Top half: outside spread (140×105mm), Bottom half: inside spread (front+back side by side)
       pageWidthMm = config.spreadWidthMm;
       pageHeightMm = config.spreadHeightMm;
       const halfWidthMm = config.spreadWidthMm / 2;
 
-      // Page 1: Outside spread at full width (only outside-spread elements visible)
       const outsideState = buildPageState(state, config, "outside-spread");
       const outsideHTML = await renderSpreadHTML(outsideState, { baseUrl: options?.baseUrl });
 
-      // Pages 2-3: Inside pages rendered at half width (70mm) with renderWidthMm override
       const frontState = buildPageState(state, config, "front");
       const backState = buildPageState(state, config, "back");
       const frontHTML = await renderSpreadHTML(frontState, { baseUrl: options?.baseUrl, renderWidthMm: halfWidthMm });
       const backHTML = await renderSpreadHTML(backState, { baseUrl: options?.baseUrl, renderWidthMm: halfWidthMm });
 
+      // Render each section as a separate PDF, then merge onto one page
       htmlPages = [outsideHTML, frontHTML, backHTML];
-      console.log(`[pdf] Folded card: 3 pages (outside spread + front + back @ ${halfWidthMm}mm)`);
+      console.log(`[pdf] Folded card: will compose onto 1 page ${pageWidthMm}x${pageHeightMm * 2}mm`);
     } else if (hasBackPage) {
       // Multi-page: render front and back as separate PDF pages
       const frontState = buildPageState(state, config, "front");
@@ -125,24 +125,26 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     pageHeightMm = dims.heightMm;
   }
 
-  // Build per-page dimensions (may vary for folded cards)
-  const pageDims: { widthMm: number; heightMm: number }[] = htmlPages.map(() => ({
-    widthMm: pageWidthMm,
-    heightMm: pageHeightMm,
-  }));
-
-  // For folded cards with outside spread: pages 2+ are inner pages at half width
-  if (isV2) {
+  // Detect folded card for compositing
+  const isFoldedCard = isV2 && htmlPages.length === 3 && (() => {
     const config = getTemplateConfig(templateId);
-    const hasOuterPages = config?.elements.some(el => el.page === "outside-spread") ?? false;
-    if (hasOuterPages && htmlPages.length >= 3) {
-      const halfWidthMm = pageWidthMm / 2;
-      pageDims[1] = { widthMm: halfWidthMm, heightMm: pageHeightMm };
-      pageDims[2] = { widthMm: halfWidthMm, heightMm: pageHeightMm };
+    return config?.elements.some(el => el.page === "outside-spread") ?? false;
+  })();
+
+  // Build per-page render dimensions
+  const pageDims: { widthMm: number; heightMm: number }[] = [];
+  if (isFoldedCard) {
+    const halfWidthMm = pageWidthMm / 2;
+    pageDims.push({ widthMm: pageWidthMm, heightMm: pageHeightMm });  // outside spread
+    pageDims.push({ widthMm: halfWidthMm, heightMm: pageHeightMm });  // front inner
+    pageDims.push({ widthMm: halfWidthMm, heightMm: pageHeightMm });  // back inner
+  } else {
+    for (let i = 0; i < htmlPages.length; i++) {
+      pageDims.push({ widthMm: pageWidthMm, heightMm: pageHeightMm });
     }
   }
 
-  console.log(`[pdf] Template: ${state.templateId}, Pages: ${htmlPages.length}, Dims: ${pageDims.map(d => `${d.widthMm}x${d.heightMm}mm`).join(", ")}`);
+  console.log(`[pdf] Template: ${state.templateId}, Sections: ${htmlPages.length}, Folded: ${isFoldedCard}, Dims: ${pageDims.map(d => `${d.widthMm}x${d.heightMm}mm`).join(", ")}`);
 
   // Launch browser with retry
   console.log(`[pdf] Step: launch browser`);
@@ -152,8 +154,8 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     const pdfBuffers: Buffer[] = [];
 
     for (let i = 0; i < htmlPages.length; i++) {
-      const dims = pageDims[i];
-      console.log(`[pdf] Step: render page ${i + 1}/${htmlPages.length} (${dims.widthMm}x${dims.heightMm}mm)`);
+      const d = pageDims[i];
+      console.log(`[pdf] Step: render section ${i + 1}/${htmlPages.length} (${d.widthMm}x${d.heightMm}mm)`);
       const page = await browser.newPage();
       page.setDefaultTimeout(15000);
 
@@ -169,8 +171,8 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
       await page.evaluateHandle(() => document.fonts.ready);
 
       const pdfBuffer = await page.pdf({
-        width: `${dims.widthMm}mm`,
-        height: `${dims.heightMm}mm`,
+        width: `${d.widthMm}mm`,
+        height: `${d.heightMm}mm`,
         printBackground: true,
         margin: { top: "0", right: "0", bottom: "0", left: "0" },
       });
@@ -179,15 +181,18 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
       await page.close();
     }
 
-    // Merge PDF pages if multiple
     let finalPdf: Buffer;
-    if (pdfBuffers.length === 1) {
+
+    if (isFoldedCard && pdfBuffers.length === 3) {
+      // Compose 3 sections onto ONE page: outside on top, front+back side by side on bottom
+      finalPdf = await composeFoldedCardPdf(pdfBuffers[0], pdfBuffers[1], pdfBuffers[2], pageWidthMm, pageHeightMm);
+    } else if (pdfBuffers.length === 1) {
       finalPdf = pdfBuffers[0];
     } else {
       finalPdf = await mergePdfBuffers(pdfBuffers);
     }
 
-    console.log(`[pdf] Step: complete (${finalPdf.byteLength} bytes, ${pdfBuffers.length} pages)`);
+    console.log(`[pdf] Step: complete (${finalPdf.byteLength} bytes, folded: ${isFoldedCard})`);
     return finalPdf;
   } catch (err) {
     console.error(`[pdf] PDF generation failed at runtime:`, err);
@@ -197,6 +202,70 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
   }
 }
 
+
+/**
+ * Compose a folded card onto ONE page (140×210mm):
+ *   Top half (0, 105→210mm): outside spread at full width
+ *   Bottom half (0, 0→105mm): front inner (left) + back inner (right)
+ *
+ * pdf-lib uses bottom-left origin, so y=0 is bottom of page.
+ */
+async function composeFoldedCardPdf(
+  outsideBuf: Buffer,
+  frontBuf: Buffer,
+  backBuf: Buffer,
+  spreadWidthMm: number,
+  halfHeightMm: number
+): Promise<Buffer> {
+  const { PDFDocument } = await import("pdf-lib");
+
+  // mm to PDF points (1mm = 2.83465pt)
+  const mmToPt = (mm: number): number => mm * 2.83465;
+
+  const totalWidthPt = mmToPt(spreadWidthMm);
+  const halfHeightPt = mmToPt(halfHeightMm);
+  const totalHeightPt = halfHeightPt * 2;
+  const halfWidthPt = totalWidthPt / 2;
+
+  const final = await PDFDocument.create();
+  const page = final.addPage([totalWidthPt, totalHeightPt]);
+
+  // Load and embed each section
+  const outsideDoc = await PDFDocument.load(outsideBuf);
+  const frontDoc = await PDFDocument.load(frontBuf);
+  const backDoc = await PDFDocument.load(backBuf);
+
+  const [outsidePage] = await final.embedPdf(outsideDoc, [0]);
+  const [frontPage] = await final.embedPdf(frontDoc, [0]);
+  const [backPage] = await final.embedPdf(backDoc, [0]);
+
+  // Top half: outside spread (y = halfHeightPt because pdf-lib origin is bottom-left)
+  page.drawPage(outsidePage, {
+    x: 0,
+    y: halfHeightPt,
+    width: totalWidthPt,
+    height: halfHeightPt,
+  });
+
+  // Bottom-left: front inner page
+  page.drawPage(frontPage, {
+    x: 0,
+    y: 0,
+    width: halfWidthPt,
+    height: halfHeightPt,
+  });
+
+  // Bottom-right: back inner page
+  page.drawPage(backPage, {
+    x: halfWidthPt,
+    y: 0,
+    width: halfWidthPt,
+    height: halfHeightPt,
+  });
+
+  const bytes = await final.save();
+  return Buffer.from(bytes);
+}
 
 /**
  * Merge multiple single-page PDF buffers into one multi-page PDF.
