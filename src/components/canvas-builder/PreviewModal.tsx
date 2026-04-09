@@ -69,7 +69,7 @@ export default function PreviewModal({
               className="border-0"
               style={{
                 width: "560px",
-                height: "850px",
+                height: previewHTML.includes("Innenseite") ? "1100px" : "850px",
                 pointerEvents: "none",
               }}
               sandbox="allow-same-origin allow-scripts"

@@ -103,6 +103,7 @@ const TI04: TemplateConfig = {
     quoteAuthor: "Johann Wolfgang von Goethe",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     { id: "heading", type: "text", x: 70, y: 85, w: 460, h: 45, field: "heading", fontSize: 10, fontStyle: "italic", textAlign: "left", letterSpacing: "0.5px" },
     { id: "labels", type: "text", x: 70, y: 148, w: 460, h: 70, field: "relationshipLabels", fontSize: 8.5, textAlign: "left" },
     { id: "name", type: "text", x: 55, y: 248, w: 490, h: 140, field: "name", fontSize: 28, fontWeight: "normal", fontFamily: "Pinyon Script", textAlign: "left" },
@@ -139,6 +140,7 @@ const TI05: TemplateConfig = {
     quoteAuthor: "(Albert Schweitzer)",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     // Front page: photo fills entire page
     { id: "photo", page: "front", type: "image", x: 0, y: 0, w: 1000, h: 1000, field: "photo", imageFit: "cover", useCrop: true },
     // Back page: portrait 70×105mm. Grid-calibrated round 2.
@@ -178,6 +180,7 @@ const TI06: TemplateConfig = {
     quote: "Man sieht die Sonne\nlangsam untergehen\nund erschrickt dennoch,\ndass es plötzlich dunkel ist.",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     // Front page: photo left ~35%, text right, quote bottom — ref T6.jpeg L-form layout
     { id: "photo", page: "front", type: "image", x: 20, y: 20, w: 350, h: 500, field: "photo", imageFit: "cover", imageBorder: "1px solid #ddd", useCrop: true },
     { id: "name", page: "front", type: "text", x: 400, y: 80, w: 550, h: 80, field: "name", fontSize: 28, fontFamily: "Playfair Display SC", fontWeight: "normal", letterSpacing: "6px", textAlign: "left", color: "#000000" },
@@ -213,6 +216,7 @@ const TI07: TemplateConfig = {
     dividerSymbol: "✦  ✦  ✦",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     // Front page (left half of spread): ornament + name + dates
     // Ref grid: ornament x=5-18% y=3-82%, name x=25% y=20%, dates x=28% y=48-62%, divider y=83%
     // Gemini-measured positions from reference grid (×10 for 0-1000):
@@ -258,6 +262,7 @@ const TI08: TemplateConfig = {
     locationDeath: "in Augsburg",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     // REF: cross x=16 y=12 w=23 h=76, name x=37-51 y=37-45, birth x=49 y=57, death x=49 y=68
     // Fixes: cross taller (h=45→76), name right (x+150), name up (y-60), death up (y-50)
     { id: "cross", page: "front", type: "ornament", x: 60, y: 10, w: 250, h: 950, fixedAsset: "/assets/ornaments/cross-simple-thin.png", imageFit: "contain" },
@@ -297,6 +302,7 @@ const TI09: TemplateConfig = {
     closingVerse: "Ruhe in Frieden",
   },
   elements: [
+    { id: "cover-photo", page: "outside-spread", type: "image", x: 0, y: 0, w: 1000, h: 1000, fixedAsset: "/TREE.jpg", imageFit: "cover" },
     { id: "ornament", type: "ornament", x: 350, y: 25, w: 300, h: 75, page: "front", fixedAsset: "/assets/ornaments/floral-divider.svg", imageFit: "contain" },
     { id: "heading", type: "text", x: 100, y: 130, w: 800, h: 40, page: "front", field: "heading", fontSize: 9, fontStyle: "italic", textAlign: "center", letterSpacing: "0.5px" },
     { id: "name", type: "text", x: 100, y: 190, w: 800, h: 100, page: "front", field: "name", fontSize: 19, fontWeight: "bold", textAlign: "center" },

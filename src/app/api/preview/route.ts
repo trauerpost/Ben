@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { renderSpreadHTML } from "@/lib/editor/card-to-html-v2";
+import { renderSpreadHTML, buildPageState } from "@/lib/editor/card-to-html-v2";
 import type { RenderOptions } from "@/lib/editor/card-to-html-v2";
 import { getTemplateConfig } from "@/lib/editor/template-configs";
 import type { WizardState } from "@/lib/editor/wizard-state";
@@ -18,6 +18,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Missing templateId" }, { status: 400 });
     }
 
+    // Trace photo data to debug placeholder bug
+    const photoInfo = state.photo?.url
+      ? `${state.photo.url.substring(0, 40)}... (${state.photo.url.length} chars)`
+      : "NULL";
+    console.log("[preview] template:", state.templateId, "| photo.url:", photoInfo);
+
     const config = getTemplateConfig(state.templateId);
     if (!config) {
       return NextResponse.json({ error: `Template not found: ${state.templateId}` }, { status: 400 });
@@ -35,13 +41,74 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const { spreadWidthMm, spreadHeightMm } = config;
     const nativeW = Math.ceil(spreadWidthMm * pxPerMm);
     const nativeH = Math.ceil(spreadHeightMm * pxPerMm);
-    const maxDisplayW = 500; // fits well in PreviewModal (max-w-4xl = 896px, minus padding)
+    const hasOuterPages = config.elements.some(el => el.page === "outside-spread");
+    // Bifold cards show 2 sections stacked — use smaller width so both fit in modal without scrolling
+    const maxDisplayW = hasOuterPages ? 380 : 500;
     const displayScale = Math.min(maxDisplayW / nativeW, 1); // never scale UP
     const displayW = Math.ceil(nativeW * displayScale);
     const displayH = Math.ceil(nativeH * displayScale);
+    const hasBackPage = config.elements.some(el => el.page && el.page !== "front" && el.page !== "outside-spread");
 
-    // Check if template has multiple pages
-    const hasBackPage = config.elements.some(el => el.page && el.page !== "front");
+    if (hasOuterPages) {
+      // 3-page folded card: outside spread + inside left + inside right
+      const outsideState = buildPageState(state, config, "outside-spread");
+      const frontState = buildPageState(state, config, "front");
+      const backState = buildPageState(state, config, "back");
+
+      // Outside spread renders at full width (140mm), inner pages at half (70mm)
+      const halfWidthMm = config.spreadWidthMm / 2;
+      const outsideHTML = await renderSpreadHTML(outsideState, renderOptions);
+      const frontHTML = await renderSpreadHTML(frontState, { ...renderOptions, renderWidthMm: halfWidthMm });
+      const backHTML = await renderSpreadHTML(backState, { ...renderOptions, renderWidthMm: halfWidthMm });
+
+      // Inner pages: rendered at 70mm, scale to half display width
+      const halfNativeW = Math.ceil(halfWidthMm * pxPerMm);
+      const halfDisplayW = Math.ceil(displayW / 2);
+      const innerScale = Math.min(halfDisplayW / halfNativeW, 1);
+      const innerDisplayH = Math.ceil(nativeH * innerScale);
+
+      const scaledOutsideHTML = injectScale(outsideHTML, displayScale);
+      const scaledFrontHTML = injectScale(frontHTML, innerScale);
+      const scaledBackHTML = injectScale(backHTML, innerScale);
+
+      const combinedHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; }
+    body { margin: 0; padding: 16px; background: white; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .page { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .page iframe { border: 0; display: block; }
+    .page-label { text-align: center; font-family: sans-serif; font-size: 11px; color: #888; margin-bottom: 4px; }
+    .inner-spread { display: flex; gap: 2px; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="page-label">Außenseite</div>
+    <div class="page">
+      <iframe srcdoc="${escapeAttr(scaledOutsideHTML)}" width="${displayW}" height="${displayH}" sandbox="allow-same-origin allow-scripts"></iframe>
+    </div>
+  </div>
+  <div>
+    <div class="page-label">Innenseite</div>
+    <div class="inner-spread">
+      <div class="page">
+        <iframe srcdoc="${escapeAttr(scaledFrontHTML)}" width="${halfDisplayW}" height="${innerDisplayH}" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+      <div class="page">
+        <iframe srcdoc="${escapeAttr(scaledBackHTML)}" width="${halfDisplayW}" height="${innerDisplayH}" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+      return new NextResponse(combinedHTML, {
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
 
     // Render the full spread (all elements)
     const fullHTML = await renderSpreadHTML(state, renderOptions);
@@ -116,27 +183,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-/**
- * Build a WizardState that hides all elements NOT on the given page.
- * Uses elementOverrides to set hidden=true on off-page elements.
- */
-function buildPageState(
-  state: WizardState,
-  config: ReturnType<typeof getTemplateConfig>,
-  pageId: string
-): WizardState {
-  if (!config) return state;
-  const overrides = { ...(state.elementOverrides ?? {}) };
-
-  for (const el of config.elements) {
-    const elPage = el.page ?? "front";
-    if (elPage !== pageId) {
-      overrides[el.id] = { ...overrides[el.id], hidden: true };
-    }
-  }
-
-  return { ...state, elementOverrides: overrides };
-}
 
 function escapeAttr(html: string): string {
   return html.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

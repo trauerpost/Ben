@@ -11,16 +11,16 @@ const STERBE_DIMS = getCanvasDimensions("sterbebild", "single"); // 827×620
 describe("templateToFabricConfigs", () => {
   // ── Positive tests ──
 
-  it("TI04 produces correct element count (7)", () => {
+  it("TI04 produces correct element count (8: 7 inner + 1 cover)", () => {
     const config = getTemplateConfig("TI04")!;
     const results = templateToFabricConfigs(config, STERBE_DIMS);
-    expect(results).toHaveLength(7);
+    expect(results).toHaveLength(8);
   });
 
-  it("TI05 produces correct element count (9)", () => {
+  it("TI05 produces correct element count (10: 9 inner + 1 cover)", () => {
     const config = getTemplateConfig("TI05")!;
     const results = templateToFabricConfigs(config, STERBE_DIMS);
-    expect(results).toHaveLength(9);
+    expect(results).toHaveLength(10);
   });
 
   it("coordinate mapping: {x:100,y:200} on 827×620 → left≈82.7, top≈124", () => {
@@ -121,8 +121,10 @@ describe("templateToFabricConfigs", () => {
   it("ornament element produces image config with fixedAsset", () => {
     const config = getTemplateConfig("TI07")!;
     const results = templateToFabricConfigs(config, STERBE_DIMS);
-    const ornament = results.find((r) => r.fabricType === "image");
+    // Find specifically the cross-rose-vine ornament (not the cover-photo ornament)
+    const ornament = results.find((r) => r.id === "ornament");
     expect(ornament).toBeDefined();
+    expect(ornament!.fabricType).toBe("image");
     expect(ornament!.meta?.fixedAsset).toContain("cross-rose-vine.png");
   });
 

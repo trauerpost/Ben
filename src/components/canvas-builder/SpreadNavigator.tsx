@@ -4,6 +4,9 @@ export interface SpreadPage {
   id: string;
   label: string;
   thumbnail?: string;
+  isSpread?: boolean;
+  canvasPageId?: string;    // actual canvas page to load (if different from id)
+  thumbnailCrop?: "left" | "right";  // crop thumbnail to show only half
 }
 
 interface SpreadNavigatorProps {
@@ -18,33 +21,44 @@ export default function SpreadNavigator({
   onPageSelect,
 }: SpreadNavigatorProps): React.ReactElement {
   return (
-    <div className="flex items-center justify-center gap-3 px-4 py-2">
+    <div className="flex items-center justify-center gap-3 px-4 py-2 overflow-x-auto sm:overflow-x-visible scroll-smooth snap-x snap-mandatory">
       {pages.map((page) => {
         const isActive = page.id === activePageId;
+        const thumbWidth = "w-16";
+        const thumbHeight = "h-12";
         return (
           <button
             key={page.id}
             onClick={() => onPageSelect(page.id)}
-            className={`flex flex-col items-center gap-1 transition-all ${
+            className={`flex-shrink-0 snap-start flex flex-col items-center gap-1 transition-all ${
               isActive ? "scale-105" : "opacity-60 hover:opacity-90"
             }`}
             title={page.label}
           >
             {/* Thumbnail or placeholder */}
             <div
-              className={`w-16 h-12 rounded border-2 overflow-hidden bg-white flex items-center justify-center ${
+              className={`${thumbWidth} ${thumbHeight} rounded border-2 overflow-hidden bg-white flex items-center justify-center ${
                 isActive
                   ? "border-brand-primary shadow-md"
                   : "border-brand-border hover:border-brand-gray"
               }`}
             >
               {page.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={page.thumbnail}
-                  alt={page.label}
-                  className="w-full h-full object-contain"
-                />
+                <div className="w-full h-full overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={page.thumbnail}
+                    alt={page.label}
+                    className="h-full w-full object-cover"
+                    style={
+                      page.thumbnailCrop === "right"
+                        ? { objectPosition: "right center" }
+                        : page.thumbnailCrop === "left"
+                        ? { objectPosition: "left center" }
+                        : undefined
+                    }
+                  />
+                </div>
               ) : (
                 <span className="text-[8px] text-brand-gray">{page.label}</span>
               )}

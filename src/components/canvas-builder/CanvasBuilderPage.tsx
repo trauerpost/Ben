@@ -91,6 +91,9 @@ export default function CanvasBuilderPage(): React.ReactElement {
         builder.templateId
       );
 
+      // Pass cover mode from canvas builder state into WizardState for preview rendering
+      wizardState.coverMode = builder.coverMode;
+
       // Debug: log what exportCanvasToWizardState returned
       console.log("[Preview] photo.url:", wizardState.photo.url?.substring(0, 100) ?? "NULL");
 
@@ -99,6 +102,20 @@ export default function CanvasBuilderPage(): React.ReactElement {
         wizardState.photo.url = await blobUrlToDataUrl(wizardState.photo.url);
         wizardState.photo.originalUrl = wizardState.photo.url;
         console.log("[Preview] blob converted, length:", wizardState.photo.url.length);
+      }
+
+      // Convert cover photo blob URL to data URL (blob: is client-only, server can't fetch it)
+      if (wizardState.coverPhoto?.url?.startsWith("blob:")) {
+        wizardState.coverPhoto.url = await blobUrlToDataUrl(wizardState.coverPhoto.url);
+      }
+
+      // Also convert blob URLs in free-form elements (user-added photos)
+      if (wizardState.freeFormElements) {
+        for (const ff of wizardState.freeFormElements) {
+          if (ff.src?.startsWith("blob:")) {
+            ff.src = await blobUrlToDataUrl(ff.src);
+          }
+        }
       }
 
       const res = await fetch("/api/preview", {
@@ -126,20 +143,68 @@ export default function CanvasBuilderPage(): React.ReactElement {
     setIsGeneratingPDF(true);
 
     try {
-      // Export each page as image directly from canvas — no HTML re-rendering
-      const pageImages = await builder.getAllPageImages();
-      const blob = await exportCanvasToPDF(
-        pageImages,
-        builder.cardType,
-        builder.cardFormat,
-        builder.templateId
-      );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `karte-${builder.templateId}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // For bifold cards: use server-side PDF (renderSpreadHTML handles inner page width correctly)
+      // For single cards: use client-side canvas-capture (faster, no server round-trip)
+      const isBifold = builder.pages.some(p => p.canvasPageId === "outside-spread" || p.id === "outside-spread");
+
+      if (isBifold) {
+        // Server-side PDF: export ALL pages merged into wizard state
+        const allPagesData = builder.getAllPagesData();
+        const { exportCanvasToWizardState } = await import("@/lib/editor/canvas-export");
+        const wizardState = exportCanvasToWizardState(
+          allPagesData,
+          builder.cardType!,
+          builder.cardFormat!,
+          builder.templateId!
+        );
+        wizardState.coverMode = builder.coverMode;
+
+        // Convert blob URLs to data URLs — blob: is client-only, server can't fetch
+        if (wizardState.photo?.url?.startsWith("blob:")) {
+          wizardState.photo.url = await blobUrlToDataUrl(wizardState.photo.url);
+          wizardState.photo.originalUrl = wizardState.photo.url;
+        }
+        if (wizardState.coverPhoto?.url?.startsWith("blob:")) {
+          wizardState.coverPhoto.url = await blobUrlToDataUrl(wizardState.coverPhoto.url);
+        }
+        if (wizardState.freeFormElements) {
+          for (const ff of wizardState.freeFormElements) {
+            if (ff.src?.startsWith("blob:")) {
+              ff.src = await blobUrlToDataUrl(ff.src);
+            }
+          }
+        }
+
+        const resp = await fetch("/api/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: wizardState }),
+        });
+
+        if (!resp.ok) throw new Error(`PDF API error: ${resp.status}`);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `karte-${builder.templateId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // Client-side PDF: capture canvas images directly
+        const pageImages = await builder.getAllPageImages();
+        const blob = await exportCanvasToPDF(
+          pageImages,
+          builder.cardType,
+          builder.cardFormat,
+          builder.templateId
+        );
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `karte-${builder.templateId}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
     } catch (err) {
       console.error("[CanvasBuilder] PDF generation failed:", err);
     } finally {
@@ -172,6 +237,21 @@ export default function CanvasBuilderPage(): React.ReactElement {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleUndo, handleRedo, getCanvas]);
+
+  // Update thumbnails when canvas objects change
+  useEffect(() => {
+    const canvas = canvasRef.current?.getCanvas();
+    if (!canvas) return;
+    const handler = () => builder.updateActiveThumbnail();
+    canvas.on("object:modified", handler);
+    canvas.on("object:added", handler);
+    canvas.on("object:removed", handler);
+    return () => {
+      canvas.off("object:modified", handler);
+      canvas.off("object:added", handler);
+      canvas.off("object:removed", handler);
+    };
+  }, [canvasRef, builder.updateActiveThumbnail, builder.isTemplateLoaded]);
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -301,6 +381,33 @@ export default function CanvasBuilderPage(): React.ReactElement {
 
         {/* Canvas area */}
         <div className="flex-1 flex flex-col bg-brand-light-gray overflow-hidden">
+          {/* Cover mode toggle */}
+          {(builder.activePageId === "outside-spread" || builder.activePageId === "outside-left" || builder.activePageId === "outside-right") && (
+            <div className="flex items-center gap-2 px-4 py-1 border-b border-brand-border bg-white">
+              <span className="text-xs text-brand-gray">Abdeckung:</span>
+              <button
+                onClick={() => builder.applyCoverMode("full-wrap")}
+                className={`text-xs px-3 py-1 rounded ${
+                  builder.coverMode === "full-wrap"
+                    ? "bg-brand-primary text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Vollbild
+              </button>
+              <button
+                onClick={() => builder.applyCoverMode("left-only")}
+                className={`text-xs px-3 py-1 rounded ${
+                  builder.coverMode === "left-only"
+                    ? "bg-brand-primary text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Halbbild
+              </button>
+            </div>
+          )}
+
           {/* Canvas with zoom */}
           <div
             ref={canvasContainerRef}
@@ -317,6 +424,7 @@ export default function CanvasBuilderPage(): React.ReactElement {
                 ref={canvasRef}
                 width={canvasWidth}
                 height={canvasHeight}
+                showFoldLine={builder.activePageId === "outside-left" || builder.activePageId === "outside-right"}
               />
             </div>
 
@@ -332,7 +440,10 @@ export default function CanvasBuilderPage(): React.ReactElement {
           {/* Bottom bar: spread navigator + zoom */}
           <div className="flex items-center justify-between border-t border-brand-border bg-white px-4 py-1 shrink-0">
             <SpreadNavigator
-              pages={builder.pages}
+              pages={builder.pages.map(p => ({
+                ...p,
+                thumbnail: builder.thumbnails[p.canvasPageId ?? p.id],
+              }))}
               activePageId={builder.activePageId}
               onPageSelect={(id) => builder.switchPage(id)}
             />

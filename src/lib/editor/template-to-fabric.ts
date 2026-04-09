@@ -132,7 +132,8 @@ function convertImagePlaceholder(
   baseData: Record<string, unknown>,
   template: TemplateConfig
 ): FabricElementConfig {
-  const placeholderSrc = template.placeholderPhotoSrc;
+  // Element-level fixedAsset takes priority (used for cover photos)
+  const placeholderSrc = el.fixedAsset ?? template.placeholderPhotoSrc;
 
   if (placeholderSrc) {
     return {
@@ -144,6 +145,7 @@ function convertImagePlaceholder(
         imageBorder: el.imageBorder,
         useCrop: el.useCrop,
         placeholderSrc,
+        fixedAsset: el.fixedAsset,  // preserve for ornament detection
       },
       options: {
         left,

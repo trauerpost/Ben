@@ -52,7 +52,7 @@ export function exportCanvasToWizardState(
     // Copy non-empty text fields from this page into the merged state.
     for (const [field, value] of Object.entries(pageState.textContent)) {
       if (typeof value !== "string" || !value) continue;
-      if (field === "fontFamily" || field === "fontColor" || field === "textAlign") continue;
+      if (field === "fontColor" || field === "textAlign") continue;
       const current = wizardState.textContent[field as keyof typeof wizardState.textContent];
       if (!current || current === "") {
         (wizardState.textContent as unknown as Record<string, unknown>)[field] = value;
@@ -67,8 +67,12 @@ export function exportCanvasToWizardState(
       };
     }
 
-    // If the front page has no photo but another page does, take it
-    if (!wizardState.photo.url && pageState.photo.url) {
+    // Cover photo goes to separate field; inner pages can adopt photo normally
+    if (key === "outside-spread") {
+      if (pageState.photo.url) {
+        wizardState.coverPhoto = { url: pageState.photo.url };
+      }
+    } else if (!wizardState.photo.url && pageState.photo.url) {
       wizardState.photo = pageState.photo;
     }
   }
@@ -120,17 +124,36 @@ export async function exportCanvasToPDF(
     return a.localeCompare(b);
   });
 
+  const hasOutsideSpread = sorted.includes("outside-spread");
+
   const pdf = new jsPDF({
     orientation: spreadW > spreadH ? "landscape" : "portrait",
     unit: "mm",
     format: [spreadW, spreadH],
   });
 
-  // Place pages side by side: front=left (0,0), back=right (halfW,0)
-  for (let i = 0; i < sorted.length; i++) {
-    const imgData = pageImages[sorted[i]];
-    if (!imgData) continue;
-    pdf.addImage(imgData, "PNG", i * halfW, 0, halfW, spreadH);
+  if (hasOutsideSpread) {
+    // Folded card: Page 1 = outside spread (full width), Pages 2-3 = inner pages (portrait)
+    const outsideImg = pageImages["outside-spread"];
+    if (outsideImg) {
+      pdf.addImage(outsideImg, "PNG", 0, 0, spreadW, spreadH);
+    }
+
+    // Pages 2-3: each inner page as separate portrait page (70x105mm)
+    const innerKeys = sorted.filter(k => k !== "outside-spread");
+    for (const key of innerKeys) {
+      const imgData = pageImages[key];
+      if (!imgData) continue;
+      pdf.addPage([halfW, spreadH], "portrait");
+      pdf.addImage(imgData, "PNG", 0, 0, halfW, spreadH);
+    }
+  } else {
+    // Standard card: place all pages side by side on one PDF page
+    for (let i = 0; i < sorted.length; i++) {
+      const imgData = pageImages[sorted[i]];
+      if (!imgData) continue;
+      pdf.addImage(imgData, "PNG", i * halfW, 0, halfW, spreadH);
+    }
   }
 
   return pdf.output("blob");

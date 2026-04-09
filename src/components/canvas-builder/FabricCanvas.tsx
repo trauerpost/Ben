@@ -33,15 +33,24 @@ export interface FabricCanvasHandle {
   addLine: (options: Partial<Record<string, unknown>>) => void;
   resize: (width: number, height: number) => void;
   toggleGrid: () => boolean;
+  setFoldLine: (show: boolean) => void;
+  setSafeZone: (show: boolean) => void;
+  setBleed: (show: boolean) => void;
+  bringOverlaysToFront: () => void;
   undo: () => void;
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  getHistory: () => { stack: string[]; index: number };
+  setHistory: (stack: string[], index: number) => void;
 }
 
 interface FabricCanvasProps {
   width: number;
   height: number;
+  showFoldLine?: boolean;
+  showSafeZone?: boolean;
+  showBleed?: boolean;
 }
 
 /** Build Google Fonts URL for preloading */
@@ -53,13 +62,189 @@ function buildFontUrl(): string {
 }
 
 const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
-  function FabricCanvas({ width, height }, ref) {
+  function FabricCanvas({ width, height, showFoldLine, showSafeZone, showBleed }, ref) {
     const canvasElRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const historyRef = useRef<string[]>([]);
     const historyIndexRef = useRef(-1);
     const isLoadingRef = useRef(false);
     const [fontsReady, setFontsReady] = useState(false);
+
+    // Track which overlays are active (they don't survive loadJSON)
+    const foldLineActiveRef = useRef(false);
+    const safeZoneActiveRef = useRef(false);
+    const bleedActiveRef = useRef(false);
+
+    // --- Overlay helpers ---
+
+    /** Remove all canvas objects matching a data predicate key */
+    const removeOverlaysByKey = useCallback(
+      (canvas: fabric.Canvas, key: string) => {
+        const existing = canvas
+          .getObjects()
+          .filter((o) => (o as any).data?.[key]);
+        existing.forEach((o) => canvas.remove(o));
+      },
+      []
+    );
+
+    /** Draw fold line + label at horizontal center */
+    const drawFoldLine = useCallback(
+      (canvas: fabric.Canvas) => {
+        removeOverlaysByKey(canvas, "isFoldLine");
+        const centerX = canvas.getWidth() / 2;
+        const h = canvas.getHeight();
+        canvas.add(
+          new fabric.Line([centerX, 0, centerX, h], {
+            stroke: "rgba(255, 255, 255, 0.7)",
+            strokeWidth: 2,
+            strokeDashArray: [10, 6],
+            selectable: false,
+            evented: false,
+            excludeFromExport: true,
+            data: { isFoldLine: true },
+          })
+        );
+        // Second line for contrast (dark shadow behind white)
+        canvas.add(
+          new fabric.Line([centerX + 1, 0, centerX + 1, h], {
+            stroke: "rgba(0, 0, 0, 0.3)",
+            strokeWidth: 1,
+            strokeDashArray: [10, 6],
+            selectable: false,
+            evented: false,
+            excludeFromExport: true,
+            data: { isFoldLine: true },
+          })
+        );
+        canvas.add(
+          new fabric.Text("Falz", {
+            left: centerX - 14,
+            top: 4,
+            fontSize: 10,
+            fill: "rgba(255, 255, 255, 0.85)",
+            fontFamily: "sans-serif",
+            selectable: false,
+            evented: false,
+            excludeFromExport: true,
+            data: { isFoldLine: true },
+          })
+        );
+      },
+      [removeOverlaysByKey]
+    );
+
+    /** Draw safe-zone shading (5 % from each edge, plus 5 % from fold if fold is on) */
+    const drawSafeZone = useCallback(
+      (canvas: fabric.Canvas) => {
+        removeOverlaysByKey(canvas, "isSafeZone");
+        const w = canvas.getWidth();
+        const h = canvas.getHeight();
+        const marginX = Math.round(w * 0.05);
+        const marginY = Math.round(h * 0.05);
+        const fill = "rgba(0, 0, 0, 0.05)";
+        const common: Partial<fabric.RectProps> = {
+          selectable: false,
+          evented: false,
+          excludeFromExport: true,
+        };
+
+        // Left
+        canvas.add(
+          new fabric.Rect({
+            left: 0, top: 0, width: marginX, height: h, fill,
+            ...common, data: { isSafeZone: true },
+          } as fabric.TOptions<fabric.RectProps>)
+        );
+        // Right
+        canvas.add(
+          new fabric.Rect({
+            left: w - marginX, top: 0, width: marginX, height: h, fill,
+            ...common, data: { isSafeZone: true },
+          } as fabric.TOptions<fabric.RectProps>)
+        );
+        // Top
+        canvas.add(
+          new fabric.Rect({
+            left: marginX, top: 0, width: w - 2 * marginX, height: marginY, fill,
+            ...common, data: { isSafeZone: true },
+          } as fabric.TOptions<fabric.RectProps>)
+        );
+        // Bottom
+        canvas.add(
+          new fabric.Rect({
+            left: marginX, top: h - marginY, width: w - 2 * marginX, height: marginY, fill,
+            ...common, data: { isSafeZone: true },
+          } as fabric.TOptions<fabric.RectProps>)
+        );
+
+        // Safe zone around fold line (if fold line is present)
+        const hasFold = canvas.getObjects().some((o) => (o as any).data?.isFoldLine);
+        if (hasFold) {
+          const centerX = w / 2;
+          const foldMargin = marginX; // same 5 % band
+          canvas.add(
+            new fabric.Rect({
+              left: centerX - foldMargin / 2,
+              top: 0,
+              width: foldMargin,
+              height: h,
+              fill,
+              ...common,
+              data: { isSafeZone: true },
+            } as fabric.TOptions<fabric.RectProps>)
+          );
+        }
+      },
+      [removeOverlaysByKey]
+    );
+
+    /** Draw bleed boundary rectangle (3 % inset from edges) */
+    const drawBleed = useCallback(
+      (canvas: fabric.Canvas) => {
+        removeOverlaysByKey(canvas, "isBleed");
+        const w = canvas.getWidth();
+        const h = canvas.getHeight();
+        const insetX = Math.round(w * 0.03);
+        const insetY = Math.round(h * 0.03);
+        canvas.add(
+          new fabric.Rect({
+            left: insetX,
+            top: insetY,
+            width: w - 2 * insetX,
+            height: h - 2 * insetY,
+            fill: "transparent",
+            stroke: "rgba(150, 150, 150, 0.5)",
+            strokeWidth: 1,
+            strokeDashArray: [3, 3],
+            selectable: false,
+            evented: false,
+            excludeFromExport: true,
+            data: { isBleed: true },
+          } as fabric.TOptions<fabric.RectProps>)
+        );
+      },
+      [removeOverlaysByKey]
+    );
+
+    /** Bring all overlay objects (fold line, safe zone, bleed, grid) to front */
+    const bringOverlaysToFront = useCallback(() => {
+      if (!fabricRef.current) return;
+      const canvas = fabricRef.current;
+      const overlays = canvas.getObjects().filter(o => {
+        const d = (o as any).data;
+        return d?.isFoldLine || d?.isSafeZone || d?.isBleed || d?.isGrid;
+      });
+      overlays.forEach(o => canvas.bringObjectToFront(o));
+      canvas.renderAll();
+    }, []);
+
+    /** Re-draw all active overlays (e.g. after loadJSON wipes them) */
+    const redrawActiveOverlays = useCallback((canvas: fabric.Canvas) => {
+      if (foldLineActiveRef.current) drawFoldLine(canvas);
+      if (safeZoneActiveRef.current) drawSafeZone(canvas);
+      if (bleedActiveRef.current) drawBleed(canvas);
+    }, [drawFoldLine, drawSafeZone, drawBleed]);
 
     const saveToHistory = useCallback(() => {
       if (isLoadingRef.current || !fabricRef.current) return;
@@ -103,6 +288,11 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
       (canvasElRef.current as unknown as { __fabricCanvas: fabric.Canvas }).__fabricCanvas = canvas;
       saveToHistory();
 
+      // Draw initial overlays from props and track in refs
+      if (showFoldLine) { foldLineActiveRef.current = true; drawFoldLine(canvas); }
+      if (showSafeZone) { safeZoneActiveRef.current = true; drawSafeZone(canvas); }
+      if (showBleed) { bleedActiveRef.current = true; drawBleed(canvas); }
+
       canvas.on("object:modified", saveToHistory);
       canvas.on("object:added", saveToHistory);
       canvas.on("object:removed", saveToHistory);
@@ -114,6 +304,24 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
       // Only re-create on mount, not on width/height changes (use resize() for that)
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // React to showFoldLine prop changes (e.g. switching between spread and inner pages)
+    useEffect(() => {
+      if (!fabricRef.current) return;
+      const canvas = fabricRef.current;
+      // Remove existing fold line
+      const existing = canvas.getObjects().filter((o: any) => o.data?.isFoldLine);
+      existing.forEach(o => canvas.remove(o));
+      // Draw if active
+      if (showFoldLine) {
+        foldLineActiveRef.current = true;
+        drawFoldLine(canvas);
+        bringOverlaysToFront();
+      } else {
+        foldLineActiveRef.current = false;
+      }
+      canvas.renderAll();
+    }, [showFoldLine, drawFoldLine, bringOverlaysToFront]);
 
     useImperativeHandle(ref, () => ({
       getCanvas: () => fabricRef.current,
@@ -127,6 +335,8 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
         if (!fabricRef.current) return;
         isLoadingRef.current = true;
         await fabricRef.current.loadFromJSON(json);
+        // Re-draw active overlays (they were lost during loadJSON since excludeFromExport: true)
+        redrawActiveOverlays(fabricRef.current);
         fabricRef.current.renderAll();
         isLoadingRef.current = false;
         saveToHistory();
@@ -134,7 +344,19 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
 
       toDataURL: () => {
         if (!fabricRef.current) return "";
-        return fabricRef.current.toDataURL();
+        // Temporarily hide overlay objects (fold line, grid, safe zone, bleed)
+        // so they don't appear in exported images (PDF, thumbnails)
+        const canvas = fabricRef.current;
+        const overlays = canvas.getObjects().filter((o: any) => {
+          const d = o.data;
+          return d?.isFoldLine || d?.isSafeZone || d?.isBleed || d?.isGrid;
+        });
+        overlays.forEach(o => o.set("visible", false));
+        canvas.renderAll();
+        const dataUrl = canvas.toDataURL();
+        overlays.forEach(o => o.set("visible", true));
+        canvas.renderAll();
+        return dataUrl;
       },
 
       addText: (text: string, options?: Partial<Record<string, unknown>>) => {
@@ -165,9 +387,11 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
             (width * 0.5) / (img.width ?? 1),
             (height * 0.5) / (img.height ?? 1)
           );
-          img.set({ scaleX: scale, scaleY: scale, left: 50, top: 50 });
+          img.set({ scaleX: scale, scaleY: scale, left: 50, top: 50, data: { elementType: "image" } });
           fabricRef.current.add(img);
           fabricRef.current.setActiveObject(img);
+          // Ensure overlays (fold line, grid, etc.) stay on top of newly added images
+          bringOverlaysToFront();
         } catch (err) {
           console.error("[FabricCanvas] Failed to load image:", err);
         }
@@ -208,8 +432,18 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
 
       resize: (newWidth: number, newHeight: number) => {
         if (!fabricRef.current) return;
-        fabricRef.current.setDimensions({ width: newWidth, height: newHeight });
-        fabricRef.current.renderAll();
+        const canvas = fabricRef.current;
+        canvas.setDimensions({ width: newWidth, height: newHeight });
+
+        // Redraw overlays at new dimensions (if they were present)
+        const hadFold = canvas.getObjects().some((o) => (o as any).data?.isFoldLine);
+        const hadSafe = canvas.getObjects().some((o) => (o as any).data?.isSafeZone);
+        const hadBleed = canvas.getObjects().some((o) => (o as any).data?.isBleed);
+        if (hadFold) drawFoldLine(canvas);
+        if (hadSafe) drawSafeZone(canvas);
+        if (hadBleed) drawBleed(canvas);
+
+        canvas.renderAll();
       },
 
       toggleGrid: () => {
@@ -254,6 +488,35 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
         return true;
       },
 
+      setFoldLine: (show: boolean) => {
+        foldLineActiveRef.current = show;
+        if (!fabricRef.current) return;
+        const canvas = fabricRef.current;
+        removeOverlaysByKey(canvas, "isFoldLine");
+        if (show) drawFoldLine(canvas);
+        bringOverlaysToFront();
+      },
+
+      setSafeZone: (show: boolean) => {
+        safeZoneActiveRef.current = show;
+        if (!fabricRef.current) return;
+        const canvas = fabricRef.current;
+        removeOverlaysByKey(canvas, "isSafeZone");
+        if (show) drawSafeZone(canvas);
+        bringOverlaysToFront();
+      },
+
+      setBleed: (show: boolean) => {
+        bleedActiveRef.current = show;
+        if (!fabricRef.current) return;
+        const canvas = fabricRef.current;
+        removeOverlaysByKey(canvas, "isBleed");
+        if (show) drawBleed(canvas);
+        bringOverlaysToFront();
+      },
+
+      bringOverlaysToFront,
+
       undo: () => {
         if (!fabricRef.current || historyIndexRef.current <= 0) return;
         historyIndexRef.current--;
@@ -261,6 +524,7 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
         fabricRef.current
           .loadFromJSON(historyRef.current[historyIndexRef.current])
           .then(() => {
+            if (fabricRef.current) redrawActiveOverlays(fabricRef.current);
             fabricRef.current?.renderAll();
             isLoadingRef.current = false;
           });
@@ -277,6 +541,7 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
         fabricRef.current
           .loadFromJSON(historyRef.current[historyIndexRef.current])
           .then(() => {
+            if (fabricRef.current) redrawActiveOverlays(fabricRef.current);
             fabricRef.current?.renderAll();
             isLoadingRef.current = false;
           });
@@ -285,6 +550,15 @@ const FabricCanvas = forwardRef<FabricCanvasHandle, FabricCanvasProps>(
       canUndo: () => historyIndexRef.current > 0,
       canRedo: () =>
         historyIndexRef.current < historyRef.current.length - 1,
+
+      getHistory: () => ({
+        stack: [...historyRef.current],
+        index: historyIndexRef.current,
+      }),
+      setHistory: (stack: string[], index: number) => {
+        historyRef.current = [...stack];
+        historyIndexRef.current = index;
+      },
     }));
 
     return (

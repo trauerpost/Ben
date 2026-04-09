@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, type RefObject } from "react";
+import { useState, useCallback, useRef, useEffect, type RefObject } from "react";
 import type { CardType, CardFormat, WizardState, TextContent } from "@/lib/editor/wizard-state";
 import {
   getCanvasDimensions,
@@ -29,8 +29,21 @@ interface DraftEnvelope {
 }
 
 function getPageDefs(
-  cardFormat: CardFormat | null
+  cardFormat: CardFormat | null,
+  hasOuterPages: boolean = false,
+  hasBackPage: boolean = true
 ): SpreadPage[] {
+  if (hasOuterPages) {
+    const pages: SpreadPage[] = [
+      { id: "outside-left", label: "Außen links", canvasPageId: "outside-spread", thumbnailCrop: "left" },
+      { id: "outside-right", label: "Außen rechts", canvasPageId: "outside-spread", thumbnailCrop: "right" },
+      { id: "front", label: "Innen links" },
+    ];
+    if (hasBackPage) {
+      pages.push({ id: "back", label: "Innen rechts" });
+    }
+    return pages;
+  }
   if (cardFormat === "folded") {
     return [
       { id: "front-left", label: "Außen links" },
@@ -68,6 +81,10 @@ export interface UseCanvasBuilderReturn {
   getAllPageImages: () => Promise<Record<string, string>>;
   saveDraft: () => void;
   restoreDraft: () => boolean;
+  thumbnails: Record<string, string>;
+  updateActiveThumbnail: () => void;
+  coverMode: "full-wrap" | "left-only";
+  applyCoverMode: (mode: "full-wrap" | "left-only") => void;
 }
 
 export function useCanvasBuilder(
@@ -83,9 +100,78 @@ export function useCanvasBuilder(
   const [hasMultiplePages, setHasMultiplePages] = useState(false);
 
   const pagesDataRef = useRef<Record<string, string>>({});
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const thumbnailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pagesHistoryRef = useRef<Record<string, { stack: string[]; index: number }>>({});
+  const isSwitchingRef = useRef(false);
+  const activePageIdRef = useRef(activePageId);
+  activePageIdRef.current = activePageId;
+  const [coverMode, setCoverMode] = useState<"full-wrap" | "left-only">("full-wrap");
 
-  const allPages = getPageDefs(cardFormat);
-  const pages = hasMultiplePages ? allPages : allPages.slice(0, 1);
+  const hasOuterPages = (() => {
+    if (!templateId) return false;
+    const tpl = getTemplateConfig(templateId);
+    return tpl?.elements.some(el => el.page === "outside-spread") ?? false;
+  })();
+  const hasBackPage = (() => {
+    if (!templateId) return true;
+    const tpl = getTemplateConfig(templateId);
+    return tpl?.elements.some(el => el.page === "back") ?? false;
+  })();
+  const allPages = getPageDefs(cardFormat, hasOuterPages, hasBackPage);
+  const pages = (hasMultiplePages || hasOuterPages) ? allPages : allPages.slice(0, 1);
+
+  const updateActiveThumbnail = useCallback(() => {
+    if (isSwitchingRef.current) return; // Skip during page switch to avoid stale closure overwrites
+    if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    thumbnailTimerRef.current = setTimeout(() => {
+      if (isSwitchingRef.current) return; // Re-check after debounce delay
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      // Use ref to get current activePageId (avoids stale closure)
+      const currentPageId = activePageIdRef.current;
+      // Store thumbnail under the canvas page ID (e.g. "outside-spread"), not the display ID
+      const activePage = pages.find(p => p.id === currentPageId);
+      const canvasId = activePage?.canvasPageId ?? currentPageId;
+      setThumbnails(prev => ({ ...prev, [canvasId]: canvas.toDataURL() }));
+    }, 500);
+  }, [canvasRef, pages]);
+
+  // Cleanup thumbnail timer on unmount
+  useEffect(() => {
+    return () => {
+      if (thumbnailTimerRef.current) clearTimeout(thumbnailTimerRef.current);
+    };
+  }, []);
+
+  const applyCoverMode = useCallback((mode: "full-wrap" | "left-only") => {
+    const canvas = canvasRef.current?.getCanvas();
+    if (!canvas) return;
+
+    const coverObj = canvas.getObjects().find(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (o: any) => o.data?.templateElementId === "cover-photo"
+    );
+    if (!coverObj) return;
+
+    const canvasW = canvas.getWidth();
+    if (mode === "full-wrap") {
+      coverObj.set({
+        left: 0,
+        scaleX: canvasW / (coverObj.width ?? canvasW),
+        scaleY: canvas.getHeight() / (coverObj.height ?? canvas.getHeight()),
+      });
+    } else {
+      // Left-only: cover spans left half
+      coverObj.set({
+        left: 0,
+        scaleX: (canvasW / 2) / (coverObj.width ?? canvasW),
+        scaleY: canvas.getHeight() / (coverObj.height ?? canvas.getHeight()),
+      });
+    }
+    canvas.renderAll();
+    setCoverMode(mode);
+  }, [canvasRef]);
 
   const loadTemplate = useCallback(
     async (ct: CardType, cf: CardFormat, tid: string) => {
@@ -98,10 +184,21 @@ export function useCanvasBuilder(
         return;
       }
 
-      // Templates with front/back pages render each page as portrait (half spread width)
+      // Detect outer pages and multi-page templates
+      const hasOuter = template.elements.some(el => el.page === "outside-spread");
+      const hasBack = template.elements.some(el => el.page === "back");
       const multiPage = template.elements.some(el => el.page && el.page !== "front");
       setHasMultiplePages(multiPage);
-      const newDims = getCanvasDimensions(ct, cf, undefined, multiPage);
+
+      // Determine which page to display first and its dimensions
+      const pageDefs = getPageDefs(cf, hasOuter, hasBack);
+      const firstPageDef = pageDefs[0];
+      const firstPageId = firstPageDef.id;
+      const firstCanvasId = firstPageDef.canvasPageId ?? firstPageId;
+      const firstIsSpread = firstPageDef.isSpread ?? firstCanvasId.includes("spread");
+
+      // Canvas dimensions: spread pages get full width, inner pages get half width
+      const newDims = getCanvasDimensions(ct, cf, undefined, !firstIsSpread);
       canvas.resize(newDims.width, newDims.height);
 
       // Wait for fonts before measuring/rendering text
@@ -123,36 +220,60 @@ export function useCanvasBuilder(
         dividerSymbol: ph.dividerSymbol ?? "",
       } : {};
 
-      // Convert template elements to Fabric configs
-      const allConfigs = templateToFabricConfigs(template, newDims, textContent);
+      // Build configs PER PAGE with correct dimensions.
+      // Outside-spread uses full width (827px), inner pages use half width (413px).
+      // Elements' grid coordinates (0-1000) are relative to each page's canvas, NOT the full spread.
 
-      // Split elements by page (default to "front" if no page specified)
-      const pageDefs = getPageDefs(cf);
-      const firstPageId = pageDefs[0].id;
-      const frontConfigs = allConfigs.filter(
-        cfg => (cfg.options.data as Record<string, unknown>)?.page === firstPageId ||
-               !(cfg.options.data as Record<string, unknown>)?.page
-      );
+      // First page configs (using newDims = dims for firstCanvasId)
+      const firstPageTemplate = {
+        ...template,
+        elements: template.elements.filter(el => {
+          const page = el.page ?? "front";
+          if (firstCanvasId === "outside-spread") return page === "outside-spread";
+          return page === firstCanvasId || !el.page;
+        }),
+      };
+      const frontConfigs = templateToFabricConfigs(firstPageTemplate, newDims, textContent);
 
-      // Add front page elements to canvas
+      // Add first page elements to canvas
       for (const cfg of frontConfigs) {
         await addFabricObject(canvas, cfg);
       }
 
-      // Pre-build other pages: create a temporary canvas for each, serialize to JSON
-      for (const pageDef of pageDefs.slice(1)) {
-        const pageConfigs = allConfigs.filter(
-          cfg => (cfg.options.data as Record<string, unknown>)?.page === pageDef.id
-        );
-        if (pageConfigs.length > 0) {
-          // Save current canvas, load page elements, serialize, restore
+      // Pre-build other pages: each with its own dimensions for correct coordinate mapping
+      const builtCanvasIds = new Set<string>([firstCanvasId]);
+      for (const pageDef of pageDefs) {
+        const pageCanvasId = pageDef.canvasPageId ?? pageDef.id;
+        if (builtCanvasIds.has(pageCanvasId)) continue;
+        builtCanvasIds.add(pageCanvasId);
+
+        // Filter template elements for this page
+        const pageElements = template.elements.filter(el => {
+          const page = el.page ?? "front";
+          if (pageCanvasId === "front") return page === "front" || !el.page;
+          return page === pageCanvasId;
+        });
+
+        if (pageElements.length > 0) {
+          // Calculate dimensions for this specific page (spread vs inner)
+          const pageIsSpread = pageDef.isSpread ?? pageCanvasId.includes("spread");
+          const pageDims = getCanvasDimensions(ct, cf, undefined, !pageIsSpread);
+
+          // Build configs with THIS PAGE's dimensions (critical: 413px for inner, 827px for spread)
+          const pageTemplate = { ...template, elements: pageElements };
+          const pageConfigs = templateToFabricConfigs(pageTemplate, pageDims, textContent);
+
+          // Save current canvas, resize to target page dims, render, serialize, restore
           const currentJSON = canvas.toJSON();
+          canvas.resize(pageDims.width, pageDims.height);
           await canvas.loadJSON(JSON.stringify({ version: "6.0.0", objects: [], background: "#ffffff" }));
           for (const cfg of pageConfigs) {
             await addFabricObject(canvas, cfg);
           }
-          pagesDataRef.current[pageDef.id] = canvas.toJSON();
-          // Restore front page
+          pagesDataRef.current[pageCanvasId] = canvas.toJSON();
+
+          // Restore first page: resize back and reload
+          canvas.resize(newDims.width, newDims.height);
           await canvas.loadJSON(currentJSON);
         }
       }
@@ -170,6 +291,9 @@ export function useCanvasBuilder(
         fabricCanvas.discardActiveObject();
         fabricCanvas.renderAll();
       }
+
+      // Bring overlays (fold line, grid, etc.) to front after all elements loaded
+      canvas.bringOverlaysToFront();
     },
     [canvasRef]
   );
@@ -179,11 +303,40 @@ export function useCanvasBuilder(
       const canvas = canvasRef.current;
       if (!canvas || pageId === activePageId) return;
 
-      // Serialize current page
-      pagesDataRef.current[activePageId] = canvas.toJSON();
+      isSwitchingRef.current = true; // Guard ON — prevent thumbnail updates during switch
+
+      const targetPage = pages.find(p => p.id === pageId);
+      const targetCanvasId = targetPage?.canvasPageId ?? pageId;
+      const currentPage = pages.find(p => p.id === activePageId);
+      const currentCanvasId = currentPage?.canvasPageId ?? activePageId;
+
+      // If switching between pages that share the same canvas (e.g. outside-left <-> outside-right),
+      // just update the highlighted thumbnail — no canvas reload needed
+      if (targetCanvasId === currentCanvasId) {
+        setActivePageId(pageId);
+        return;
+      }
+
+      // Snapshot outgoing page thumbnail (store under canvas ID)
+      const outgoingThumbnail = canvas.toDataURL();
+      setThumbnails(prev => ({ ...prev, [currentCanvasId]: outgoingThumbnail }));
+
+      // Save current page's undo history (keyed by canvas ID)
+      const currentHistory = canvas.getHistory();
+      pagesHistoryRef.current[currentCanvasId] = currentHistory;
+
+      // Serialize current page (keyed by canvas ID)
+      pagesDataRef.current[currentCanvasId] = canvas.toJSON();
+
+      // Determine if target page is a spread (full width) or inner page (half width)
+      const targetIsSpread = targetPage?.isSpread ?? (targetCanvasId.includes("spread"));
+      const targetDims = getCanvasDimensions(cardType!, cardFormat!, undefined, !targetIsSpread);
+
+      // Resize canvas to target dimensions
+      canvas.resize(targetDims.width, targetDims.height);
 
       // Load target page (or blank)
-      const targetJSON = pagesDataRef.current[pageId];
+      const targetJSON = pagesDataRef.current[targetCanvasId];
       if (targetJSON) {
         await canvas.loadJSON(targetJSON);
       } else {
@@ -197,9 +350,21 @@ export function useCanvasBuilder(
         );
       }
 
+      // Restore target page's undo history (or start fresh)
+      const targetHistory = pagesHistoryRef.current[targetCanvasId];
+      if (targetHistory) {
+        canvas.setHistory(targetHistory.stack, targetHistory.index);
+      } else {
+        canvas.setHistory([], -1);
+      }
+
       setActivePageId(pageId);
+      setDims(targetDims);
+
+      // Wait for React to process state update before allowing thumbnail updates
+      setTimeout(() => { isSwitchingRef.current = false; }, 100);
     },
-    [canvasRef, activePageId]
+    [canvasRef, activePageId, pages, cardType, cardFormat]
   );
 
   const handleZoomFit = useCallback(
@@ -220,12 +385,14 @@ export function useCanvasBuilder(
     const canvas = canvasRef.current;
     if (!canvas || !cardType || !cardFormat || !templateId || !dims) return null;
 
-    // Save current page first
-    pagesDataRef.current[activePageId] = canvas.toJSON();
+    // Save current page first (under canvas ID)
+    const activeCanvasId = pages.find(p => p.id === activePageId)?.canvasPageId ?? activePageId;
+    pagesDataRef.current[activeCanvasId] = canvas.toJSON();
 
     // Use front page for export (primary content)
-    const frontPageId = pages[0].id;
-    const frontJSON = pagesDataRef.current[frontPageId];
+    const frontPage = pages[0];
+    const frontCanvasId = frontPage.canvasPageId ?? frontPage.id;
+    const frontJSON = pagesDataRef.current[frontCanvasId];
     if (!frontJSON) return null;
 
     return fabricToWizardState(
@@ -240,50 +407,65 @@ export function useCanvasBuilder(
   const getAllPagesData = useCallback((): Record<string, string> => {
     const canvas = canvasRef.current;
     if (canvas) {
-      pagesDataRef.current[activePageId] = canvas.toJSON();
+      const activePage = pages.find(p => p.id === activePageId);
+      const canvasId = activePage?.canvasPageId ?? activePageId;
+      pagesDataRef.current[canvasId] = canvas.toJSON();
     }
     return { ...pagesDataRef.current };
-  }, [canvasRef, activePageId]);
+  }, [canvasRef, activePageId, pages]);
 
   const getAllPageImages = useCallback(async (): Promise<Record<string, string>> => {
     const canvas = canvasRef.current;
-    if (!canvas) return {};
+    if (!canvas || !cardType || !cardFormat) return {};
 
-    // Save current page state
-    pagesDataRef.current[activePageId] = canvas.toJSON();
-    const originalPageId = activePageId;
+    // Save current page state under canvas ID
+    const activeCanvasId = pages.find(p => p.id === activePageId)?.canvasPageId ?? activePageId;
+    pagesDataRef.current[activeCanvasId] = canvas.toJSON();
     const images: Record<string, string> = {};
+    const capturedCanvasIds = new Set<string>();
 
     for (const page of pages) {
-      if (page.id === originalPageId) {
+      const canvasId = page.canvasPageId ?? page.id;
+      // Skip if we already captured this canvas (shared by multiple display pages)
+      if (capturedCanvasIds.has(canvasId)) continue;
+      capturedCanvasIds.add(canvasId);
+
+      if (canvasId === activeCanvasId) {
         // Current page — just capture it directly
-        images[page.id] = canvas.toDataURL();
+        images[canvasId] = canvas.toDataURL();
       } else {
-        // Switch to this page, capture, switch back
-        const pageJSON = pagesDataRef.current[page.id];
+        // Resize canvas to this page's dimensions, load, capture
+        const pageJSON = pagesDataRef.current[canvasId];
         if (pageJSON) {
+          const pageIsSpread = page.isSpread ?? canvasId.includes("spread");
+          const pageDims = getCanvasDimensions(cardType, cardFormat, undefined, !pageIsSpread);
+          canvas.resize(pageDims.width, pageDims.height);
           await canvas.loadJSON(pageJSON);
-          images[page.id] = canvas.toDataURL();
+          images[canvasId] = canvas.toDataURL();
         }
       }
     }
 
-    // Restore original page
+    // Restore original page dimensions and content
     if (pages.length > 1) {
-      const origJSON = pagesDataRef.current[originalPageId];
+      const origIsSpread = activeCanvasId.includes("spread");
+      const origDims = getCanvasDimensions(cardType, cardFormat, undefined, !origIsSpread);
+      canvas.resize(origDims.width, origDims.height);
+      const origJSON = pagesDataRef.current[activeCanvasId];
       if (origJSON) {
         await canvas.loadJSON(origJSON);
       }
     }
 
     return images;
-  }, [canvasRef, activePageId, pages]);
+  }, [canvasRef, activePageId, pages, cardType, cardFormat]);
 
   const saveDraft = useCallback(() => {
     if (!cardType || !cardFormat || !templateId) return;
     const canvas = canvasRef.current;
     if (canvas) {
-      pagesDataRef.current[activePageId] = canvas.toJSON();
+      const canvasId = pages.find(p => p.id === activePageId)?.canvasPageId ?? activePageId;
+      pagesDataRef.current[canvasId] = canvas.toJSON();
     }
     try {
       const envelope: DraftEnvelope = {
@@ -298,7 +480,7 @@ export function useCanvasBuilder(
     } catch {
       /* ignore */
     }
-  }, [canvasRef, cardType, cardFormat, templateId, activePageId]);
+  }, [canvasRef, cardType, cardFormat, templateId, activePageId, pages]);
 
   const restoreDraft = useCallback((): boolean => {
     try {
@@ -313,10 +495,14 @@ export function useCanvasBuilder(
       const canvas = canvasRef.current;
       if (!canvas) return false;
 
-      // Check if template has multiple pages for perPage sizing
+      // Determine correct dimensions for the active page
       const tmpl = getTemplateConfig(envelope.templateId);
-      const hasPages = tmpl?.elements.some(el => el.page && el.page !== "front") ?? false;
-      const newDims = getCanvasDimensions(envelope.cardType, envelope.cardFormat, undefined, hasPages);
+      const hasOuter = tmpl?.elements.some(el => el.page === "outside-spread") ?? false;
+      const hasBack = tmpl?.elements.some(el => el.page === "back") ?? false;
+      const restoredPages = getPageDefs(envelope.cardFormat, hasOuter, hasBack);
+      const activePage = restoredPages.find(p => p.id === envelope.activePageId);
+      const activeIsSpread = activePage?.isSpread ?? false;
+      const newDims = getCanvasDimensions(envelope.cardType, envelope.cardFormat, undefined, !activeIsSpread);
       canvas.resize(newDims.width, newDims.height);
 
       // Load the active page
@@ -325,6 +511,8 @@ export function useCanvasBuilder(
         canvas.loadJSON(pageJSON);
       }
 
+      const hasPages = tmpl?.elements.some(el => el.page && el.page !== "front") ?? false;
+      setHasMultiplePages(hasPages);
       setCardType(envelope.cardType);
       setCardFormat(envelope.cardFormat);
       setTemplateId(envelope.templateId);
@@ -359,6 +547,10 @@ export function useCanvasBuilder(
     getAllPageImages,
     saveDraft,
     restoreDraft,
+    thumbnails,
+    updateActiveThumbnail,
+    coverMode,
+    applyCoverMode,
   };
 }
 
@@ -456,6 +648,8 @@ async function addFabricObject(
           }
 
           fabricCanvas.add(img);
+          // Bring overlays (fold line, grid) back to front after image loads
+          canvas.bringOverlaysToFront();
         } catch (err) {
           console.warn("[addFabricObject] Failed to load image:", src, err);
           canvas.addRect({ ...config.options, fill: "#f0ebe6", stroke: "#ccc", strokeWidth: 1 });

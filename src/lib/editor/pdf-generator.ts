@@ -1,9 +1,9 @@
 import { renderCardHTML } from "./card-to-html";
-import { renderSpreadHTML, autoShrinkText } from "./card-to-html-v2";
+import { renderSpreadHTML, autoShrinkText, buildPageState } from "./card-to-html-v2";
 import { getCardDimensions } from "./wizard-state";
 import { getTemplateById } from "./card-templates";
 import { getTemplateConfig } from "./template-configs";
-import type { WizardState } from "./wizard-state";
+import type { WizardState, ElementOverride } from "./wizard-state";
 import type { Browser } from "puppeteer-core";
 
 /**
@@ -83,10 +83,29 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     pageWidthMm = config.spreadWidthMm;
     pageHeightMm = config.spreadHeightMm;
 
-    // Check if template has multiple pages (front/back)
+    // Check if template has outside-spread (folded card) or front/back pages
+    const hasOuterPages = config.elements.some(el => el.page === "outside-spread");
     const hasBackPage = config.elements.some(el => el.page && el.page !== "front");
 
-    if (hasBackPage) {
+    if (hasOuterPages) {
+      // Folded card: outside spread (full width) + inside spread (two half-width pages side by side)
+      pageWidthMm = config.spreadWidthMm;
+      pageHeightMm = config.spreadHeightMm;
+      const halfWidthMm = config.spreadWidthMm / 2;
+
+      // Page 1: Outside spread at full width (only outside-spread elements visible)
+      const outsideState = buildPageState(state, config, "outside-spread");
+      const outsideHTML = await renderSpreadHTML(outsideState, { baseUrl: options?.baseUrl });
+
+      // Pages 2-3: Inside pages rendered at half width (70mm) with renderWidthMm override
+      const frontState = buildPageState(state, config, "front");
+      const backState = buildPageState(state, config, "back");
+      const frontHTML = await renderSpreadHTML(frontState, { baseUrl: options?.baseUrl, renderWidthMm: halfWidthMm });
+      const backHTML = await renderSpreadHTML(backState, { baseUrl: options?.baseUrl, renderWidthMm: halfWidthMm });
+
+      htmlPages = [outsideHTML, frontHTML, backHTML];
+      console.log(`[pdf] Folded card: 3 pages (outside spread + front + back @ ${halfWidthMm}mm)`);
+    } else if (hasBackPage) {
       // Multi-page: render front and back as separate PDF pages
       const frontState = buildPageState(state, config, "front");
       const backState = buildPageState(state, config, "back");
@@ -106,7 +125,24 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     pageHeightMm = dims.heightMm;
   }
 
-  console.log(`[pdf] Template: ${state.templateId}, Page: ${pageWidthMm}x${pageHeightMm}mm, Pages: ${htmlPages.length}`);
+  // Build per-page dimensions (may vary for folded cards)
+  const pageDims: { widthMm: number; heightMm: number }[] = htmlPages.map(() => ({
+    widthMm: pageWidthMm,
+    heightMm: pageHeightMm,
+  }));
+
+  // For folded cards with outside spread: pages 2+ are inner pages at half width
+  if (isV2) {
+    const config = getTemplateConfig(templateId);
+    const hasOuterPages = config?.elements.some(el => el.page === "outside-spread") ?? false;
+    if (hasOuterPages && htmlPages.length >= 3) {
+      const halfWidthMm = pageWidthMm / 2;
+      pageDims[1] = { widthMm: halfWidthMm, heightMm: pageHeightMm };
+      pageDims[2] = { widthMm: halfWidthMm, heightMm: pageHeightMm };
+    }
+  }
+
+  console.log(`[pdf] Template: ${state.templateId}, Pages: ${htmlPages.length}, Dims: ${pageDims.map(d => `${d.widthMm}x${d.heightMm}mm`).join(", ")}`);
 
   // Launch browser with retry
   console.log(`[pdf] Step: launch browser`);
@@ -116,7 +152,8 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
     const pdfBuffers: Buffer[] = [];
 
     for (let i = 0; i < htmlPages.length; i++) {
-      console.log(`[pdf] Step: render page ${i + 1}/${htmlPages.length}`);
+      const dims = pageDims[i];
+      console.log(`[pdf] Step: render page ${i + 1}/${htmlPages.length} (${dims.widthMm}x${dims.heightMm}mm)`);
       const page = await browser.newPage();
       page.setDefaultTimeout(15000);
 
@@ -132,8 +169,8 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
       await page.evaluateHandle(() => document.fonts.ready);
 
       const pdfBuffer = await page.pdf({
-        width: `${pageWidthMm}mm`,
-        height: `${pageHeightMm}mm`,
+        width: `${dims.widthMm}mm`,
+        height: `${dims.heightMm}mm`,
         printBackground: true,
         margin: { top: "0", right: "0", bottom: "0", left: "0" },
       });
@@ -160,24 +197,6 @@ export async function generateCardPDF(state: WizardState, options?: { baseUrl?: 
   }
 }
 
-/**
- * Build a WizardState that hides all elements NOT on the given page.
- * Same logic as preview route's buildPageState.
- */
-function buildPageState(
-  state: WizardState,
-  config: NonNullable<ReturnType<typeof getTemplateConfig>>,
-  pageId: string
-): WizardState {
-  const overrides = { ...(state.elementOverrides ?? {}) };
-  for (const el of config.elements) {
-    const elPage = el.page ?? "front";
-    if (elPage !== pageId) {
-      overrides[el.id] = { ...overrides[el.id], hidden: true };
-    }
-  }
-  return { ...state, elementOverrides: overrides };
-}
 
 /**
  * Merge multiple single-page PDF buffers into one multi-page PDF.

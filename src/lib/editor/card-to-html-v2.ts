@@ -10,6 +10,30 @@ import type { TemplateConfig, TemplateElement } from "./template-configs";
 import type { WizardState, TextContent, ElementOverride } from "./wizard-state";
 import { getMergedElement } from "./wizard-state";
 
+// ── Page state helper (shared with preview route + pdf-generator) ──
+
+/**
+ * Build a WizardState that hides all elements NOT on the given page.
+ * Uses elementOverrides to set hidden=true on off-page elements.
+ */
+export function buildPageState(
+  state: WizardState,
+  config: TemplateConfig | null,
+  pageId: string
+): WizardState {
+  if (!config) return state;
+  const overrides = { ...(state.elementOverrides ?? {}) };
+
+  for (const el of config.elements) {
+    const elPage = el.page ?? "front";
+    if (elPage !== pageId) {
+      overrides[el.id] = { ...overrides[el.id], hidden: true };
+    }
+  }
+
+  return { ...state, elementOverrides: overrides };
+}
+
 // ── Image helpers ──
 
 async function imageToBase64(url: string, baseUrl?: string): Promise<string> {
@@ -140,15 +164,19 @@ function renderTextElement(el: TemplateElement, state: WizardState, pos: string,
 }
 
 function renderImageElement(el: TemplateElement, state: WizardState, images: Record<string, string>, pos: string): string {
-  const base64 = images[el.field ?? "photo"] ?? "";
+  // For elements with fixedAsset (e.g. cover-photo), use the cover image
+  // (which may be user-uploaded or the default fixedAsset)
+  const base64 = el.fixedAsset
+    ? (images[`cover:${el.fixedAsset}`] ?? "")
+    : (images[el.field ?? "photo"] ?? "");
   if (!base64) {
     return `<div style="${pos}background:#f5f5f5;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:10pt;">Foto</div>`;
   }
 
   let imgStyle = `background-image:url('${base64}');background-size:cover;background-position:center center;background-repeat:no-repeat;`;
 
-  // Apply user crop if available
-  if (el.useCrop !== false && state.photo?.crop) {
+  // Apply user crop if available (but NOT for fixedAsset elements like cover-photo)
+  if (!el.fixedAsset && el.useCrop !== false && state.photo?.crop) {
     const cropCSS = computeCropStyle(state.photo.crop);
     if (cropCSS) {
       imgStyle = `background-image:url('${base64}');${cropCSS}background-repeat:no-repeat;`;
@@ -161,9 +189,15 @@ function renderImageElement(el: TemplateElement, state: WizardState, images: Rec
 
   const border = el.imageBorder && el.imageBorder !== "none" ? `border:${el.imageBorder};` : "";
 
-  const photoFilter = state.photo?.filter && state.photo.filter !== "none"
+  const photoFilter = !el.fixedAsset && state.photo?.filter && state.photo.filter !== "none"
     ? `filter:${state.photo.filter};`
     : "";
+
+  // Left-only cover mode: restrict cover photo to left half of the spread
+  if (el.fixedAsset && state.coverMode === "left-only") {
+    const halfPos = pos.replace(/width:\s*[\d.]+%/, "width:50%");
+    return `<div style="${halfPos}${imgStyle}${clipStyle}${border}${photoFilter}"></div>`;
+  }
 
   return `<div style="${pos}${imgStyle}${clipStyle}${border}${photoFilter}"></div>`;
 }
@@ -205,6 +239,8 @@ function renderFontLinks(fonts: string[]): string {
 
 export interface RenderOptions {
   baseUrl?: string;
+  /** Override render width (mm) — use for inner pages that render at half spread width */
+  renderWidthMm?: number;
 }
 
 // ── Main render function ──
@@ -213,7 +249,8 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
   const config = state.templateId ? getTemplateConfig(state.templateId) : null;
   if (!config) throw new Error(`Template config not found: ${state.templateId}`);
 
-  const { spreadWidthMm, spreadHeightMm } = config;
+  const spreadHeightMm = config.spreadHeightMm;
+  const renderWidth = options?.renderWidthMm ?? config.spreadWidthMm;
   const gridW = 1000;
   const gridH = 1000;
 
@@ -221,6 +258,12 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
   const fonts: string[] = [state.textContent.fontFamily];
   for (const el of config.elements) {
     if (el.fontFamily) fonts.push(el.fontFamily);
+  }
+  // Also collect fonts from per-element overrides (user may have changed font on individual elements)
+  if (state.elementOverrides) {
+    for (const override of Object.values(state.elementOverrides)) {
+      if (override.fontFamily) fonts.push(override.fontFamily);
+    }
   }
 
   // Pre-fetch images
@@ -232,6 +275,14 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
   if (photoSrc && !images["photo"]) {
     console.warn("[card-html] Photo URL provided but conversion failed:", photoSrc);
   }
+  // If user uploaded a custom cover photo, pre-fetch it and override the fixedAsset
+  if (state.coverPhoto?.url) {
+    const coverEl = config.elements.find(el => el.id === "cover-photo");
+    if (coverEl?.fixedAsset) {
+      images[`cover:${coverEl.fixedAsset}`] = await imageToBase64(state.coverPhoto.url, options?.baseUrl);
+    }
+  }
+
   // Fetch ornament assets
   for (const el of config.elements) {
     if (el.type === "ornament" && el.fixedAsset) {
@@ -240,36 +291,62 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
         ? el.fixedAsset
         : `https://www.svgrepo.com/show/${el.fixedAsset.replace("/assets/ornaments/", "").replace(".svg", "")}.svg`;
 
-      // Try the direct path first (for PNGs from freesvg.org stored locally)
-      if (typeof window === "undefined" && el.fixedAsset.endsWith(".png")) {
-        // For local PNG files, read from filesystem (server-side only)
-        try {
-          const fs = await import("fs");
-          const path = await import("path");
-          const filePath = path.join(process.cwd(), "public", el.fixedAsset);
-          if (fs.existsSync(filePath)) {
-            const buf = fs.readFileSync(filePath);
-            images[el.fixedAsset] = `data:image/png;base64,${buf.toString("base64")}`;
-            continue;
-          }
-        } catch { /* fall through to URL fetch */ }
-      }
-      if (typeof window === "undefined" && el.fixedAsset.endsWith(".svg")) {
-        try {
-          const fs = await import("fs");
-          const path = await import("path");
-          const filePath = path.join(process.cwd(), "public", el.fixedAsset);
-          if (fs.existsSync(filePath)) {
-            const buf = fs.readFileSync(filePath);
-            images[el.fixedAsset] = `data:image/svg+xml;base64,${buf.toString("base64")}`;
-            continue;
-          }
-        } catch { /* fall through */ }
+      // Try the direct path first — read local assets from filesystem (server-side only)
+      if (typeof window === "undefined") {
+        const ext = el.fixedAsset.split(".").pop()?.toLowerCase() ?? "";
+        const mimeMap: Record<string, string> = {
+          png: "image/png",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          svg: "image/svg+xml",
+          webp: "image/webp",
+        };
+        const mime = mimeMap[ext];
+        if (mime) {
+          try {
+            const fs = await import("fs");
+            const path = await import("path");
+            const filePath = path.join(process.cwd(), "public", el.fixedAsset);
+            if (fs.existsSync(filePath)) {
+              const buf = fs.readFileSync(filePath);
+              images[el.fixedAsset] = `data:${mime};base64,${buf.toString("base64")}`;
+              continue;
+            }
+          } catch { /* fall through to URL fetch */ }
+        }
       }
       // Fallback: fetch from URL
       images[el.fixedAsset] = await imageToBase64(assetUrl, options?.baseUrl);
     }
   }
+  // Fetch fixedAsset for image-type elements (e.g. cover-photo with default TREE.jpg)
+  for (const el of config.elements) {
+    if (el.type === "image" && el.fixedAsset && !images[`cover:${el.fixedAsset}`]) {
+      // No user-uploaded cover photo — load the default fixedAsset
+      if (typeof window === "undefined") {
+        const ext = el.fixedAsset.split(".").pop()?.toLowerCase() ?? "";
+        const mimeMap: Record<string, string> = {
+          png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+          svg: "image/svg+xml", webp: "image/webp",
+        };
+        const mime = mimeMap[ext];
+        if (mime) {
+          try {
+            const fs = await import("fs");
+            const path = await import("path");
+            const filePath = path.join(process.cwd(), "public", el.fixedAsset);
+            if (fs.existsSync(filePath)) {
+              const buf = fs.readFileSync(filePath);
+              images[`cover:${el.fixedAsset}`] = `data:${mime};base64,${buf.toString("base64")}`;
+              continue;
+            }
+          } catch { /* fall through to URL fetch */ }
+        }
+      }
+      images[`cover:${el.fixedAsset}`] = await imageToBase64(el.fixedAsset, options?.baseUrl);
+    }
+  }
+
   // Fetch decoration asset if provided
   if (state.decoration.assetUrl) {
     images["decoration"] = await imageToBase64(state.decoration.assetUrl, options?.baseUrl);
@@ -283,7 +360,7 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
     const pos = posStyle(el, gridW, gridH, overrides);
     switch (el.type) {
       case "text":
-        elementsHtml += renderTextElement(el, state, pos, spreadWidthMm);
+        elementsHtml += renderTextElement(el, state, pos, renderWidth);
         break;
       case "image":
         elementsHtml += renderImageElement(el, state, images, pos);
@@ -300,14 +377,14 @@ export async function renderSpreadHTML(state: WizardState, options?: RenderOptio
   // Free-form elements (user-added, not from template)
   if (state.freeFormElements) {
     for (const ff of state.freeFormElements) {
-      const ffLeft = (ff.left / (spreadWidthMm * 3.7795) * 100).toFixed(3);
+      const ffLeft = (ff.left / (renderWidth * 3.7795) * 100).toFixed(3);
       const ffTop = (ff.top / (spreadHeightMm * 3.7795) * 100).toFixed(3);
-      const ffWidth = (ff.width / (spreadWidthMm * 3.7795) * 100).toFixed(3);
+      const ffWidth = (ff.width / (renderWidth * 3.7795) * 100).toFixed(3);
       const ffHeight = (ff.height / (spreadHeightMm * 3.7795) * 100).toFixed(3);
       const ffPos = `position:absolute;left:${ffLeft}%;top:${ffTop}%;width:${ffWidth}%;height:${ffHeight}%;`;
       if (ff.type === "text" && ff.text) {
         const escaped = ff.text.replace(/\n/g, "<br>");
-        const ffSizeMm = fontPxToMm(ff.fontSize ?? 12, spreadWidthMm).toFixed(2);
+        const ffSizeMm = fontPxToMm(ff.fontSize ?? 12, renderWidth).toFixed(2);
         elementsHtml += `<div style="${ffPos}font-family:'${ff.fontFamily ?? "Playfair Display"}',serif;font-size:${ffSizeMm}mm;color:${ff.fill ?? "#1A1A1A"};text-align:${ff.textAlign ?? "left"};white-space:pre-wrap;">${escaped}</div>`;
       } else if (ff.type === "image" && ff.src) {
         elementsHtml += `<div style="${ffPos}background-image:url('${ff.src}');background-size:cover;background-position:center;"></div>`;
@@ -360,13 +437,13 @@ document.fonts.ready.then(function() {
   <meta charset="UTF-8">
   ${renderFontLinks(fonts)}
   <style>
-    @page { size: ${spreadWidthMm}mm ${spreadHeightMm}mm; margin: 0; }
+    @page { size: ${renderWidth}mm ${spreadHeightMm}mm; margin: 0; }
     * { margin: 0; padding: 0; }
     body { margin: 0; padding: 0; }
   </style>
 </head>
 <body>
-  <div style="position:relative;width:${spreadWidthMm}mm;height:${spreadHeightMm}mm;background:white;overflow:hidden;">
+  <div style="position:relative;width:${renderWidth}mm;height:${spreadHeightMm}mm;background:white;overflow:hidden;">
     ${elementsHtml}
   </div>
   ${autoShrinkScript}

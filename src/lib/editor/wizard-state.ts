@@ -202,6 +202,10 @@ export interface WizardState {
     backgroundRemoved: boolean;
     backgroundBlurred: boolean;
   };
+  coverPhoto?: {
+    url: string | null;
+  };
+  coverMode?: "full-wrap" | "left-only";
   background: {
     type: "color" | "image";
     color: string;
